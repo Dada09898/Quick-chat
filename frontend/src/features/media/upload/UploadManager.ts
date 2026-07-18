@@ -3,10 +3,9 @@ import { RetryManager } from './RetryManager';
 import { ProgressManager } from './ProgressManager';
 import { encryptMediaChunk, generateMediaKey } from '../crypto';
 import { stripExif } from '../exif';
+import { apiClient, apiJson } from '../../../lib/api';
 
 interface UploadOptions {
-  apiBase: string;
-  token: string;
   onProgress?: (progress: number) => void;
   onComplete?: (attachmentId: string, url: string, mediaKeyBase64: string) => void;
   onError?: (error: string) => void;
@@ -41,17 +40,10 @@ export class UploadManager {
 
       // 3. Initialize Upload Session via API
       const chunkManager = new ChunkManager(processedFile);
-      const startRes = await fetch(`${this.options.apiBase}/api/media/upload/start/`, {
+      const { session_id } = await apiJson('/api/media/upload/start/', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.options.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ chunk_count: chunkManager.getChunkCount() })
+        body: { chunk_count: chunkManager.getChunkCount() }
       });
-      
-      if (!startRes.ok) throw new Error("Failed to start upload session");
-      const { session_id } = await startRes.json();
 
       const progressManager = new ProgressManager(processedFile.size, this.options.onProgress || (() => {}));
       const retryManager = new RetryManager();
@@ -76,9 +68,8 @@ export class UploadManager {
           formData.append('chunk_index', index.toString());
           formData.append('chunk', new Blob([encryptedChunk]));
 
-          const res = await fetch(`${this.options.apiBase}/api/media/upload/${session_id}/chunk/`, {
+          const res = await apiClient(`/api/media/upload/${session_id}/chunk/`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${this.options.token}` },
             body: formData
           });
           if (!res.ok) throw new Error(`Chunk ${index} failed`);
@@ -93,17 +84,10 @@ export class UploadManager {
       const fileHashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
       // 6. Complete Upload
-      const completeRes = await fetch(`${this.options.apiBase}/api/media/upload/${session_id}/complete/`, {
+      const { attachment_id, url } = await apiJson(`/api/media/upload/${session_id}/complete/`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.options.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_hash: fileHashHex })
+        body: { file_hash: fileHashHex }
       });
-
-      if (!completeRes.ok) throw new Error("Failed to complete upload");
-      const { attachment_id, url } = await completeRes.json();
 
       const mediaKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(rawKey)));
 

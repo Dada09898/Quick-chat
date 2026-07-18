@@ -39,6 +39,9 @@ class ChatEventRouter:
                 payload
             )
             
+            server_ts = msg.server_timestamp.isoformat() if hasattr(msg.server_timestamp, 'isoformat') else msg.server_timestamp
+            created_ts = msg.created_at.isoformat() if hasattr(msg.created_at, 'isoformat') else msg.created_at
+            
             # 1. Send ACK back to sender
             await consumer.send(text_data=json.dumps({
                 'type': 'ack',
@@ -47,7 +50,7 @@ class ChatEventRouter:
                     'status': 'sent',
                     'message_id': str(msg.id),
                     'sequence_number': msg.sequence_number,
-                    'server_timestamp': msg.server_timestamp.isoformat()
+                    'server_timestamp': server_ts
                 }
             }))
             
@@ -68,7 +71,7 @@ class ChatEventRouter:
                         'signature': msg.signature,
                         'key_version': msg.key_version,
                         'algorithm': msg.algorithm,
-                        'created_at': msg.created_at.isoformat(),
+                        'created_at': created_ts,
                     }
                 }
             })
