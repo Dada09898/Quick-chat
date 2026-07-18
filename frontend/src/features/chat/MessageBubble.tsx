@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Bookmark, BookmarkCheck, Trash2 } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Trash2, ChevronDown, CornerUpLeft, CornerUpRight, Copy } from 'lucide-react';
 import { useChatStore } from './chatStore';
 import { ClientLinkPreview } from './ClientLinkPreview';
 import { useRealtime } from '../../realtime/RealtimeProvider';
@@ -17,9 +17,10 @@ interface MessageBubbleProps {
   isOwn: boolean;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message, isOwn }) => {
   const [decryptedText, setDecryptedText] = useState<string | null>(message.decrypted_text || null);
   const [isDecrypting, setIsDecrypting] = useState(!message.decrypted_text);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   useEffect(() => {
     let isMounted = true;
@@ -100,8 +101,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) 
   return (
     <motion.div 
       ref={bubbleRef}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       layout
       onClick={handleSelection}
       className={`group flex flex-col mb-1.5 w-full cursor-pointer transition-colors ${
@@ -110,7 +112,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) 
     >
       <div className={`flex flex-col max-w-[85%] md:max-w-[65%] relative ${isOwn ? 'items-end' : 'items-start'}`}>
         <div 
-          className={`px-3 py-1.5 pb-[22px] min-w-[100px] shadow-sm text-[15px] leading-relaxed break-words relative
+          onMouseLeave={() => setIsMenuOpen(false)}
+          className={`px-3 py-1.5 pb-[22px] min-w-[100px] shadow-sm text-[15px] leading-relaxed break-words relative group/bubble
             ${isDeleted ? 'bg-[#202c33] text-[#8696a0] italic rounded-lg border border-[#222d34]' :
               isOwn 
               ? 'bg-[#005c4b] text-[#e9edef] rounded-lg rounded-tr-none' 
@@ -118,6 +121,50 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) 
             }
           `}
         >
+          {/* Context Menu Button */}
+          {!isDeleted && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); }}
+              className={`absolute top-1 right-1 p-1 rounded-full text-[#8696a0] hover:text-[#d1d7db] bg-gradient-to-l from-[#005c4b] via-[#005c4b]/80 to-transparent opacity-0 group-hover/bubble:opacity-100 transition-opacity z-10 ${!isOwn ? 'from-[#202c33] via-[#202c33]/80' : ''}`}
+            >
+              <ChevronDown size={18} />
+            </button>
+          )}
+
+          {/* Context Menu Dropdown */}
+          {isMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="absolute top-8 right-2 w-40 bg-[#2a3942] rounded-lg shadow-xl py-2 z-50 border border-[#222d34]"
+            >
+              <button className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3">
+                <CornerUpLeft size={16} /> Reply
+              </button>
+              <button className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3">
+                <Copy size={16} /> Copy
+              </button>
+              <button className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3">
+                <CornerUpRight size={16} /> Forward
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); toggleBookmark(message.id); setIsMenuOpen(false); }}
+                className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3"
+              >
+                {isBookmarked ? <BookmarkCheck size={16} className="text-[#00a884]"/> : <Bookmark size={16} />} 
+                {isBookmarked ? 'Unstar' : 'Star'}
+              </button>
+              {isOwn && (
+                <button 
+                  onClick={(e) => { handleDelete(e); setIsMenuOpen(false); }}
+                  className="w-full px-4 py-2 text-left text-[14px] text-[#f15c6d] hover:bg-[#202c33] flex items-center gap-3"
+                >
+                  <Trash2 size={16} /> Delete
+                </button>
+              )}
+            </motion.div>
+          )}
+
           {/* Decryption Loading State */}
           {isDecrypting && !isDeleted && <span className="animate-pulse text-gray-300">Decrypting...</span>}
 
@@ -150,6 +197,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) 
               </ReactMarkdown>
             )
           }
+          </div>
 
           {/* Deleted State */}
           {isDeleted && (
@@ -190,28 +238,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) 
           <ClientLinkPreview key={idx} url={url} />
         ))}
         
-        {/* External Actions (Bookmark/Delete outside) */}
-        {!isDeleted && (
-          <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 ${isOwn ? 'right-full mr-2' : 'left-full ml-2'}`}>
-            {isOwn && (
-              <button 
-                onClick={handleDelete}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-gray-800 text-gray-500 hover:text-red-400"
-                aria-label="Delete message"
-              >
-                <Trash2 size={16} />
-              </button>
-            )}
-            <button 
-              onClick={(e) => { e.stopPropagation(); toggleBookmark(message.id); }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-gray-800 text-gray-500"
-              aria-label={isBookmarked ? "Remove bookmark" : "Bookmark message"}
-            >
-              {isBookmarked ? <BookmarkCheck size={16} className="text-indigo-400" /> : <Bookmark size={16} />}
-            </button>
-          </div>
-        )}
       </div>
     </motion.div>
   );
-};
+});

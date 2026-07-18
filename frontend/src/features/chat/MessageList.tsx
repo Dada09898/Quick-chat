@@ -99,10 +99,43 @@ export const MessageList: React.FC = () => {
         data={messages}
         initialTopMostItemIndex={messages.length - 1}
         itemContent={(index, msg) => {
-          // Virtuoso mounts this component only when entering the viewport.
-          // This naturally triggers the `useEffect` inside MessageBubble for Lazy Decryption.
+          const prevMsg = index > 0 ? messages[index - 1] : null;
+          let showDateSeparator = false;
+          let dateText = '';
+          
+          if (!prevMsg) {
+            showDateSeparator = true;
+          } else {
+            const prevDate = new Date(prevMsg.created_at).toDateString();
+            const currDate = new Date(msg.created_at).toDateString();
+            if (prevDate !== currDate) {
+              showDateSeparator = true;
+            }
+          }
+          
+          if (showDateSeparator) {
+            const date = new Date(msg.created_at);
+            const today = new Date();
+            const yest = new Date();
+            yest.setDate(yest.getDate() - 1);
+            if (date.toDateString() === today.toDateString()) {
+              dateText = 'TODAY';
+            } else if (date.toDateString() === yest.toDateString()) {
+              dateText = 'YESTERDAY';
+            } else {
+              dateText = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+            }
+          }
+
           return (
-            <div className="py-1">
+            <div className="py-1 flex flex-col">
+              {showDateSeparator && (
+                <div className="flex justify-center my-2.5">
+                  <span className="bg-[#182229] text-[#8696a0] text-[12.5px] px-3 py-1 rounded-lg shadow-sm font-medium">
+                    {dateText}
+                  </span>
+                </div>
+              )}
               <MessageBubble 
                 key={msg.id} 
                 message={msg} 

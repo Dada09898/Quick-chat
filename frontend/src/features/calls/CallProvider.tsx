@@ -3,7 +3,7 @@ import { useCallStore } from './CallStore';
 import { MediaManager } from './MediaManager';
 import { PeerConnectionManager } from './PeerConnectionManager';
 import { useRealtimeStore } from '../../realtime/store';
-import { realtimeSocket } from '../../realtime/socket';
+import { useRealtime } from '../../realtime/RealtimeProvider';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,9 +12,7 @@ const pcManager = new PeerConnectionManager();
 
 export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   const { state, sessionId, isMuted, isVideoOn, toggleMute, toggleVideo, endCall, setState } = useCallStore();
-  // sendEvent was erroneously taken from useRealtimeStore
-  // We'll import realtimeSocket directly for sending.
-  
+  const { sendEvent } = useRealtime();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   
@@ -39,7 +37,7 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
         if (state === 'OUTGOING') {
           // Send offer
           const offer = await pcManager.createOffer();
-          realtimeSocket.send('call.offer', { 
+          sendEvent('call.offer', { 
             session_id: sessionId, 
             conversation_id: useCallStore.getState().conversationId,
             sdp: offer 
