@@ -32,7 +32,7 @@ RUN pip install --no-cache /wheels/*
 
 COPY . .
 COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 RUN chown -R appuser:appuser /app
 
 USER appuser
