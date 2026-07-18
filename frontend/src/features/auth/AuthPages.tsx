@@ -15,15 +15,17 @@ export const LoginPage = () => {
       const res = await fetch(`${baseUrl}/api/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       });
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
       } else {
-        alert("Login failed.");
+        const err = await res.json().catch(() => ({}));
+        alert("Login failed: " + JSON.stringify(err));
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); alert("Network error: " + e); }
   };
 
   return (
@@ -76,15 +78,17 @@ export const RegisterPage = () => {
       const res = await fetch(`${baseUrl}/api/auth/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password, timezone, preferred_language: 'en' })
       });
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
       } else {
-        alert("Registration failed.");
+        const err = await res.json().catch(() => ({}));
+        alert("Registration failed: " + JSON.stringify(err));
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); alert("Network error: " + e); }
   };
 
   return (
