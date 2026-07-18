@@ -31,6 +31,8 @@ COPY --from=builder /app/requirements.txt .
 RUN pip install --no-cache /wheels/*
 
 COPY . .
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 RUN chown -R appuser:appuser /app
 
 USER appuser
@@ -41,5 +43,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8000/health/live/ || exit 1
 
-# Using daphne for ASGI (WebSockets & HTTP)
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+# Start via entrypoint script to run migrations and create admin
+ENTRYPOINT ["./entrypoint.sh"]
