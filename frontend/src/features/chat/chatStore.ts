@@ -25,6 +25,8 @@ interface ChatState {
   selectedMessageIds: string[];
   bookmarkedMessageIds: string[];
   conversations: any[];
+  drafts: Record<string, string>;
+  isRightPanelOpen: boolean;
   
   setActiveConversation: (id: string | null) => void;
   setConversations: (convs: any[]) => void;
@@ -36,6 +38,8 @@ interface ChatState {
   enqueueMessage: (msg: ChatMessage) => void;
   removeFromOutbox: (id: string) => void;
   updateMessageStatus: (id: string, status: ChatMessage['status'], sequence?: number) => void;
+  setDraft: (conversationId: string, text: string) => void;
+  toggleRightPanel: () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -45,8 +49,10 @@ export const useChatStore = create<ChatState>((set) => ({
   outbox: [],
   selectedMessageIds: [],
   bookmarkedMessageIds: [],
+  drafts: {},
+  isRightPanelOpen: false,
   
-  setActiveConversation: (id) => set({ activeConversationId: id, selectedMessageIds: [] }),
+  setActiveConversation: (id) => set({ activeConversationId: id, selectedMessageIds: [], isRightPanelOpen: false }),
   setConversations: (convs) => set({ conversations: convs }),
   
   toggleMessageSelection: (id) => set((state) => ({

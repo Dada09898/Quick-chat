@@ -2,26 +2,72 @@ import React, { useState, useRef } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useRealtime } from '../../realtime/RealtimeProvider';
-import { Smile, Paperclip, Send } from 'lucide-react';
-import EmojiPicker from 'emoji-picker-react';
+import { Smile, Paperclip, Send, Mic, Camera, X, Image, FileText, Video, Contact, MapPin, Headphones } from 'lucide-react';
 import { UploadManager } from '../media/upload/UploadManager';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const LazyEmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
 export const MessageInput: React.FC = () => {
   const [text, setText] = useState('');
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const enqueueMessage = useChatStore(state => state.enqueueMessage);
+  const activeDraft = useChatStore(state => state.activeConversationId ? state.drafts[state.activeConversationId] : '');
+  const setDraft = useChatStore(state => state.setDraft);
   const user = useAuthStore(state => state.user);
   const { sendEvent } = useRealtime();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setText(e.target.value);
+  // Restore draft when conversation changes
+  React.useEffect(() => {
+    if (activeConversationId) {
+      const draft = activeDraft || '';
+      setText(draft);
+      if (textareaRef.current) {
+        // Reset height then adjust based on text
+        textareaRef.current.style.height = '24px';
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+          }
+        }, 0);
+      }
+    }
+  }, [activeConversationId]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setText(val);
+    if (activeConversationId) {
+      setDraft(activeConversationId, val);
+    }
+    
+    // Auto-resize
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '24px';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+
     sendEvent('typing.start', { conversation_id: activeConversationId });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => sendEvent('typing.stop', { conversation_id: activeConversationId }), 2000);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowEmojiPicker(false);
+      setShowAttachmentMenu(false);
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend(e);
+    }
   };
 
   const handleEmojiClick = (emojiObject: any) => {
@@ -68,6 +114,10 @@ export const MessageInput: React.FC = () => {
     
     enqueueMessage(newMsg);
     setText('');
+    if (activeConversationId) setDraft(activeConversationId, '');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '24px';
+    }
     
     // 2. Transmit via WebSocket
     sendEvent('message.send', {
@@ -154,57 +204,135 @@ export const MessageInput: React.FC = () => {
       )}
 
       {/* Emoji Picker Popover */}
-      {showEmojiPicker && (
-        <div className="absolute bottom-full left-4 mb-2 z-50 shadow-2xl rounded-lg overflow-hidden border border-[#222d34] bg-[#202c33]">
-          <EmojiPicker 
-            onEmojiClick={handleEmojiClick} 
-            theme={'dark' as any}
-            searchDisabled={false}
-            skinTonesDisabled
-          />
-        </div>
-      )}
+      <AnimatePresence>
+        {showEmojiPicker && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-full left-4 mb-2 z-50 shadow-2xl rounded-lg overflow-hidden border border-[#222d34] bg-[#202c33]"
+          >
+            <React.Suspense fallback={<div className="w-[350px] h-[400px] flex items-center justify-center text-[#8696a0]">Loading emojis...</div>}>
+              <LazyEmojiPicker 
+                onEmojiClick={handleEmojiClick} 
+                theme={'dark' as any}
+                searchDisabled={false}
+                skinTonesDisabled
+              />
+            </React.Suspense>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Attachment Menu Popover */}
+      <AnimatePresence>
+        {showAttachmentMenu && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.8, originY: 1, originX: 0 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-full left-14 mb-4 z-50 bg-[#2a3942] rounded-2xl shadow-xl border border-[#222d34] p-4 flex gap-4 w-[280px] flex-wrap justify-center"
+          >
+            <label className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#bf59cf] to-[#9c27b0] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform relative overflow-hidden">
+                 <Image size={24} />
+                 <input 
+                   type="file" 
+                   className="hidden" 
+                   accept="image/*,video/*" 
+                   onChange={handleFileUpload}
+                   disabled={isUploading}
+                 />
+               </div>
+               <span className="text-[12px] text-[#e9edef]">Photos</span>
+            </label>
+            <div className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#00a884] to-[#008f6f] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+                 <Camera size={24} />
+               </div>
+               <span className="text-[12px] text-[#e9edef]">Camera</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#53bdeb] to-[#3498db] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+                 <FileText size={24} />
+               </div>
+               <span className="text-[12px] text-[#e9edef]">Document</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#ff7a00] to-[#e66a00] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+                 <Headphones size={24} />
+               </div>
+               <span className="text-[12px] text-[#e9edef]">Audio</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <button 
         type="button" 
-        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+        onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowAttachmentMenu(false); }}
         className={`p-2 rounded-full transition ${showEmojiPicker ? 'bg-[#2a3942] text-[#d1d7db]' : 'text-[#8696a0] hover:text-[#d1d7db]'}`}
       >
         <Smile size={24} />
       </button>
 
-      <label className="p-2 rounded-full text-[#8696a0] hover:text-[#d1d7db] transition cursor-pointer">
+      <button 
+        type="button" 
+        onClick={() => { setShowAttachmentMenu(!showAttachmentMenu); setShowEmojiPicker(false); }}
+        className={`p-2 rounded-full transition ${showAttachmentMenu ? 'bg-[#2a3942] text-[#d1d7db]' : 'text-[#8696a0] hover:text-[#d1d7db]'}`}
+      >
         <Paperclip size={24} />
-        <input 
-          type="file" 
-          className="hidden" 
-          accept="image/*,video/*" 
-          onChange={handleFileUpload}
-          disabled={isUploading}
-        />
-      </label>
+      </button>
 
-      <form onSubmit={handleSend} className="flex-1 flex items-center gap-2">
-        <div className="flex-1 bg-[#2a3942] rounded-lg flex items-center px-4 py-2">
-          <input 
-            type="text" 
-            value={text}
-            onChange={handleTextChange}
-            onFocus={() => setShowEmojiPicker(false)}
-            placeholder="Type a message"
-            className="w-full bg-transparent text-[#d1d7db] placeholder-[#8696a0] focus:outline-none focus:ring-0 text-[15px]"
-          />
-        </div>
-        
-        {text.trim() && !isUploading && (
-          <button 
-            type="submit"
-            className="p-3 bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] rounded-full transition-colors flex items-center justify-center shrink-0"
-          >
-            <Send size={20} className="ml-1" />
+      <div className="flex-1 bg-[#2a3942] rounded-xl flex items-end px-4 py-2 min-h-[44px]">
+        <textarea 
+          ref={textareaRef}
+          value={text}
+          onChange={handleTextChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => { setShowEmojiPicker(false); setShowAttachmentMenu(false); }}
+          placeholder="Type a message"
+          rows={1}
+          className="w-full bg-transparent text-[#d1d7db] placeholder-[#8696a0] focus:outline-none focus:ring-0 text-[15px] resize-none overflow-y-auto custom-scrollbar"
+          style={{ height: '24px', lineHeight: '24px' }}
+        />
+        {!text.trim() && (
+          <button className="p-1 text-[#8696a0] hover:text-[#d1d7db] transition mb-[-2px] ml-2">
+            <Camera size={22} />
           </button>
         )}
-      </form>
+      </div>
+      
+      <button 
+        onClick={text.trim() ? handleSend : () => { /* Placeholder for Voice Record Start */ }}
+        className="p-3 bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] rounded-full transition-colors flex items-center justify-center shrink-0 w-[44px] h-[44px] relative overflow-hidden"
+      >
+        <AnimatePresence mode="popLayout">
+          {text.trim() ? (
+            <motion.div
+              key="send"
+              initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Send size={20} className="ml-1" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="mic"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Mic size={20} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </button>
     </div>
   );
 };

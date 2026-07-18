@@ -78,7 +78,10 @@ export const ChatLayout: React.FC = () => {
               </button>
             )}
             
-            <div className="flex items-center gap-3 cursor-pointer group">
+            <div 
+              className="flex items-center gap-3 cursor-pointer group"
+              onClick={() => activeConversationId && useChatStore.getState().toggleRightPanel()}
+            >
               {activeConversationId && (
                 <Avatar name={displayName} url={avatarUrl} size="md" className="group-hover:opacity-90 transition-opacity" />
               )}
@@ -163,7 +166,11 @@ export const ChatLayout: React.FC = () => {
       </div>
 
       {/* Right Details Panel */}
-      <RightPanel />
+      <AnimatePresence>
+        {useChatStore(state => state.isRightPanelOpen) && (
+          <RightPanel />
+        )}
+      </AnimatePresence>
 
       <NewChatModal 
         isOpen={isNewChatModalOpen}
