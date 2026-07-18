@@ -4,6 +4,9 @@ set -e
 echo "Running database migrations..."
 python manage.py migrate
 
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
+
 echo "Creating default superuser..."
 python manage.py shell -c "
 from django.contrib.auth import get_user_model
