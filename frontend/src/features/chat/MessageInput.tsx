@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useRealtime } from '../../realtime/RealtimeProvider';
-import { Smile, Paperclip } from 'lucide-react';
+import { Smile, Paperclip, Send } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { UploadManager } from '../media/upload/UploadManager';
 
@@ -142,12 +142,12 @@ export const MessageInput: React.FC = () => {
   };
 
   return (
-    <div className="relative">
+    <div className="relative bg-[#202c33] px-4 py-2 border-t border-[#222d34] flex items-center gap-2">
       {/* Upload Progress Bar */}
       {isUploading && (
-        <div className="absolute top-0 left-0 w-full h-1 bg-gray-800 -translate-y-full">
+        <div className="absolute top-0 left-0 w-full h-1 bg-[#202c33] -translate-y-full">
           <div 
-            className="h-full bg-blue-500 transition-all duration-300" 
+            className="h-full bg-[#00a884] transition-all duration-300" 
             style={{ width: `${uploadProgress * 100}%` }}
           />
         </div>
@@ -155,7 +155,7 @@ export const MessageInput: React.FC = () => {
 
       {/* Emoji Picker Popover */}
       {showEmojiPicker && (
-        <div className="absolute bottom-full left-4 mb-2 z-50 shadow-2xl rounded-lg overflow-hidden border border-gray-700">
+        <div className="absolute bottom-full left-4 mb-2 z-50 shadow-2xl rounded-lg overflow-hidden border border-[#222d34] bg-[#202c33]">
           <EmojiPicker 
             onEmojiClick={handleEmojiClick} 
             theme={'dark' as any}
@@ -165,41 +165,45 @@ export const MessageInput: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSend} className="p-4 bg-gray-900 border-t border-gray-800 flex items-center gap-3">
-        <button 
-          type="button" 
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className={`p-2 rounded-full transition ${showEmojiPicker ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
-        >
-          <Smile size={24} />
-        </button>
+      <button 
+        type="button" 
+        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+        className={`p-2 rounded-full transition ${showEmojiPicker ? 'bg-[#2a3942] text-[#d1d7db]' : 'text-[#8696a0] hover:text-[#d1d7db]'}`}
+      >
+        <Smile size={24} />
+      </button>
 
-        <label className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer">
-          <Paperclip size={24} />
-          <input 
-            type="file" 
-            className="hidden" 
-            accept="image/*,video/*" 
-            onChange={handleFileUpload}
-            disabled={isUploading}
-          />
-        </label>
-
+      <label className="p-2 rounded-full text-[#8696a0] hover:text-[#d1d7db] transition cursor-pointer">
+        <Paperclip size={24} />
         <input 
-          type="text" 
-          value={text}
-          onChange={handleTextChange}
-          onFocus={() => setShowEmojiPicker(false)}
-          placeholder="Type a message..."
-          className="flex-1 bg-gray-800 text-white rounded-full px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+          type="file" 
+          className="hidden" 
+          accept="image/*,video/*" 
+          onChange={handleFileUpload}
+          disabled={isUploading}
         />
-        <button 
-          type="submit"
-          disabled={!text.trim() || isUploading}
-          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full px-6 py-3 font-medium transition-colors"
-        >
-          Send
-        </button>
+      </label>
+
+      <form onSubmit={handleSend} className="flex-1 flex items-center gap-2">
+        <div className="flex-1 bg-[#2a3942] rounded-lg flex items-center px-4 py-2">
+          <input 
+            type="text" 
+            value={text}
+            onChange={handleTextChange}
+            onFocus={() => setShowEmojiPicker(false)}
+            placeholder="Type a message"
+            className="w-full bg-transparent text-[#d1d7db] placeholder-[#8696a0] focus:outline-none focus:ring-0 text-[15px]"
+          />
+        </div>
+        
+        {text.trim() && !isUploading && (
+          <button 
+            type="submit"
+            className="p-3 bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] rounded-full transition-colors flex items-center justify-center shrink-0"
+          >
+            <Send size={20} className="ml-1" />
+          </button>
+        )}
       </form>
     </div>
   );

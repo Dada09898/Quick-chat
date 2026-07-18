@@ -12,7 +12,8 @@ interface ChatListProps {
 }
 
 export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile, onOpenNewChat }) => {
-  const [conversations, setConversations] = useState<any[]>([]);
+  const conversations = useChatStore(state => state.conversations);
+  const setConversations = useChatStore(state => state.setConversations);
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const setActiveConversation = useChatStore(state => state.setActiveConversation);
   const user = useAuthStore(state => state.user);
@@ -56,36 +57,40 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
 
   return (
     <div className={`
-      flex-col w-full md:w-80 bg-gray-950 border-r border-gray-800 h-full
+      flex-col w-full md:w-[30vw] min-w-[300px] max-w-[450px] bg-[#111b21] border-r border-[#222d34] h-full
       ${isMobileOpen ? 'flex absolute inset-0 z-50' : 'hidden md:flex'}
     `}>
-      <div className="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-900 z-10 shrink-0">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <MessageSquare className="text-indigo-500"/> Chats
+      <div className="p-4 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0">
+        <h2 className="text-[22px] font-semibold text-[#e9edef] flex items-center gap-2">
+          Chats
         </h2>
-        <button 
-          onClick={onOpenNewChat}
-          className="p-2 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-full transition"
-          title="New Chat"
-        >
-          <Plus size={18} />
-        </button>
+        <div className="flex items-center gap-3 text-[#aebac1]">
+          <button 
+            onClick={onOpenNewChat}
+            className="p-2 hover:bg-[#374248] rounded-full transition"
+            title="New Chat"
+          >
+            <MessageSquare size={20} />
+          </button>
+        </div>
       </div>
       
-      <div className="p-3 bg-gray-900 border-b border-gray-800 shrink-0">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+      <div className="p-2 border-b border-[#222d34] bg-[#111b21] shrink-0">
+        <div className="relative flex items-center bg-[#202c33] rounded-lg px-3 py-1.5 h-9">
+          <button className="text-[#8696a0]">
+            <Search size={18} />
+          </button>
           <input 
             type="text" 
-            placeholder="Search conversations..." 
-            className="w-full bg-gray-950 border border-gray-800 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+            placeholder="Search or start new chat" 
+            className="w-full bg-transparent border-none text-[15px] text-[#d1d7db] ml-4 placeholder-[#8696a0] focus:outline-none focus:ring-0"
           />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {conversations.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 text-sm">
+          <div className="p-8 text-center text-[#8696a0] text-[15px]">
             No conversations found.
           </div>
         ) : (
@@ -98,33 +103,36 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
               <button
                 key={conv.id}
                 onClick={() => handleSelect(conv.id)}
-                className={`w-full p-3 flex items-center gap-3 transition border-b border-gray-800/50 hover:bg-gray-900 group ${
-                  isActive ? 'bg-gray-800/80 border-indigo-500/30' : ''
+                className={`w-full flex items-center gap-3 transition group ${
+                  isActive ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'
                 }`}
               >
-                <Avatar 
-                  name={displayName} 
-                  url={otherUser?.avatar} 
-                  status={otherUser?.presence_status} 
-                  size="lg"
-                />
+                <div className="pl-3 py-3 shrink-0">
+                  <Avatar 
+                    name={displayName} 
+                    url={otherUser?.avatar} 
+                    status={otherUser?.presence_status} 
+                    size="lg"
+                  />
+                </div>
                 
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className={`font-medium truncate ${isActive ? 'text-indigo-400' : 'text-gray-200 group-hover:text-white'}`}>
+                <div className="flex-1 min-w-0 text-left py-3 pr-4 border-b border-[#222d34] group-last:border-none">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <h3 className="font-medium text-[17px] text-[#e9edef] truncate">
                       {displayName}
                     </h3>
-                    <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                    <span className={`text-[12px] whitespace-nowrap ml-2 ${conv.unread_count_cache > 0 ? 'text-[#00a884]' : 'text-[#8696a0]'}`}>
                       {formatTime(conv.last_activity)}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 truncate pr-2">
+                    <p className="text-[14px] text-[#8696a0] truncate pr-2 flex items-center gap-1">
+                      {/* Checkmarks would go here if we were the last sender */}
                       Tap to view messages
                     </p>
                     {conv.unread_count_cache > 0 && (
-                      <span className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                      <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#00a884] flex items-center justify-center text-[11px] font-bold text-[#111b21] shrink-0">
                         {conv.unread_count_cache}
                       </span>
                     )}

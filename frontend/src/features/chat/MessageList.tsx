@@ -83,7 +83,16 @@ export const MessageList: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-hidden p-4 flex flex-col bg-gray-950">
+    <div 
+      className="flex-1 overflow-hidden p-4 flex flex-col bg-[#0b141a] relative"
+      style={{
+        backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
+        backgroundRepeat: 'repeat',
+        backgroundSize: '400px',
+        backgroundBlendMode: 'overlay',
+        backgroundColor: 'rgba(11, 20, 26, 0.95)'
+      }}
+    >
       <Virtuoso
         ref={virtuosoRef}
         className="flex-1 w-full h-full"
@@ -104,8 +113,8 @@ export const MessageList: React.FC = () => {
         }}
         components={{
           Footer: () => remoteTyping ? (
-            <div className="self-start mb-4 bg-gray-800 text-gray-400 px-4 py-2 rounded-2xl rounded-bl-none text-sm animate-pulse w-max mt-2">
-              Typing...
+            <div className="self-start mb-4 bg-[#202c33] text-[#00a884] px-4 py-2 rounded-lg rounded-tl-none text-[14px] font-medium animate-pulse w-max mt-2">
+              typing...
             </div>
           ) : null
         }}

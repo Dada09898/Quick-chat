@@ -3,20 +3,40 @@ import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useChatStore } from './chatStore';
 import { useRealtimeStore } from '../../realtime/store';
+import { useAuthStore } from '../../store/authStore';
 import { ChatList } from './ChatList';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { Menu, User, MessageSquarePlus, Phone, Video } from 'lucide-react';
+import { Menu, User, MessageSquarePlus, Phone, Video, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewChatModal } from './NewChatModal';
 import { useCallStore } from '../calls/CallStore';
+import { Avatar } from '../../components/ui/Avatar';
 
 export const ChatLayout: React.FC = () => {
   const [isMobileListOpen, setIsMobileListOpen] = useState(false);
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  
   const activeConversationId = useChatStore(state => state.activeConversationId);
+  const conversations = useChatStore(state => state.conversations);
+  const currentUser = useAuthStore(state => state.user);
+  
   const { remotePresence, remoteTyping } = useRealtimeStore();
   const setCallSession = useCallStore(state => state.setSession);
   const setCallState = useCallStore(state => state.setState);
+
+  const activeConversation = conversations.find(c => c.id === activeConversationId);
+  let displayName = 'Private Chat';
+  let avatarUrl = undefined;
+  let status = remotePresence.status;
+  
+  if (activeConversation && activeConversation.members) {
+    const otherMember = activeConversation.members.find((m: any) => m.user && m.user.id !== currentUser?.id)?.user;
+    if (otherMember) {
+      displayName = otherMember.display_name || otherMember.username || otherMember.email?.split('@')[0] || 'Unknown';
+      avatarUrl = otherMember.avatar;
+      // We could also read their status from presence service here
+    }
+  }
 
   const handleStartCall = (isVideo: boolean) => {
     if (!activeConversationId) return;
@@ -25,66 +45,88 @@ export const ChatLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white font-sans overflow-hidden relative">
+    <div className="flex h-screen bg-[#111b21] text-white font-sans overflow-hidden relative">
       
       {/* Sidebar Chat List */}
-      <ChatList 
-        isMobileOpen={isMobileListOpen} 
-        onCloseMobile={() => setIsMobileListOpen(false)} 
-        onOpenNewChat={() => setIsNewChatModalOpen(true)}
-      />
+      <div className={`${activeConversationId ? 'hidden md:flex' : 'flex'} w-full md:w-auto h-full z-10`}>
+        <ChatList 
+          isMobileOpen={isMobileListOpen} 
+          onCloseMobile={() => setIsMobileListOpen(false)} 
+          onOpenNewChat={() => setIsNewChatModalOpen(true)}
+        />
+      </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-full min-w-0">
+      <div className={`${!activeConversationId ? 'hidden md:flex' : 'flex'} flex-1 flex-col h-full min-w-0 bg-[#0b141a]`}>
         {/* Header */}
-        <header className="px-4 md:px-6 py-4 bg-gray-900 border-b border-gray-800 flex items-center justify-between shadow-sm z-10 shrink-0">
+        <header className="px-3 md:px-4 py-2 bg-[#202c33] border-b border-[#222d34] flex items-center justify-between shadow-sm z-10 shrink-0">
           <div className="flex items-center gap-3">
-            <button 
-              className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white"
-              onClick={() => setIsMobileListOpen(true)}
-            >
-              <Menu size={24} />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">{activeConversationId ? 'Private Chat' : 'Kryozen Quick Chat'}</h1>
+            {activeConversationId ? (
+              <button 
+                className="md:hidden p-1 -ml-1 text-[#aebac1] hover:text-white flex items-center"
+                onClick={() => useChatStore.getState().setActiveConversation(null)}
+              >
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              </button>
+            ) : (
+              <button 
+                className="md:hidden p-2 -ml-2 text-[#aebac1] hover:text-white"
+                onClick={() => setIsMobileListOpen(true)}
+              >
+                <Menu size={24} />
+              </button>
+            )}
+            
+            <div className="flex items-center gap-3">
               {activeConversationId && (
-                <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${remotePresence.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`}></span>
-                  {remoteTyping ? (
-                    <span className="text-green-400 font-medium italic animate-pulse">typing...</span>
-                  ) : (
-                    <span>{remotePresence.status === 'online' ? 'Online' : 'Offline'}</span>
-                  )}
-                </p>
+                <Avatar name={displayName} url={avatarUrl} size="md" />
               )}
+              <div className="flex flex-col justify-center">
+                <h1 className="text-base font-semibold text-[#e9edef] leading-tight cursor-pointer hover:underline">{activeConversationId ? displayName : 'Kryozen Quick Chat'}</h1>
+                {activeConversationId && (
+                  <p className="text-[13px] text-[#8696a0] leading-tight mt-0.5">
+                    {remoteTyping ? (
+                      <span className="text-[#00a884] font-medium">typing...</span>
+                    ) : (
+                      <span>{status === 'online' ? 'online' : ''}</span>
+                    )}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           
           {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 text-[#aebac1]">
             {activeConversationId && (
               <>
                 <button 
-                  onClick={() => handleStartCall(false)}
-                  className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 rounded-full transition"
-                  title="Voice Call"
-                >
-                  <Phone size={20} />
-                </button>
-                <button 
                   onClick={() => handleStartCall(true)}
-                  className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 rounded-full transition"
+                  className="p-1 hover:text-white transition"
                   title="Video Call"
                 >
                   <Video size={20} />
                 </button>
-                <div className="w-px h-6 bg-gray-800 mx-1"></div>
+                <button 
+                  onClick={() => handleStartCall(false)}
+                  className="p-1 hover:text-white transition"
+                  title="Voice Call"
+                >
+                  <Phone size={20} />
+                </button>
+                <button className="p-1 hover:text-white transition">
+                   <Search size={20} />
+                </button>
               </>
             )}
-            <NotificationBell />
-            <Link to="/settings" className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-full transition">
-              <User size={20} />
-            </Link>
+            {!activeConversationId && (
+              <>
+                <NotificationBell />
+                <Link to="/settings" className="p-1 hover:text-white transition">
+                  <User size={20} />
+                </Link>
+              </>
+            )}
           </div>
         </header>
 

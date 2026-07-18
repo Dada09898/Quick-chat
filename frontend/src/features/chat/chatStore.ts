@@ -24,8 +24,10 @@ interface ChatState {
   outbox: ChatMessage[];
   selectedMessageIds: string[];
   bookmarkedMessageIds: string[];
+  conversations: any[];
   
-  setActiveConversation: (id: string) => void;
+  setActiveConversation: (id: string | null) => void;
+  setConversations: (convs: any[]) => void;
   toggleMessageSelection: (id: string) => void;
   clearSelection: () => void;
   toggleBookmark: (id: string) => void;
@@ -39,11 +41,13 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set) => ({
   messages: {},
   activeConversationId: null,
+  conversations: [],
   outbox: [],
   selectedMessageIds: [],
   bookmarkedMessageIds: [],
   
   setActiveConversation: (id) => set({ activeConversationId: id, selectedMessageIds: [] }),
+  setConversations: (convs) => set({ conversations: convs }),
   
   toggleMessageSelection: (id) => set((state) => ({
     selectedMessageIds: state.selectedMessageIds.includes(id) 
