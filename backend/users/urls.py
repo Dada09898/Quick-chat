@@ -3,7 +3,8 @@ from .views import (
     LoginView, RefreshTokenView, LogoutView, GlobalLogoutView, 
     CurrentUserView, TOTPSetupView, TOTPVerifyView,
     DeviceListView, DeviceRegisterView, DeviceDetailView, SessionListView,
-    RegisterView, ChangePasswordView, PasswordResetView, EmailVerificationView
+    RegisterView, ChangePasswordView, PasswordResetView, EmailVerificationView,
+    UserSearchView, FriendRequestCreateView, FriendRequestRespondView, ContactListView, PendingRequestsView
 )
 
 urlpatterns = [
@@ -22,4 +23,9 @@ urlpatterns = [
     path('devices/register/', DeviceRegisterView.as_view(), name='device_register'),
     path('devices/<uuid:pk>/', DeviceDetailView.as_view(), name='device_detail'),
     path('sessions/', SessionListView.as_view(), name='session_list'),
+    path('search/', UserSearchView.as_view(), name='user_search'),
+    path('friends/requests/', PendingRequestsView.as_view(), name='pending_requests'),
+    path('friends/request/', FriendRequestCreateView.as_view(), name='send_request'),
+    path('friends/request/<uuid:pk>/respond/', FriendRequestRespondView.as_view(), name='respond_request'),
+    path('contacts/', ContactListView.as_view(), name='contact_list'),
 ]

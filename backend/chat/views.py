@@ -123,11 +123,48 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Optimize N+1 queries by prefetching members and their user profiles
-        return Conversation.objects.filter(members__user=self.request.user).prefetch_related('members__user').distinct()
+        return Conversation.objects.filter(members__user=self.request.user, deleted_at__isnull=True).prefetch_related('members__user').distinct()
         
     def perform_create(self, serializer):
         conversation = serializer.save()
         ConversationMember.objects.create(conversation=conversation, user=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def get_or_create(self, request):
+        from django.db import transaction, IntegrityError
+        from hashlib import sha256
+        
+        target_user_id = request.data.get('target_user_id')
+        if not target_user_id:
+            return Response({'error': 'target_user_id required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        user1_id = str(request.user.id)
+        user2_id = str(target_user_id)
+        
+        if user1_id == user2_id:
+            return Response({'error': 'Cannot create conversation with yourself'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        sorted_ids = sorted([user1_id, user2_id])
+        hash_str = f"{sorted_ids[0]}:{sorted_ids[1]}"
+        direct_hash = sha256(hash_str.encode('utf-8')).hexdigest()
+        
+        try:
+            with transaction.atomic():
+                conversation = Conversation.objects.create(
+                    is_direct=True,
+                    direct_hash=direct_hash
+                )
+                ConversationMember.objects.create(conversation=conversation, user_id=user1_id)
+                ConversationMember.objects.create(conversation=conversation, user_id=user2_id)
+                
+                # Fetch it back fully serialized
+                serializer = self.get_serializer(conversation)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except IntegrityError:
+            # Race condition or already exists, fetch it
+            conversation = Conversation.objects.get(direct_hash=direct_hash, deleted_at__isnull=True)
+            serializer = self.get_serializer(conversation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def add_member(self, request, pk=None):

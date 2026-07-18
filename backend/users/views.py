@@ -8,8 +8,12 @@ from django.contrib.auth import authenticate
 from rest_framework import status, views, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Device, Session, CustomUser
-from .serializers import UserSerializer, DeviceSerializer, SessionSerializer, RegisterSerializer
+from rest_framework import generics
+from django.db import transaction, IntegrityError
+from django.db.models import Q
+from core.models import SecurityAuditLog
+from .models import Device, Session, CustomUser, FriendRequest, Contact
+from .serializers import UserSerializer, DeviceSerializer, SessionSerializer, RegisterSerializer, UserSearchSerializer, FriendRequestSerializer, ContactSerializer
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -318,3 +322,98 @@ class SessionListView(views.APIView):
     def get(self, request):
         sessions = Session.objects.filter(user=request.user, is_active=True)
         return Response(SessionSerializer(sessions, many=True).data)
+
+class UserSearchView(generics.ListAPIView):
+    serializer_class = UserSearchSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        query = self.request.query_params.get('q', '')
+        if not query or len(query) < 2:
+            return CustomUser.objects.none()
+        
+        return CustomUser.objects.filter(
+            Q(email__icontains=query) | Q(username__icontains=query) | Q(display_name__icontains=query),
+            is_active=True,
+            deleted_at__isnull=True
+        ).exclude(id=self.request.user.id)[:20]
+
+class FriendRequestCreateView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        target_user_id = request.data.get('target_user_id')
+        try:
+            target_user = CustomUser.objects.get(id=target_user_id, is_active=True, deleted_at__isnull=True)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+
+        if target_user == request.user:
+            return Response({'error': 'Cannot send friend request to yourself'}, status=400)
+
+        if Contact.objects.filter(owner=request.user, user=target_user, deleted_at__isnull=True).exists():
+            return Response({'error': 'User is already a contact'}, status=400)
+
+        with transaction.atomic():
+            req, created = FriendRequest.objects.get_or_create(
+                sender=request.user,
+                receiver=target_user,
+                status='pending',
+                deleted_at__isnull=True
+            )
+            if created:
+                SecurityAuditLog.objects.create(
+                    event_type='FRIEND_REQUEST_SENT',
+                    severity='INFO',
+                    category='RELATIONSHIP',
+                    user=request.user,
+                    metadata={'target_user_id': str(target_user.id), 'request_id': str(req.id)}
+                )
+                return Response(FriendRequestSerializer(req).data, status=201)
+            return Response({'error': 'Pending request already exists'}, status=400)
+
+class FriendRequestRespondView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        action = request.data.get('action') # 'accept' or 'reject'
+        try:
+            req = FriendRequest.objects.get(id=pk, receiver=request.user, status='pending', deleted_at__isnull=True)
+        except FriendRequest.DoesNotExist:
+            return Response({'error': 'Request not found or already processed'}, status=404)
+
+        if action not in ['accept', 'reject']:
+            return Response({'error': 'Invalid action'}, status=400)
+
+        with transaction.atomic():
+            req.status = action
+            req.responded_at = timezone.now()
+            req.save()
+
+            if action == 'accept':
+                Contact.objects.get_or_create(owner=req.sender, user=req.receiver, deleted_at__isnull=True)
+                Contact.objects.get_or_create(owner=req.receiver, user=req.sender, deleted_at__isnull=True)
+                
+            SecurityAuditLog.objects.create(
+                event_type=f'FRIEND_REQUEST_{action.upper()}',
+                severity='INFO',
+                category='RELATIONSHIP',
+                user=request.user,
+                metadata={'sender_id': str(req.sender.id), 'request_id': str(req.id)}
+            )
+            
+        return Response({'status': 'success', 'action': action})
+
+class ContactListView(generics.ListAPIView):
+    serializer_class = ContactSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Contact.objects.filter(owner=self.request.user, deleted_at__isnull=True).select_related('user')
+
+class PendingRequestsView(generics.ListAPIView):
+    serializer_class = FriendRequestSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return FriendRequest.objects.filter(receiver=self.request.user, status='pending', deleted_at__isnull=True).select_related('sender')

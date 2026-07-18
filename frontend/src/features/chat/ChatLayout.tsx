@@ -5,21 +5,26 @@ import { useChatStore } from './chatStore';
 import { useRealtimeStore } from '../../realtime/store';
 import { ChatList } from './ChatList';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, User, MessageSquarePlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { NewChatModal } from './NewChatModal';
 
 export const ChatLayout: React.FC = () => {
   const [isMobileListOpen, setIsMobileListOpen] = useState(false);
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const { remotePresence } = useRealtimeStore();
-
-  // No hardcoded conversation selection — ChatList.onSelect sets the active conversation.
 
   return (
     <div className="flex h-screen bg-gray-950 text-white font-sans overflow-hidden relative">
       
       {/* Sidebar Chat List */}
-      <ChatList isMobileOpen={isMobileListOpen} onCloseMobile={() => setIsMobileListOpen(false)} />
+      <ChatList 
+        isMobileOpen={isMobileListOpen} 
+        onCloseMobile={() => setIsMobileListOpen(false)} 
+        onOpenNewChat={() => setIsNewChatModalOpen(true)}
+      />
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full min-w-0">
@@ -59,14 +64,28 @@ export const ChatLayout: React.FC = () => {
             <MessageInput />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-400 mb-2">Welcome to Kryozen Quick Chat</h2>
-              <p className="text-gray-500">Select a conversation or start a new chat</p>
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+            <div className="bg-gray-900 p-8 rounded-2xl shadow-xl flex flex-col items-center text-center max-w-sm w-full mx-4 border border-gray-800">
+              <div className="w-16 h-16 bg-indigo-500/10 text-indigo-500 rounded-2xl flex items-center justify-center mb-4">
+                <MessageSquarePlus size={32} />
+              </div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Your Conversations</h2>
+              <p className="text-gray-400 mb-6">Select an existing chat from the left or start a new one to connect with your friends.</p>
+              <button 
+                onClick={() => setIsNewChatModalOpen(true)}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition shadow-lg shadow-indigo-500/20"
+              >
+                Start a New Chat
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      <NewChatModal 
+        isOpen={isNewChatModalOpen}
+        onClose={() => setIsNewChatModalOpen(false)}
+      />
     </div>
   );
 };

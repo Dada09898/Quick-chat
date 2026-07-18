@@ -5,23 +5,36 @@ from users.models import Device
 
 class Conversation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    is_direct = models.BooleanField(default=False)
+    direct_hash = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    
     last_message_id = models.UUIDField(null=True, blank=True)
     last_activity = models.DateTimeField(auto_now_add=True)
     version = models.BigIntegerField(default=1, db_index=True) # Optimistic locking/sequence
     unread_count_cache = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         indexes = [
             models.Index(fields=['version']),
             models.Index(fields=['last_activity']),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['direct_hash'],
+                condition=models.Q(is_direct=True, deleted_at__isnull=True),
+                name='unique_active_direct_conversation'
+            )
+        ]
 
 class ConversationMember(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='members')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    
+    role = models.CharField(max_length=50, default='member')
     session_key_version = models.IntegerField(default=1)
     
     is_pinned = models.BooleanField(default=False)
@@ -29,10 +42,16 @@ class ConversationMember(models.Model):
     is_archived = models.BooleanField(default=False)
     is_favorite = models.BooleanField(default=False)
     
+    last_read_at = models.DateTimeField(null=True, blank=True)
+    unread_count = models.IntegerField(default=0)
+    
     joined_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         unique_together = ('conversation', 'user')
+        indexes = [
+            models.Index(fields=['user', 'unread_count']),
+        ]
 
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False) # Client generates this usually, but fallback if not provided

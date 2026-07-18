@@ -1,11 +1,33 @@
 from rest_framework import serializers
-from .models import CustomUser, Device, Session
+from .models import CustomUser, Device, Session, FriendRequest, Contact
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'is_user_a', 'avatar', 'bio', 'presence_status', 'last_seen', 'timezone', 'preferred_language', 'last_login']
+        fields = ['id', 'email', 'username', 'display_name', 'is_user_a', 'avatar', 'bio', 'presence_status', 'last_seen', 'timezone', 'preferred_language', 'last_login']
         read_only_fields = ['id', 'email', 'is_user_a', 'last_login', 'last_seen']
+
+class UserSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'username', 'display_name', 'avatar', 'presence_status', 'last_seen']
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+    sender_details = UserSearchSerializer(source='sender', read_only=True)
+    receiver_details = UserSearchSerializer(source='receiver', read_only=True)
+
+    class Meta:
+        model = FriendRequest
+        fields = ['id', 'sender', 'sender_details', 'receiver', 'receiver_details', 'status', 'created_at']
+        read_only_fields = ['id', 'status', 'created_at']
+
+class ContactSerializer(serializers.ModelSerializer):
+    user_details = UserSearchSerializer(source='user', read_only=True)
+
+    class Meta:
+        model = Contact
+        fields = ['id', 'user', 'user_details', 'nickname', 'is_blocked', 'is_close_friend', 'is_archived', 'is_muted', 'is_favorite', 'last_interaction_at', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})

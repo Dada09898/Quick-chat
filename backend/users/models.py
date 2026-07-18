@@ -29,6 +29,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     totp_secret = models.CharField(max_length=64, blank=True, null=True)
     
     # Extended Profile Fields
+    username = models.CharField(max_length=150, unique=True, null=True, blank=True)
+    display_name = models.CharField(max_length=255, blank=True, null=True)
     avatar = models.URLField(blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     presence_status = models.CharField(max_length=20, default='offline', choices=[
@@ -41,8 +43,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     timezone = models.CharField(max_length=50, default='UTC')
     preferred_language = models.CharField(max_length=10, default='en')
     
+    privacy_settings = models.JSONField(default=dict, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     objects = CustomUserManager()
 
@@ -50,10 +55,89 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.email
+        return self.username or self.email
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+
+class FriendRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+        ('expired', 'Expired'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sent_requests')
+    receiver = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='received_requests')
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    rejection_reason = models.TextField(blank=True, null=True)
+    
+    responded_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='cancelled_requests')
+    expires_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['sender', 'receiver'],
+                condition=models.Q(status='pending', deleted_at__isnull=True),
+                name='unique_pending_request'
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(sender=models.F('receiver')),
+                name='prevent_self_request'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['sender', 'status']),
+            models.Index(fields=['receiver', 'status']),
+        ]
+
+class Contact(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='contacts')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='contacted_by')
+    
+    nickname = models.CharField(max_length=255, blank=True, null=True)
+    
+    is_blocked = models.BooleanField(default=False)
+    is_close_friend = models.BooleanField(default=False)
+    is_archived = models.BooleanField(default=False)
+    is_muted = models.BooleanField(default=False)
+    is_favorite = models.BooleanField(default=False)
+    
+    blocked_at = models.DateTimeField(null=True, blank=True)
+    last_interaction_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_contacts')
+    notes = models.TextField(blank=True, null=True)
+    
+    disappearing_messages_default = models.IntegerField(default=0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['owner', 'user'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='unique_active_contact'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['owner', 'is_blocked', 'deleted_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.owner.email} -> {self.user.email}"
 
 class Device(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

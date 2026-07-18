@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
-import { MessageSquare, Plus } from 'lucide-react';
+import { MessageSquare, Plus, Search } from 'lucide-react';
 import { apiClient } from '../../lib/api';
+import { Avatar } from '../../components/ui/Avatar';
 
-export const ChatList = ({ isMobileOpen, onCloseMobile }: { isMobileOpen: boolean, onCloseMobile: () => void }) => {
+interface ChatListProps {
+  isMobileOpen: boolean;
+  onCloseMobile: () => void;
+  onOpenNewChat?: () => void;
+}
+
+export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile, onOpenNewChat }) => {
   const [conversations, setConversations] = useState<any[]>([]);
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const setActiveConversation = useChatStore(state => state.setActiveConversation);
@@ -23,70 +30,107 @@ export const ChatList = ({ isMobileOpen, onCloseMobile }: { isMobileOpen: boolea
       }
     };
     fetchConversations();
-  }, []);
+  }, [activeConversationId]); 
 
   const handleSelect = (id: string) => {
     setActiveConversation(id);
     onCloseMobile();
   };
 
-  /**
-   * Derive a display name for a conversation by finding the other member's email.
-   * Falls back to "Conversation" if member data is not available.
-   */
-  const getConversationName = (conv: any): string => {
+  const getOtherMember = (conv: any) => {
     if (conv.members && Array.isArray(conv.members)) {
-      const otherMember = conv.members.find(
-        (m: any) => m.user && m.user.id !== user?.id
-      );
-      if (otherMember?.user?.email) {
-        return otherMember.user.email;
-      }
+      return conv.members.find((m: any) => m.user && m.user.id !== user?.id)?.user;
     }
-    return 'Conversation';
+    return null;
+  };
+
+  const formatTime = (isoString: string) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const today = new Date();
+    if (date.toDateString() === today.toDateString()) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
   return (
     <div className={`
-      flex-col w-full md:w-80 bg-gray-900 border-r border-gray-800 h-full
+      flex-col w-full md:w-80 bg-gray-950 border-r border-gray-800 h-full
       ${isMobileOpen ? 'flex absolute inset-0 z-50' : 'hidden md:flex'}
     `}>
-      <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+      <div className="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-900 z-10 shrink-0">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <MessageSquare className="text-cyan-500"/> Chats
+          <MessageSquare className="text-indigo-500"/> Chats
         </h2>
-        <button className="p-2 bg-gray-800 hover:bg-gray-700 rounded-full text-white transition">
+        <button 
+          onClick={onOpenNewChat}
+          className="p-2 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-full transition"
+          title="New Chat"
+        >
           <Plus size={18} />
         </button>
       </div>
+      
+      <div className="p-3 bg-gray-900 border-b border-gray-800 shrink-0">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+          <input 
+            type="text" 
+            placeholder="Search conversations..." 
+            className="w-full bg-gray-950 border border-gray-800 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+          />
+        </div>
+      </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         {conversations.length === 0 ? (
-          <div className="p-6 text-center text-gray-500 text-sm">No conversations found.</div>
+          <div className="p-8 text-center text-gray-500 text-sm">
+            No conversations found.
+          </div>
         ) : (
           conversations.map(conv => {
-            const isActive = conv.id === activeConversationId;
-            const displayName = getConversationName(conv);
+            const otherUser = getOtherMember(conv);
+            const displayName = otherUser?.display_name || otherUser?.username || otherUser?.email?.split('@')[0] || 'Unknown User';
+            const isActive = activeConversationId === conv.id;
+            
             return (
-              <div 
+              <button
                 key={conv.id}
                 onClick={() => handleSelect(conv.id)}
-                className={`p-4 border-b border-gray-800/50 cursor-pointer transition flex items-center gap-3
-                  ${isActive ? 'bg-gray-800/80 border-l-4 border-l-cyan-500' : 'hover:bg-gray-800/40 border-l-4 border-l-transparent'}`}
+                className={`w-full p-3 flex items-center gap-3 transition border-b border-gray-800/50 hover:bg-gray-900 group ${
+                  isActive ? 'bg-gray-800/80 border-indigo-500/30' : ''
+                }`}
               >
-                <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-gray-400 shrink-0">
-                  <MessageSquare size={20}/>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h3 className="font-semibold text-gray-200 truncate">{displayName}</h3>
-                    <span className="text-xs text-gray-500">
-                      {conv.last_activity ? new Date(conv.last_activity).toLocaleDateString() : ''}
+                <Avatar 
+                  name={displayName} 
+                  url={otherUser?.avatar} 
+                  status={otherUser?.presence_status} 
+                  size="lg"
+                />
+                
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className={`font-medium truncate ${isActive ? 'text-indigo-400' : 'text-gray-200 group-hover:text-white'}`}>
+                      {displayName}
+                    </h3>
+                    <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                      {formatTime(conv.last_activity)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400 truncate">Tap to open chat</p>
+                  
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500 truncate pr-2">
+                      Tap to view messages
+                    </p>
+                    {conv.unread_count_cache > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                        {conv.unread_count_cache}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </button>
             );
           })
         )}
