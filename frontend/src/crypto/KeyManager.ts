@@ -1,0 +1,53 @@
+import { generateEd25519KeyPair, generateX25519KeyPair, exportPublicKey } from './keys';
+import { storeKey, getKey, clearAllKeys } from './storage';
+import { CryptoError, ErrorCodes } from './errors';
+
+export class KeyManager {
+  /**
+   * Initializes the device by generating Identity (Ed25519) and Key Exchange (X25519) keys.
+   * Stores private keys in IndexedDB and returns Base64 public keys for server registration.
+   */
+  static async initializeDeviceKeys(): Promise<{ x25519Public: string; ed25519Public: string }> {
+    try {
+      // 1. Generate Keys
+      const ed25519 = await generateEd25519KeyPair();
+      const x25519 = await generateX25519KeyPair();
+
+      // 2. Store Private Keys locally
+      await storeKey('identity_private', 'ed25519', ed25519.privateKey);
+      await storeKey('exchange_private', 'x25519', x25519.privateKey);
+      
+      // Store Public Keys as well for easy access
+      await storeKey('identity_public', 'ed25519', ed25519.publicKey);
+      await storeKey('exchange_public', 'x25519', x25519.publicKey);
+
+      // 3. Export Public Keys for server
+      const ed25519PublicBase64 = await exportPublicKey(ed25519.publicKey);
+      const x25519PublicBase64 = await exportPublicKey(x25519.publicKey);
+
+      return {
+        x25519Public: x25519PublicBase64,
+        ed25519Public: ed25519PublicBase64,
+      };
+    } catch (err) {
+      console.error(err);
+      throw new CryptoError('Device key initialization failed', ErrorCodes.KEY_GENERATION_FAILED, err);
+    }
+  }
+
+  static async getIdentityPrivateKey(): Promise<CryptoKey> {
+    const key = await getKey('identity_private');
+    if (!key) throw new CryptoError('Identity private key not found', ErrorCodes.KEY_NOT_FOUND);
+    return key;
+  }
+
+  static async getExchangePrivateKey(): Promise<CryptoKey> {
+    const key = await getKey('exchange_private');
+    if (!key) throw new CryptoError('Exchange private key not found', ErrorCodes.KEY_NOT_FOUND);
+    return key;
+  }
+
+  static async destroyAllKeys(): Promise<void> {
+    await clearAllKeys();
+  }
+}

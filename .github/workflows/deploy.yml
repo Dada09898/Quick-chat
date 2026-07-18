@@ -1,0 +1,109 @@
+name: Production Deployment Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff bandit pip-audit
+
+      - name: Python Static Analysis (Ruff)
+        run: |
+          cd backend
+          ruff check .
+
+      - name: Python Security Analysis (Bandit)
+        run: |
+          cd backend
+          bandit -r . -x ./venv
+
+      - name: Python Dependency Audit (pip-audit)
+        run: |
+          cd backend
+          pip-audit
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Frontend Static Analysis (ESLint & TSC)
+        run: |
+          cd frontend
+          npx eslint src/
+          npx tsc --noEmit
+
+      - name: Frontend Dependency Audit (npm audit)
+        run: |
+          cd frontend
+          npm audit
+
+      - name: Run Unit Tests
+        run: |
+          # Django Tests
+          cd backend
+          python manage.py test
+          # React Tests
+          cd ../frontend
+          npm test -- --watchAll=false
+
+  docker-build-scan:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker Images
+        run: |
+          docker compose -f docker-compose.prod.yml build
+
+      - name: Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'dualconnect_backend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Generate SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: dualconnect_backend:latest
+          format: spdx-json
+          output-file: backend-sbom.spdx.json
+
+      # In a real pipeline, we'd push to ECR/Docker Hub and deploy.
+
+  deploy:
+    needs: docker-build-scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to Production
+        run: |
+          echo "Triggering deployment webhook or SSH executing docker-compose pull && docker-compose up -d"
+          # SSH logic goes here
