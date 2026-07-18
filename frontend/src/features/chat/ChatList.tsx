@@ -31,7 +31,7 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
       }
     };
     fetchConversations();
-  }, [activeConversationId]); 
+  }, [setConversations]); 
 
   const handleSelect = (id: string) => {
     setActiveConversation(id);
@@ -45,7 +45,7 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
     return null;
   };
 
-  const formatTime = (isoString: string) => {
+  const formatTime = React.useCallback((isoString: string) => {
     if (!isoString) return '';
     const date = new Date(isoString);
     const today = new Date();
@@ -53,7 +53,7 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  };
+  }, []);
 
   return (
     <div className={`

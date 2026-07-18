@@ -8,11 +8,12 @@ import { ChatList } from './ChatList';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { Menu, User, MessageSquarePlus, Phone, Video, Search, Bot, MoreVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { NewChatModal } from './NewChatModal';
 import { useCallStore } from '../calls/CallStore';
 import { Avatar } from '../../components/ui/Avatar';
+import { AnimatePresence } from 'framer-motion';
 
-import { RightPanel } from './RightPanel';
+const NewChatModal = React.lazy(() => import('./NewChatModal').then(module => ({ default: module.NewChatModal })));
+const RightPanel = React.lazy(() => import('./RightPanel').then(module => ({ default: module.RightPanel })));
 
 export const ChatLayout: React.FC = () => {
   const [isMobileListOpen, setIsMobileListOpen] = useState(false);
@@ -166,16 +167,18 @@ export const ChatLayout: React.FC = () => {
       </div>
 
       {/* Right Details Panel */}
-      <AnimatePresence>
-        {useChatStore(state => state.isRightPanelOpen) && (
-          <RightPanel />
-        )}
-      </AnimatePresence>
+      <React.Suspense fallback={null}>
+        <AnimatePresence>
+          {useChatStore(state => state.isRightPanelOpen) && (
+            <RightPanel />
+          )}
+        </AnimatePresence>
 
-      <NewChatModal 
-        isOpen={isNewChatModalOpen}
-        onClose={() => setIsNewChatModalOpen(false)}
-      />
+        <NewChatModal 
+          isOpen={isNewChatModalOpen}
+          onClose={() => setIsNewChatModalOpen(false)}
+        />
+      </React.Suspense>
     </div>
   );
 };
