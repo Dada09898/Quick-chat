@@ -15,13 +15,14 @@ interface CallStore {
   state: CallState;
   sessionId: string | null;
   remoteUserId: string | null;
+  conversationId: string | null;
   
   isMuted: boolean;
   isVideoOn: boolean;
   isScreenSharing: boolean;
   
   setState: (newState: CallState) => void;
-  setSession: (id: string, userId: string) => void;
+  setSession: (id: string, userId: string, convId?: string) => void;
   toggleMute: () => void;
   toggleVideo: () => void;
   endCall: () => void;
@@ -31,6 +32,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
   state: 'IDLE',
   sessionId: null,
   remoteUserId: null,
+  conversationId: null,
   
   isMuted: false,
   isVideoOn: false,
@@ -43,7 +45,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     set({ state: newState });
   },
   
-  setSession: (id, userId) => set({ sessionId: id, remoteUserId: userId }),
+  setSession: (id, userId, convId) => set({ sessionId: id, remoteUserId: userId, conversationId: convId }),
   
   toggleMute: () => set(state => ({ isMuted: !state.isMuted })),
   toggleVideo: () => set(state => ({ isVideoOn: !state.isVideoOn })),
@@ -52,6 +54,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     state: 'ENDED', 
     sessionId: null, 
     remoteUserId: null,
+    conversationId: null,
     isMuted: false,
     isVideoOn: false,
     isScreenSharing: false

@@ -3,6 +3,7 @@ import { useCallStore } from './CallStore';
 import { MediaManager } from './MediaManager';
 import { PeerConnectionManager } from './PeerConnectionManager';
 import { useRealtimeStore } from '../../realtime/store';
+import { realtimeSocket } from '../../realtime/socket';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,8 +12,8 @@ const pcManager = new PeerConnectionManager();
 
 export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   const { state, sessionId, isMuted, isVideoOn, toggleMute, toggleVideo, endCall, setState } = useCallStore();
-  const addSubscription = useRealtimeStore(state => state.addSubscription);
-  const sendEvent = useRealtimeStore(state => state.sendEvent);
+  // sendEvent was erroneously taken from useRealtimeStore
+  // We'll import realtimeSocket directly for sending.
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -38,7 +39,11 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
         if (state === 'OUTGOING') {
           // Send offer
           const offer = await pcManager.createOffer();
-          sendEvent('call.offer', { session_id: sessionId, sdp: offer });
+          realtimeSocket.send('call.offer', { 
+            session_id: sessionId, 
+            conversation_id: useCallStore.getState().conversationId,
+            sdp: offer 
+          });
         }
       };
       initMedia();
@@ -49,19 +54,25 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const handleOffer = async (e: Event) => {
       const { sdp } = (e as CustomEvent).detail;
-      await pcManager.handleOffer(sdp);
+      await pcManager.setRemoteDescription(sdp);
+      const answer = await pcManager.createAnswer();
+      sendEvent('call.answer', {
+        session_id: sessionId,
+        conversation_id: useCallStore.getState().conversationId,
+        sdp: answer
+      });
     };
     
     const handleAnswer = async (e: Event) => {
       const { sdp } = (e as CustomEvent).detail;
-      await pcManager.handleAnswer(sdp);
+      await pcManager.setRemoteDescription(sdp);
     };
     
     const handleIceCandidate = (e: Event) => {
       const { candidate } = (e as CustomEvent).detail;
       pcManager.addIceCandidate(candidate);
     };
-
+    // Use window event listeners which are triggered by socket.ts
     window.addEventListener('webrtc:offer', handleOffer);
     window.addEventListener('webrtc:answer', handleAnswer);
     window.addEventListener('webrtc:ice_candidate', handleIceCandidate);
@@ -101,20 +112,20 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(interval);
   }, [state]);
 
-  const handleHangup = () => {
-    sendEvent('call.end', { session_id: sessionId });
-    mediaManager.stopAll();
+  const handleEndCall = () => {
     pcManager.close();
+    mediaManager.stopAll();
+    realtimeSocket.send('call.end', { session_id: sessionId });
     endCall();
   };
 
-  const handleAccept = () => {
+  const handleAcceptCall = () => {
     setState('CONNECTING');
-    sendEvent('call.accept', { session_id: sessionId });
+    realtimeSocket.send('call.accept', { session_id: sessionId });
   };
 
-  const handleReject = () => {
-    sendEvent('call.reject', { session_id: sessionId });
+  const handleRejectCall = () => {
+    realtimeSocket.send('call.reject', { session_id: sessionId });
     endCall();
   };
 
@@ -151,8 +162,8 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
             <div className="p-4 flex items-center justify-between bg-gray-800">
               {state === 'RINGING' ? (
                 <>
-                  <button onClick={handleReject} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition">Decline</button>
-                  <button onClick={handleAccept} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full transition shadow-[0_0_15px_rgba(34,197,94,0.5)]">Accept</button>
+                  <button onClick={handleRejectCall} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition">Decline</button>
+                  <button onClick={handleAcceptCall} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full transition shadow-[0_0_15px_rgba(34,197,94,0.5)]">Accept</button>
                 </>
               ) : (
                 <>
@@ -164,7 +175,7 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
                       {!isVideoOn ? <VideoOff size={20} /> : <Video size={20} />}
                     </button>
                   </div>
-                  <button onClick={handleHangup} className="p-3 bg-red-600 hover:bg-red-700 text-white rounded-full transition">
+                  <button onClick={handleEndCall} className="p-3 bg-red-600 hover:bg-red-700 text-white rounded-full transition">
                     <PhoneOff size={20} />
                   </button>
                 </>

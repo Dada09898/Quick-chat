@@ -26,9 +26,12 @@ export class PeerConnectionManager {
         const sessionId = useCallStore.getState().sessionId;
         if (!sessionId) return;
         
-        useRealtimeStore.getState().sendEvent('call.ice', {
-          session_id: sessionId,
-          candidate: event.candidate
+        import('../../realtime/socket').then(({ realtimeSocket }) => {
+          realtimeSocket.send('call.ice_candidate', {
+            session_id: sessionId,
+            conversation_id: useCallStore.getState().conversationId,
+            candidate: event.candidate
+          });
         });
       }
     };

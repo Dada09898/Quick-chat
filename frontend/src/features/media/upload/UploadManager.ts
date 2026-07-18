@@ -40,10 +40,11 @@ export class UploadManager {
 
       // 3. Initialize Upload Session via API
       const chunkManager = new ChunkManager(processedFile);
-      const { session_id } = await apiJson('/api/chat/upload/start/', {
+      const startRes = await apiJson('/api/chat/upload/start/', {
         method: 'POST',
         body: { chunk_count: chunkManager.getChunkCount() }
       });
+      const { session_id } = await startRes.json();
 
       const progressManager = new ProgressManager(processedFile.size, this.options.onProgress || (() => {}));
       const retryManager = new RetryManager();
@@ -84,10 +85,11 @@ export class UploadManager {
       const fileHashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
       // 6. Complete Upload
-      const { attachment_id, url } = await apiJson(`/api/chat/upload/${session_id}/complete/`, {
+      const completeRes = await apiJson(`/api/chat/upload/${session_id}/complete/`, {
         method: 'POST',
         body: { file_hash: fileHashHex }
       });
+      const { attachment_id, url } = await completeRes.json();
 
       const mediaKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(rawKey)));
 

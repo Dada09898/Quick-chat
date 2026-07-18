@@ -20,7 +20,7 @@ export const ChatLayout: React.FC = () => {
 
   const handleStartCall = (isVideo: boolean) => {
     if (!activeConversationId) return;
-    setCallSession(crypto.randomUUID(), activeConversationId); // In a real app we'd map to a target user ID
+    setCallSession(crypto.randomUUID(), '', activeConversationId);
     setCallState('OUTGOING');
   };
 
