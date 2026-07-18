@@ -15,6 +15,7 @@ export interface ChatMessage {
   deleted_at: string | null;
   status: 'queued' | 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | 'expired';
   decrypted_text?: string; // Stored only in memory!
+  media_attachments?: Array<{ id: string, url: string, type: string, media_key?: string }>;
 }
 
 interface ChatState {

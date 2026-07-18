@@ -40,7 +40,7 @@ export class UploadManager {
 
       // 3. Initialize Upload Session via API
       const chunkManager = new ChunkManager(processedFile);
-      const { session_id } = await apiJson('/api/media/upload/start/', {
+      const { session_id } = await apiJson('/api/chat/upload/start/', {
         method: 'POST',
         body: { chunk_count: chunkManager.getChunkCount() }
       });
@@ -58,9 +58,9 @@ export class UploadManager {
         const encryptedChunk = await encryptMediaChunk(this.mediaKey, iv, chunkBuffer);
 
         // Concatenate for hash (simplified for Sprint 6 demo, actual app uses SubtleCrypto.digest in chunks if supported)
-        const newHashInput = new Uint8Array(fileHashInput.byteLength + encryptedChunk.byteLength);
+        const newHashInput = new Uint8Array(fileHashInput.length + encryptedChunk.byteLength);
         newHashInput.set(fileHashInput, 0);
-        newHashInput.set(new Uint8Array(encryptedChunk), fileHashInput.byteLength);
+        newHashInput.set(new Uint8Array(encryptedChunk), fileHashInput.length);
         fileHashInput = newHashInput;
 
         await retryManager.execute(async () => {
@@ -68,7 +68,7 @@ export class UploadManager {
           formData.append('chunk_index', index.toString());
           formData.append('chunk', new Blob([encryptedChunk]));
 
-          const res = await apiClient(`/api/media/upload/${session_id}/chunk/`, {
+          const res = await apiClient(`/api/chat/upload/${session_id}/chunk/`, {
             method: 'POST',
             body: formData
           });
@@ -84,7 +84,7 @@ export class UploadManager {
       const fileHashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
       // 6. Complete Upload
-      const { attachment_id, url } = await apiJson(`/api/media/upload/${session_id}/complete/`, {
+      const { attachment_id, url } = await apiJson(`/api/chat/upload/${session_id}/complete/`, {
         method: 'POST',
         body: { file_hash: fileHashHex }
       });

@@ -45,6 +45,34 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [state, sessionId, sendEvent]);
 
+  // Handle incoming signaling
+  useEffect(() => {
+    const handleOffer = async (e: Event) => {
+      const { sdp } = (e as CustomEvent).detail;
+      await pcManager.handleOffer(sdp);
+    };
+    
+    const handleAnswer = async (e: Event) => {
+      const { sdp } = (e as CustomEvent).detail;
+      await pcManager.handleAnswer(sdp);
+    };
+    
+    const handleIceCandidate = (e: Event) => {
+      const { candidate } = (e as CustomEvent).detail;
+      pcManager.addIceCandidate(candidate);
+    };
+
+    window.addEventListener('webrtc:offer', handleOffer);
+    window.addEventListener('webrtc:answer', handleAnswer);
+    window.addEventListener('webrtc:ice_candidate', handleIceCandidate);
+
+    return () => {
+      window.removeEventListener('webrtc:offer', handleOffer);
+      window.removeEventListener('webrtc:answer', handleAnswer);
+      window.removeEventListener('webrtc:ice_candidate', handleIceCandidate);
+    };
+  }, []);
+
   // Handle Mute/Video toggles
   useEffect(() => {
     mediaManager.toggleAudio(!isMuted);

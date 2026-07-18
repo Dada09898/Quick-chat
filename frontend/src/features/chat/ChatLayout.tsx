@@ -5,16 +5,24 @@ import { useChatStore } from './chatStore';
 import { useRealtimeStore } from '../../realtime/store';
 import { ChatList } from './ChatList';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { Menu, User, MessageSquarePlus } from 'lucide-react';
+import { Menu, User, MessageSquarePlus, Phone, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewChatModal } from './NewChatModal';
+import { useCallStore } from '../calls/CallStore';
 
 export const ChatLayout: React.FC = () => {
   const [isMobileListOpen, setIsMobileListOpen] = useState(false);
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
-  
   const activeConversationId = useChatStore(state => state.activeConversationId);
-  const { remotePresence } = useRealtimeStore();
+  const { remotePresence, remoteTyping } = useRealtimeStore();
+  const setCallSession = useCallStore(state => state.setSession);
+  const setCallState = useCallStore(state => state.setState);
+
+  const handleStartCall = (isVideo: boolean) => {
+    if (!activeConversationId) return;
+    setCallSession(crypto.randomUUID(), activeConversationId); // In a real app we'd map to a target user ID
+    setCallState('OUTGOING');
+  };
 
   return (
     <div className="flex h-screen bg-gray-950 text-white font-sans overflow-hidden relative">
@@ -42,7 +50,11 @@ export const ChatLayout: React.FC = () => {
               {activeConversationId && (
                 <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${remotePresence.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`}></span>
-                  {remotePresence.status === 'online' ? 'Online' : 'Offline'}
+                  {remoteTyping ? (
+                    <span className="text-green-400 font-medium italic animate-pulse">typing...</span>
+                  ) : (
+                    <span>{remotePresence.status === 'online' ? 'Online' : 'Offline'}</span>
+                  )}
                 </p>
               )}
             </div>
@@ -50,6 +62,25 @@ export const ChatLayout: React.FC = () => {
           
           {/* Actions */}
           <div className="flex items-center gap-3">
+            {activeConversationId && (
+              <>
+                <button 
+                  onClick={() => handleStartCall(false)}
+                  className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 rounded-full transition"
+                  title="Voice Call"
+                >
+                  <Phone size={20} />
+                </button>
+                <button 
+                  onClick={() => handleStartCall(true)}
+                  className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 rounded-full transition"
+                  title="Video Call"
+                >
+                  <Video size={20} />
+                </button>
+                <div className="w-px h-6 bg-gray-800 mx-1"></div>
+              </>
+            )}
             <NotificationBell />
             <Link to="/settings" className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-full transition">
               <User size={20} />

@@ -12,6 +12,7 @@ const LoginPage = lazy(() => import('./features/auth/AuthPages').then(module => 
 const RegisterPage = lazy(() => import('./features/auth/AuthPages').then(module => ({ default: module.RegisterPage })))
 const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPasswordPage').then(module => ({ default: module.ForgotPasswordPage })))
 const ProfileSettings = lazy(() => import('./features/profile/ProfileSettings').then(module => ({ default: module.ProfileSettings })))
+const CallProvider = lazy(() => import('./features/calls/CallProvider').then(module => ({ default: module.CallProvider })))
 
 const queryClient = new QueryClient()
 
@@ -59,7 +60,9 @@ function App() {
               <Route path="/" element={
                 isAuthenticated ? (
                   <RealtimeProvider>
-                    <ChatLayout />
+                    <CallProvider>
+                      <ChatLayout />
+                    </CallProvider>
                   </RealtimeProvider>
                 ) : <Navigate to="/login" />
               } />

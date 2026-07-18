@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import type { ChatMessage } from './chatStore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Bookmark, BookmarkCheck } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Trash2 } from 'lucide-react';
 import { useChatStore } from './chatStore';
 import { ClientLinkPreview } from './ClientLinkPreview';
+import { useRealtime } from '../../realtime/RealtimeProvider';
 import { decryptMediaChunk } from '../media/crypto'; // Mock for actual decryption logic
 // Assuming useCryptoStore or similar provides the actual keys
 
@@ -46,7 +47,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) 
     lazyDecrypt();
     
     return () => { isMounted = false; };
-  }, [message.ciphertext, message.decrypted_text]);
+  }, [message.ciphertext, message.decrypted_text, message.deleted_at]);
+
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const { sendEvent } = useRealtime();
+
+  useEffect(() => {
+    if (isOwn || message.status === 'read' || message.deleted_at) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        sendEvent('message.read', {
+          message_id: message.id,
+          conversation_id: message.conversation_id
+        });
+        observer.disconnect();
+      }
+    }, { threshold: 0.5 });
+
+    if (bubbleRef.current) {
+      observer.observe(bubbleRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isOwn, message.status, message.deleted_at, message.id, message.conversation_id, sendEvent]);
 
   const { 
     selectedMessageIds, 
@@ -58,43 +82,46 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) 
   const isSelected = selectedMessageIds.includes(message.id);
   const isBookmarked = bookmarkedMessageIds.includes(message.id);
 
-  // Extract URLs for link preview
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    sendEvent('message.delete', {
+      id: message.id,
+      conversation_id: message.conversation_id
+    });
+  };
+
+  const isDeleted = !!message.deleted_at;
+
+  const handleSelection = () => {
+    toggleMessageSelection(message.id);
+  };const urlRegex = /(https?:\/\/[^\s]+)/g;
   const urls = decryptedText ? Array.from(decryptedText.matchAll(urlRegex)).map(m => m[0]) : [];
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className={`flex flex-col w-full px-2 py-1 ${isSelected ? 'bg-blue-500/10' : ''}`}
-      onClick={(e) => {
-        if (selectedMessageIds.length > 0) {
-          e.preventDefault();
-          toggleMessageSelection(message.id);
-        }
-      }}
+      ref={bubbleRef}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      layout
+      onClick={handleSelection}
+      className={`group flex flex-col mb-1 cursor-pointer transition-colors ${
+        isSelected ? 'bg-blue-500/10 -mx-4 px-4 py-1' : ''
+      } ${isOwn ? 'items-end' : 'items-start'}`}
     >
-      <div className={`flex flex-col max-w-[75%] ${isOwn ? 'self-end' : 'self-start'} mb-4 relative group`}>
-        {/* Selection Checkbox */}
-        {selectedMessageIds.length > 0 && (
-          <div className={`absolute ${isOwn ? '-left-8' : '-right-8'} top-1/2 -translate-y-1/2`}>
-            <input 
-              type="checkbox" 
-              checked={isSelected}
-              readOnly
-              className="w-5 h-5 rounded border-gray-400 text-blue-500 focus:ring-blue-500 cursor-pointer"
-            />
-          </div>
-        )}
+      <div className={`flex flex-col max-w-[75%] ${isOwn ? 'items-end' : 'items-start'}`}>
+        <div 
+          className={`px-4 py-2 rounded-2xl relative shadow-sm text-[15px] leading-relaxed break-words
+            ${isDeleted ? 'bg-gray-800 text-gray-500 italic border border-gray-700' :
+              isOwn 
+              ? 'bg-blue-600 text-white rounded-br-sm' 
+              : 'bg-gray-800 text-gray-100 rounded-bl-sm border border-gray-700'
+            }
+          `}
+        >
+          {/* Decryption Loading State */}
+          {isDecrypting && !isDeleted && <span className="animate-pulse text-gray-300">Decrypting...</span>}
 
-      <div 
-        className={`px-4 py-3 rounded-2xl ${
-          isOwn 
-            ? 'bg-blue-600 text-white rounded-br-none' 
-            : 'bg-gray-800 text-gray-100 rounded-bl-none'
-        }`}
-      >
-        <div className="text-sm md:text-base markdown-body">
+          <div className="text-sm md:text-base markdown-body">
           {message.deleted_at ? 
             <span className="italic text-gray-400">This message was deleted</span> : 
             (isDecrypting ? <span className="animate-pulse text-gray-300">Decrypting...</span> : 
@@ -123,15 +150,43 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) 
               </ReactMarkdown>
             )
           }
+
+          {/* Deleted State */}
+          {isDeleted && (
+            <div className="flex items-center gap-2">
+              <Trash2 size={16} />
+              <span>This message was deleted</span>
+            </div>
+          )}
         </div>
         
+        {/* Media Attachments */}
+        {!isDeleted && (message.media_attachments || []).map((media, idx) => (
+          <div key={idx} className="mt-2 rounded-lg overflow-hidden border border-gray-700 max-w-sm">
+            {media.type === 'image' ? (
+              <img src={media.url || `https://placehold.co/400x300?text=Encrypted+Image`} alt="Attachment" className="w-full h-auto object-cover" />
+            ) : (
+              <video src={media.url} controls className="w-full h-auto" />
+            )}
+          </div>
+        ))}
+
         {/* Link Previews */}
-        {urls.slice(0, 1).map((url, idx) => (
+        {!isDeleted && urls.slice(0, 1).map((url, idx) => (
           <ClientLinkPreview key={idx} url={url} />
         ))}
       </div>
       
       <div className={`flex items-center mt-1 text-xs text-gray-500 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+        {!isDeleted && isOwn && (
+          <button 
+            onClick={handleDelete}
+            className="mr-2 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 text-gray-400 hover:text-red-400"
+            aria-label="Delete message"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
         <button 
           onClick={(e) => { e.stopPropagation(); toggleBookmark(message.id); }}
           className="mr-2 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"

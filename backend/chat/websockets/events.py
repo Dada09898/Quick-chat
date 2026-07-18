@@ -187,3 +187,5 @@ class ChatEventRouter:
                 await consumer.send(text_data=json.dumps({'type': 'ack', 'id': ack_id, 'payload': {'status': 'routed'}}))
         except Exception as e:
             await consumer.send_error(f"Call signaling failed: {str(e)}")
+
+

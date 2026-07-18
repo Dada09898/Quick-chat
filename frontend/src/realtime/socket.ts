@@ -1,5 +1,6 @@
 import { useRealtimeStore } from './store';
 import { useChatStore } from '../features/chat/chatStore';
+import { useAuthStore } from '../store/authStore';
 
 /**
  * Decode ciphertext that was encoded as btoa(unescape(encodeURIComponent(text))).
@@ -144,6 +145,50 @@ export class RealtimeClient {
               status: 'delivered'
             });
           });
+          break;
+        case 'call.offer':
+          import('../features/calls/CallStore').then(({ useCallStore }) => {
+            useCallStore.getState().setSession(payload.session_id, payload.caller_id);
+            useCallStore.getState().setState('RINGING');
+            import('../features/calls/PeerConnectionManager').then(({ PeerConnectionManager }) => {
+              // We need a singleton or store access to the PC Manager. 
+              // Since it's instantiated in CallProvider, we should ideally route it there.
+              // For simplicity, we can emit a custom event or let CallProvider handle signaling via store.
+              window.dispatchEvent(new CustomEvent('webrtc:offer', { detail: payload }));
+            });
+          });
+          break;
+        case 'call.answer':
+          window.dispatchEvent(new CustomEvent('webrtc:answer', { detail: payload }));
+          break;
+        case 'call.ice_candidate':
+          window.dispatchEvent(new CustomEvent('webrtc:ice_candidate', { detail: payload }));
+          break;
+        case 'call.reject':
+        case 'call.end':
+          import('../features/calls/CallStore').then(({ useCallStore }) => {
+            useCallStore.getState().endCall();
+          });
+          break;
+        case 'typing.start':
+          if (payload.user_id !== useAuthStore.getState().user?.id) {
+            useRealtimeStore.getState().setRemoteTyping(true);
+          }
+          break;
+        case 'typing.stop':
+          if (payload.user_id !== useAuthStore.getState().user?.id) {
+            useRealtimeStore.getState().setRemoteTyping(false);
+          }
+          break;
+        case 'presence.online':
+          if (payload.user_id !== useAuthStore.getState().user?.id) {
+            useRealtimeStore.getState().setRemotePresence('online', payload.timestamp);
+          }
+          break;
+        case 'presence.offline':
+          if (payload.user_id !== useAuthStore.getState().user?.id) {
+            useRealtimeStore.getState().setRemotePresence('offline', payload.timestamp);
+          }
           break;
         case 'error':
           console.error('Realtime Error:', payload.message);
