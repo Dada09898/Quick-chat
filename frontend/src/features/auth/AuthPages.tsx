@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { Link } from 'react-router-dom';
 import { Mail, Lock, User, Globe, Clock, ArrowRight } from 'lucide-react';
 
 export const LoginPage = () => {
@@ -49,6 +50,12 @@ export const LoginPage = () => {
           <button type="submit" className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg font-semibold transition shadow-lg shadow-cyan-500/20">
             Sign In <ArrowRight size={18} />
           </button>
+          <div className="text-center mt-4">
+            <p className="text-gray-400 text-sm">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-cyan-400 hover:text-cyan-300 font-medium">Create one</Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>
@@ -115,6 +122,12 @@ export const RegisterPage = () => {
           <button type="submit" className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg font-semibold transition shadow-lg shadow-cyan-500/20">
             Create Account <ArrowRight size={18} />
           </button>
+          <div className="text-center mt-4">
+            <p className="text-gray-400 text-sm">
+              Already have an account?{' '}
+              <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-medium">Sign in here</Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>
