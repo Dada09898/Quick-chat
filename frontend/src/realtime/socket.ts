@@ -11,10 +11,22 @@ export class RealtimeClient {
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    // Determine WS protocol based on current origin
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = import.meta.env.DEV ? 'localhost:8000' : window.location.host;
-    this.url = `${protocol}//${host}/ws/realtime/`;
+    // Determine WS protocol and host based on API URL or fallback to origin
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (apiUrl) {
+      try {
+        const parsedUrl = new URL(apiUrl);
+        const protocol = parsedUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+        this.url = `${protocol}//${parsedUrl.host}/ws/realtime/`;
+      } catch (e) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        this.url = `${protocol}//${window.location.host}/ws/realtime/`;
+      }
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = import.meta.env.DEV ? 'localhost:8000' : window.location.host;
+      this.url = `${protocol}//${host}/ws/realtime/`;
+    }
   }
 
   public connect() {

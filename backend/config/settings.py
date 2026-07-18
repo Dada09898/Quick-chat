@@ -178,8 +178,10 @@ if not DEBUG:
     CSP_SCRIPT_SRC = ("'self'",)
     CSP_IMG_SRC = ("'self'", "data:", "https:")
 
-# CORS
+# CORS & Proxy
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CORS_ALLOW_CREDENTIALS = True
 
 # Logging
