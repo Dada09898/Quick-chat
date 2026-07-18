@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Image as ImageIcon, Link2, FileText, Users, Pin, Shield, Info, Sparkles, ChevronDown, ChevronRight, Bell, Trash2, Ban } from 'lucide-react';
 import { Avatar } from '../../components/ui/Avatar';
+import { layoutVariants, springPresets } from '../../motion';
 
 interface AccordionSectionProps {
   title: string;
@@ -33,7 +34,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({ title, icon, childr
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            transition={springPresets.accordion}
             className="overflow-hidden"
           >
             <div className="p-4 pt-0">
@@ -60,10 +61,11 @@ export const RightPanel: React.FC = () => {
 
   return (
     <motion.div 
-      initial={{ width: 0, opacity: 0 }}
-      animate={{ width: 320, opacity: 1 }}
-      exit={{ width: 0, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+      variants={layoutVariants.drawerRight}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={springPresets.drawer}
       className="bg-[#111b21] border-l border-[#222d34] h-full hidden xl:flex flex-col shrink-0 overflow-hidden relative"
     >
       <div className="px-4 py-2 bg-[#202c33] border-b border-[#222d34] flex items-center gap-4 shrink-0 h-[60px] w-[320px]">

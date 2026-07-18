@@ -5,6 +5,7 @@ import { useRealtime } from '../../realtime/RealtimeProvider';
 import { Smile, Paperclip, Send, Mic, Camera, X, Image, FileText, Video, Contact, MapPin, Headphones } from 'lucide-react';
 import { UploadManager } from '../media/upload/UploadManager';
 import { motion, AnimatePresence } from 'framer-motion';
+import { layoutVariants, springPresets } from '../../motion';
 
 const LazyEmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
@@ -192,7 +193,7 @@ export const MessageInput: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-[#202c33] px-4 py-2 border-t border-[#222d34] flex items-center gap-2">
+    <div className="relative bg-[#202c33] px-4 py-2 pb-[max(8px,env(safe-area-inset-bottom))] border-t border-[#222d34] flex items-center gap-2">
       {/* Upload Progress Bar */}
       {isUploading && (
         <div className="absolute top-0 left-0 w-full h-1 bg-[#202c33] -translate-y-full">
@@ -207,10 +208,11 @@ export const MessageInput: React.FC = () => {
       <AnimatePresence>
         {showEmojiPicker && (
           <motion.div 
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
+            variants={layoutVariants.popoverMenu}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={springPresets.fast}
             className="absolute bottom-full left-4 mb-2 z-50 shadow-2xl rounded-lg overflow-hidden border border-[#222d34] bg-[#202c33]"
           >
             <React.Suspense fallback={<div className="w-[350px] h-[400px] flex items-center justify-center text-[#8696a0]">Loading emojis...</div>}>
@@ -229,10 +231,11 @@ export const MessageInput: React.FC = () => {
       <AnimatePresence>
         {showAttachmentMenu && (
           <motion.div 
-            initial={{ opacity: 0, y: 20, scale: 0.8, originY: 1, originX: 0 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.8 }}
-            transition={{ duration: 0.15 }}
+            variants={layoutVariants.popoverAttachment}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={springPresets.fast}
             className="absolute bottom-full left-14 mb-4 z-50 bg-[#2a3942] rounded-2xl shadow-xl border border-[#222d34] p-4 flex gap-4 w-[280px] flex-wrap justify-center"
           >
             <label className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
@@ -316,7 +319,7 @@ export const MessageInput: React.FC = () => {
               initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              transition={springPresets.fab}
             >
               <Send size={20} className="ml-1" />
             </motion.div>
@@ -326,7 +329,7 @@ export const MessageInput: React.FC = () => {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              transition={springPresets.fab}
             >
               <Mic size={20} />
             </motion.div>

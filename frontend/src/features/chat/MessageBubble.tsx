@@ -11,6 +11,7 @@ import { ClientLinkPreview } from './ClientLinkPreview';
 import { useRealtime } from '../../realtime/RealtimeProvider';
 import { decryptMediaChunk } from '../media/crypto'; // Mock for actual decryption logic
 // Assuming useCryptoStore or similar provides the actual keys
+import { layoutVariants, springPresets } from '../../motion';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -101,9 +102,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   return (
     <motion.div 
       ref={bubbleRef}
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      variants={isOwn ? layoutVariants.messageOutgoing : layoutVariants.messageIncoming}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={springPresets.message}
       layout
       onClick={handleSelection}
       className={`group flex flex-col mb-1.5 w-full cursor-pointer transition-colors ${
@@ -134,8 +137,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
           {/* Context Menu Dropdown */}
           {isMenuOpen && (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: -5 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              variants={layoutVariants.popoverMenu}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={springPresets.fast}
               className="absolute top-8 right-2 w-40 bg-[#2a3942] rounded-lg shadow-xl py-2 z-50 border border-[#222d34]"
             >
               <button className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3">

@@ -60,7 +60,7 @@ export const ChatLayout: React.FC = () => {
       {/* Main Chat Area */}
       <div className={`${!activeConversationId ? 'hidden md:flex' : 'flex'} flex-1 flex-col h-full min-w-0 bg-[#0b141a]`}>
         {/* Header */}
-        <header className="px-3 md:px-4 py-2 bg-[#202c33]/80 backdrop-blur-md shadow-sm flex items-center justify-between z-10 shrink-0 h-[60px] relative">
+        <header className="px-3 md:px-4 py-2 pt-[max(8px,env(safe-area-inset-top))] bg-[#202c33]/80 backdrop-blur-md shadow-sm flex items-center justify-between z-10 shrink-0 h-[calc(60px+env(safe-area-inset-top))] relative">
           <div className="flex items-center gap-3">
             {activeConversationId ? (
               <button 
