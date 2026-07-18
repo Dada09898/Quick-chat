@@ -52,8 +52,8 @@ class ChatEventRouter:
             }))
             
             # 2. Broadcast 'message.new' to the conversation group
-            # Assuming global_group is used for 2 users, but properly it should be a conversation group
-            await consumer.channel_layer.group_send(consumer.global_group, {
+            conversation_group = f"conversation_{msg.conversation_id}"
+            await consumer.channel_layer.group_send(conversation_group, {
                 'type': 'forward_event',
                 'sender_id': str(consumer.user.id),
                 'payload': {
@@ -87,7 +87,8 @@ class ChatEventRouter:
                 payload
             )
             await consumer.send(text_data=json.dumps({'type': 'ack', 'id': ack_id, 'payload': {'status': 'edited'}}))
-            await consumer.channel_layer.group_send(consumer.global_group, {
+            conversation_group = f"conversation_{payload.get('conversation_id', msg.conversation_id)}"
+            await consumer.channel_layer.group_send(conversation_group, {
                 'type': 'forward_event',
                 'sender_id': str(consumer.user.id),
                 'payload': {'type': 'message.edit', 'payload': payload}
@@ -103,7 +104,8 @@ class ChatEventRouter:
                 payload
             )
             await consumer.send(text_data=json.dumps({'type': 'ack', 'id': ack_id, 'payload': {'status': 'deleted'}}))
-            await consumer.channel_layer.group_send(consumer.global_group, {
+            conversation_group = f"conversation_{payload.get('conversation_id')}"
+            await consumer.channel_layer.group_send(conversation_group, {
                 'type': 'forward_event',
                 'sender_id': str(consumer.user.id),
                 'payload': {'type': 'message.delete', 'payload': payload}
@@ -120,7 +122,8 @@ class ChatEventRouter:
                 event_type.split('.')[1] # 'delivered' or 'read'
             )
             await consumer.send(text_data=json.dumps({'type': 'ack', 'id': ack_id, 'payload': {'status': 'ok'}}))
-            await consumer.channel_layer.group_send(consumer.global_group, {
+            conversation_group = f"conversation_{payload.get('conversation_id')}"
+            await consumer.channel_layer.group_send(conversation_group, {
                 'type': 'forward_event',
                 'sender_id': str(consumer.user.id),
                 'payload': {'type': event_type, 'payload': payload}

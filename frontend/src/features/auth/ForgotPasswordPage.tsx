@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, ArrowRight, ArrowLeft } from 'lucide-react';
+import { apiJson } from '../../lib/api';
 
 export const ForgotPasswordPage = ({ onBack }: { onBack: () => void }) => {
   const [email, setEmail] = useState('');
@@ -8,10 +9,9 @@ export const ForgotPasswordPage = ({ onBack }: { onBack: () => void }) => {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/auth/password/reset/', {
+      const res = await apiJson('/api/auth/password/reset/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: { email }
       });
       if (res.ok) setSent(true);
     } catch (e) { console.error(e); }

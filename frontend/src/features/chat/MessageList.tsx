@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import type { VirtuosoHandle } from 'react-virtuoso';
 import { useChatStore } from './chatStore';
+import { useAuthStore } from '../../store/authStore';
 import { MessageBubble } from './MessageBubble';
 import { useRealtimeStore } from '../../realtime/store';
 
@@ -9,6 +10,7 @@ export const MessageList: React.FC = () => {
   const messagesRecord = useChatStore(state => state.messages);
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const remoteTyping = useRealtimeStore(state => state.remoteTyping);
+  const userId = useAuthStore(state => state.user?.id);
   
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   
@@ -50,7 +52,7 @@ export const MessageList: React.FC = () => {
               <MessageBubble 
                 key={msg.id} 
                 message={msg} 
-                isOwn={msg.sender_id === 'me'} // Replace with actual user ID
+                isOwn={msg.sender_id === userId}
               />
             </div>
           );

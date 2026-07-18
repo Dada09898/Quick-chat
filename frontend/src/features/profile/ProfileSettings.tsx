@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { User, Settings, Save, MapPin, Globe, Moon } from 'lucide-react';
+import { apiJson } from '../../lib/api';
 
 export const ProfileSettings = () => {
   const user = useAuthStore(state => state.user);
@@ -11,10 +12,9 @@ export const ProfileSettings = () => {
   
   const handleSave = async () => {
     try {
-      const res = await fetch('/api/auth/me/', {
+      const res = await apiJson('/api/auth/me/', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bio, presence_status: presence })
+        body: { bio, presence_status: presence }
       });
       if (res.ok) {
         const updatedUser = await res.json();

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
 import { Mail, Lock, User, Globe, Clock, ArrowRight } from 'lucide-react';
+import { apiJson } from '../../lib/api';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -11,12 +12,9 @@ export const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || '';
-      const res = await fetch(`${baseUrl}/api/auth/login/`, {
+      const res = await apiJson('/api/auth/login/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password })
+        body: { email, password }
       });
       if (res.ok) {
         const data = await res.json();
@@ -74,12 +72,9 @@ export const RegisterPage = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || '';
-      const res = await fetch(`${baseUrl}/api/auth/register/`, {
+      const res = await apiJson('/api/auth/register/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password, timezone, preferred_language: 'en' })
+        body: { email, password, timezone, preferred_language: 'en' }
       });
       if (res.ok) {
         const data = await res.json();

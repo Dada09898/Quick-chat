@@ -1,3 +1,5 @@
+import { apiJson } from '../../lib/api';
+
 export class TelemetryManager {
   private static isOptedIn = false;
   private static batch: Array<Record<string, any>> = [];
@@ -40,10 +42,9 @@ export class TelemetryManager {
     try {
       // In production, we'd use a compression stream here if supported
       // e.g. CompressionStream('gzip')
-      await fetch('/api/telemetry/', {
+      await apiJson('/api/telemetry/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ events: payload })
+        body: { events: payload }
       });
     } catch (e) {
       // Silently fail telemetry in offline mode, drop payload to avoid memory leak

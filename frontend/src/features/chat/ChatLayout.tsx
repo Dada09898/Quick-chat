@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useChatStore } from './chatStore';
@@ -13,11 +13,7 @@ export const ChatLayout: React.FC = () => {
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const { remotePresence } = useRealtimeStore();
 
-  useEffect(() => {
-    // In a real app, this would be set by routing or selection
-    // Hardcoded for Sprint 5 UI demo
-    setActiveConversation('conv-123');
-  }, [setActiveConversation]);
+  // No hardcoded conversation selection — ChatList.onSelect sets the active conversation.
 
   return (
     <div className="flex h-screen bg-gray-950 text-white font-sans overflow-hidden relative">
@@ -37,7 +33,7 @@ export const ChatLayout: React.FC = () => {
               <Menu size={24} />
             </button>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">{activeConversationId ? 'Private Chat' : 'DualConnect'}</h1>
+              <h1 className="text-xl font-bold tracking-tight">{activeConversationId ? 'Private Chat' : 'Kryozen Quick Chat'}</h1>
               {activeConversationId && (
                 <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${remotePresence.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`}></span>
@@ -57,8 +53,19 @@ export const ChatLayout: React.FC = () => {
         </header>
 
         {/* Messages & Input */}
-        <MessageList />
-        <MessageInput />
+        {activeConversationId ? (
+          <>
+            <MessageList />
+            <MessageInput />
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <h2 className="text-2xl font-semibold text-gray-400 mb-2">Welcome to Kryozen Quick Chat</h2>
+              <p className="text-gray-500">Select a conversation or start a new chat</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

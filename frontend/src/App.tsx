@@ -24,27 +24,56 @@ function App() {
   }, [setTheme])
 
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isRestoring = useAuthStore(state => state.isRestoring);
+  const restoreSession = useAuthStore(state => state.restoreSession);
+
+  // Restore session from HttpOnly cookies on app mount
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
+  // Show loading while checking session — prevents flash of login page
+  if (isRestoring) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-400 text-sm">Restoring session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RealtimeProvider>
-        <BrowserRouter>
-          <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-            <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-950 text-white">Loading...</div>}>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
-                <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage onBack={() => window.history.back()} />} />
-                
-                {/* Protected Routes */}
-                <Route path="/" element={isAuthenticated ? <ChatLayout /> : <Navigate to="/login" />} />
-                <Route path="/settings" element={isAuthenticated ? <ProfileSettings /> : <Navigate to="/login" />} />
-              </Routes>
-            </Suspense>
-          </div>
-        </BrowserRouter>
-      </RealtimeProvider>
+      <BrowserRouter>
+        <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+          <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-950 text-white">Loading...</div>}>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
+              <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage onBack={() => window.history.back()} />} />
+              
+              {/* Protected Routes — RealtimeProvider only wraps authenticated routes */}
+              <Route path="/" element={
+                isAuthenticated ? (
+                  <RealtimeProvider>
+                    <ChatLayout />
+                  </RealtimeProvider>
+                ) : <Navigate to="/login" />
+              } />
+              <Route path="/settings" element={
+                isAuthenticated ? (
+                  <RealtimeProvider>
+                    <ProfileSettings />
+                  </RealtimeProvider>
+                ) : <Navigate to="/login" />
+              } />
+            </Routes>
+          </Suspense>
+        </div>
+      </BrowserRouter>
     </QueryClientProvider>
   )
 }

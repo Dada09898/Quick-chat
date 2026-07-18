@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { MessageSquare, Plus } from 'lucide-react';
+import { apiClient } from '../../lib/api';
 
 export const ChatList = ({ isMobileOpen, onCloseMobile }: { isMobileOpen: boolean, onCloseMobile: () => void }) => {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -12,9 +13,7 @@ export const ChatList = ({ isMobileOpen, onCloseMobile }: { isMobileOpen: boolea
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const res = await fetch('/api/chat/conversations/', {
-          headers: { 'Authorization': 'Bearer ' + document.cookie } // Using HttpOnly so this is just placeholder logic if JWT needed in header. If strictly cookies, drop header.
-        });
+        const res = await apiClient('/api/chat/conversations/');
         if (res.ok) {
           const data = await res.json();
           setConversations(data.results || []);
@@ -29,6 +28,22 @@ export const ChatList = ({ isMobileOpen, onCloseMobile }: { isMobileOpen: boolea
   const handleSelect = (id: string) => {
     setActiveConversation(id);
     onCloseMobile();
+  };
+
+  /**
+   * Derive a display name for a conversation by finding the other member's email.
+   * Falls back to "Conversation" if member data is not available.
+   */
+  const getConversationName = (conv: any): string => {
+    if (conv.members && Array.isArray(conv.members)) {
+      const otherMember = conv.members.find(
+        (m: any) => m.user && m.user.id !== user?.id
+      );
+      if (otherMember?.user?.email) {
+        return otherMember.user.email;
+      }
+    }
+    return 'Conversation';
   };
 
   return (
@@ -51,6 +66,7 @@ export const ChatList = ({ isMobileOpen, onCloseMobile }: { isMobileOpen: boolea
         ) : (
           conversations.map(conv => {
             const isActive = conv.id === activeConversationId;
+            const displayName = getConversationName(conv);
             return (
               <div 
                 key={conv.id}
@@ -63,12 +79,12 @@ export const ChatList = ({ isMobileOpen, onCloseMobile }: { isMobileOpen: boolea
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
-                    <h3 className="font-semibold text-gray-200 truncate">Conversation</h3>
+                    <h3 className="font-semibold text-gray-200 truncate">{displayName}</h3>
                     <span className="text-xs text-gray-500">
-                      {new Date(conv.last_activity).toLocaleDateString()}
+                      {conv.last_activity ? new Date(conv.last_activity).toLocaleDateString() : ''}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400 truncate">Secure Vault Chat</p>
+                  <p className="text-sm text-gray-400 truncate">Tap to open chat</p>
                 </div>
               </div>
             );

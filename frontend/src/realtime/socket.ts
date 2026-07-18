@@ -1,6 +1,20 @@
 import { useRealtimeStore } from './store';
 import { useChatStore } from '../features/chat/chatStore';
 
+/**
+ * Decode ciphertext that was encoded as btoa(unescape(encodeURIComponent(text))).
+ * This supports full Unicode. When real E2EE is implemented, replace this with
+ * actual AES-256-GCM decryption.
+ */
+function decodeCiphertext(ciphertext: string): string {
+  try {
+    return decodeURIComponent(escape(atob(ciphertext)));
+  } catch {
+    // Fallback for plain ASCII base64
+    try { return atob(ciphertext); } catch { return ciphertext; }
+  }
+}
+
 export class RealtimeClient {
   private ws: WebSocket | null = null;
   private url: string;
@@ -97,15 +111,18 @@ export class RealtimeClient {
           }
           break;
         case 'message.new':
-          // Decrypt payload here in a real E2EE system, for now store as is with decrypted text stub
+          // Decrypt payload here in a real E2EE system, for now decode base64 stub
           useChatStore.getState().upsertMessage({
             ...payload,
             status: 'delivered',
-            decrypted_text: atob(payload.ciphertext), // Demo decryption
+            decrypted_text: decodeCiphertext(payload.ciphertext),
           });
           
-          // Send delivered receipt back
-          this.send('message.delivered', { message_id: payload.id });
+          // Send delivered receipt back (include conversation_id for group routing)
+          this.send('message.delivered', {
+            message_id: payload.id,
+            conversation_id: payload.conversation_id
+          });
           break;
         case 'message.delivered':
           useChatStore.getState().updateMessageStatus(payload.message_id, 'delivered');
@@ -123,7 +140,7 @@ export class RealtimeClient {
           payload.messages.forEach((msg: any) => {
             useChatStore.getState().upsertMessage({
               ...msg,
-              decrypted_text: atob(msg.ciphertext), // Demo decryption
+              decrypted_text: decodeCiphertext(msg.ciphertext),
               status: 'delivered'
             });
           });

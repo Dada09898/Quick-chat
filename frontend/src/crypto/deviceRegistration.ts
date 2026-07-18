@@ -1,4 +1,5 @@
 import { KeyManager } from './KeyManager';
+import { apiJson } from '../lib/api';
 
 export async function registerDeviceCryptoFlow(deviceName: string) {
   // 1. Generate keys locally
@@ -12,12 +13,9 @@ export async function registerDeviceCryptoFlow(deviceName: string) {
   };
 
   // 3. API Call
-  const response = await fetch('/api/auth/devices/register/', {
+  const response = await apiJson('/api/auth/devices/register/', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
 
   if (!response.ok) {
