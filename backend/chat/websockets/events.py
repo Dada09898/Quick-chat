@@ -32,6 +32,7 @@ class ChatEventRouter:
 
     @staticmethod
     async def handle_message_send(consumer, payload, ack_id):
+        logger.error(f"Received message payload: {payload}")
         try:
             # Run the synchronous service layer in a sync_to_async thread
             msg = await database_sync_to_async(ChatService.process_incoming_message)(
@@ -77,6 +78,7 @@ class ChatEventRouter:
             })
             
         except ValueError as e:
+            logger.error(f"Message processing failed (ValueError): {str(e)}")
             await consumer.send_error(str(e))
         except Exception as e:
             logger.error(f"Message processing failed: {str(e)}")

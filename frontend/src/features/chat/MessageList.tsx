@@ -51,6 +51,8 @@ export const MessageList: React.FC = () => {
 
             upsertMessage({
               ...msg,
+              conversation_id: msg.conversation || msg.conversation_id,
+              sender_id: msg.sender?.id || msg.sender_id,
               decrypted_text: decodeCiphertext(msg.ciphertext),
               status: msg.status || 'delivered',
               media_attachments
