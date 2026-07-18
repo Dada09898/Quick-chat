@@ -137,7 +137,9 @@ SIMPLE_JWT = {
 
 # Channels / Redis
 import sys
-if 'pytest' in sys.modules:
+REDIS_URL = os.environ.get('REDIS_URL', None)
+
+if 'pytest' in sys.modules or not REDIS_URL:
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
@@ -148,7 +150,7 @@ else:
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [os.environ.get('REDIS_URL', 'redis://localhost:6379/0')],
+                "hosts": [REDIS_URL],
             },
         },
     }
