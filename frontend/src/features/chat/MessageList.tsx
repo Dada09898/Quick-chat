@@ -5,6 +5,8 @@ import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { MessageBubble } from './MessageBubble';
 import { useRealtimeStore } from '../../realtime/store';
+import { apiClient } from '../../lib/api';
+import { decodeCiphertext } from '../../realtime/socket';
 
 export const MessageList: React.FC = () => {
   const messagesRecord = useChatStore(state => state.messages);
@@ -25,6 +27,47 @@ export const MessageList: React.FC = () => {
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       });
   }, [messagesRecord, activeConversationId]);
+
+  useEffect(() => {
+    if (!activeConversationId) return;
+    
+    // Fetch initial history for conversation
+    const fetchHistory = async () => {
+      try {
+        const res = await apiClient(`/api/chat/messages/?conversation_id=${activeConversationId}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Assuming the API returns a paginated list in data.results
+          const msgs = data.results || [];
+          // Need to upsert them into the store
+          const upsertMessage = useChatStore.getState().upsertMessage;
+          msgs.forEach((msg: any) => {
+            const media_attachments = (msg.attachments || []).map((att: any) => ({
+              id: att.id,
+              url: `http://localhost:8000/media/${att.s3_key}`,
+              type: 'image', // Basic fallback
+              media_key: undefined
+            }));
+
+            upsertMessage({
+              ...msg,
+              decrypted_text: decodeCiphertext(msg.ciphertext),
+              status: msg.status || 'delivered',
+              media_attachments
+            });
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch message history", err);
+      }
+    };
+    
+    // Check if we need to fetch (e.g. if we have 0 messages for this conv)
+    const existingCount = Object.values(useChatStore.getState().messages).filter(m => m.conversation_id === activeConversationId).length;
+    if (existingCount === 0) {
+      fetchHistory();
+    }
+  }, [activeConversationId]);
 
   useEffect(() => {
     // Scroll to bottom when a new message arrives (if already at bottom)

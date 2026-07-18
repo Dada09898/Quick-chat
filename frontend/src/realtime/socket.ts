@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/authStore';
  * This supports full Unicode. When real E2EE is implemented, replace this with
  * actual AES-256-GCM decryption.
  */
-function decodeCiphertext(ciphertext: string): string {
+export function decodeCiphertext(ciphertext: string): string {
   try {
     return decodeURIComponent(escape(atob(ciphertext)));
   } catch {
@@ -137,6 +137,7 @@ export class RealtimeClient {
         case 'message.delete':
           useChatStore.getState().upsertMessage({ ...payload, deleted_at: new Date().toISOString() });
           break;
+        case 'conversation.delta':
         case 'conversation.sync_response':
           payload.messages.forEach((msg: any) => {
             useChatStore.getState().upsertMessage({
