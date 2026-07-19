@@ -9,7 +9,7 @@ from rest_framework import status, views, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from django.db.models import Q
 from core.models import SecurityAuditLog
 from .models import Device, Session, CustomUser, FriendRequest, Contact

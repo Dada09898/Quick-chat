@@ -1,10 +1,8 @@
 import pytest
-import json
 from channels.testing import WebsocketCommunicator
 from config.asgi import application
 from users.models import CustomUser
 from rest_framework_simplejwt.tokens import RefreshToken
-from chat.models import Conversation, ConversationMember
 
 @pytest.fixture
 def user(db):

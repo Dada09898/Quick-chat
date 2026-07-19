@@ -107,7 +107,7 @@ class UploadCompleteView(APIView):
         except Exception:
             return Response({'error': 'Internal error during assembly'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from rest_framework import viewsets, mixins, filters
+from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from .models import Conversation, ConversationMember, Message
 from .serializers import ConversationSerializer, MessageSerializer

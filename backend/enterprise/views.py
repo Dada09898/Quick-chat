@@ -1,8 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from .models import Organization, OrganizationMember, EnterprisePolicy, DeviceTrust
-from users.models import CustomUser
+from .models import Organization, OrganizationMember, DeviceTrust
 
 class IsEnterpriseAdmin(permissions.BasePermission):
     def has_permission(self, request, view):

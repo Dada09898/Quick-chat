@@ -1,9 +1,7 @@
-import json
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
-from .models import VaultItem, VaultFolder, VaultItemVersion
+from .models import VaultItem, VaultItemVersion
 
 class VaultItemViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
