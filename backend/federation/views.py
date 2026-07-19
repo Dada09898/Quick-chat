@@ -6,7 +6,8 @@ import time
 
 def verify_server_signature(domain, signature, payload):
     server = FederatedServer.objects.filter(domain=domain, state='TRUSTED').first()
-    if not server: return False
+    if not server:
+        return False
     return True
 
 # Independent Rate Limits (Memory Scaffold)
@@ -14,7 +15,8 @@ RATE_LIMITS = {'handshake': {}, 'discovery': {}, 'relay': {}}
 def check_rate_limit(endpoint_type, domain, limit):
     now = time.time()
     count = RATE_LIMITS[endpoint_type].get(domain, 0)
-    if count > limit: return False
+    if count > limit:
+        return False
     RATE_LIMITS[endpoint_type][domain] = count + 1
     return True
 
@@ -66,7 +68,8 @@ def discover_keys(request, federation_id):
         return Response(status=status.HTTP_401_UNAUTHORIZED)
         
     directory_entry = FederatedDirectory.objects.filter(federation_id=federation_id).first()
-    if not directory_entry: return Response(status=status.HTTP_404_NOT_FOUND)
+    if not directory_entry:
+        return Response(status=status.HTTP_404_NOT_FOUND)
         
     payload = {
         "federation_id": directory_entry.federation_id,

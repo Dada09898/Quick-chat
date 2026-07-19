@@ -107,12 +107,12 @@ class UploadCompleteView(APIView):
         except Exception:
             return Response({'error': 'Internal error during assembly'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from rest_framework import viewsets, mixins, filters
-from rest_framework.decorators import action
-from .models import Conversation, ConversationMember, Message
-from .serializers import ConversationSerializer, MessageSerializer
-from .pagination import ConversationPagination, MessageCursorPagination
-from .services import ChatService
+from rest_framework import viewsets, mixins, filters  # noqa: E402
+from rest_framework.decorators import action  # noqa: E402
+from .models import Conversation, ConversationMember, Message  # noqa: E402
+from .serializers import ConversationSerializer, MessageSerializer  # noqa: E402
+from .pagination import ConversationPagination, MessageCursorPagination  # noqa: E402
+from .services import ChatService  # noqa: E402
 
 class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
