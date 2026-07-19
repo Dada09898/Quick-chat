@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Bookmark, BookmarkCheck, Trash2, ChevronDown, CornerUpLeft, CornerUpRight, Copy } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Trash2, ChevronDown, CornerUpLeft, CornerUpRight, Copy, Smile, Edit2 } from 'lucide-react';
 import { useChatStore } from './chatStore';
 import { ClientLinkPreview } from './ClientLinkPreview';
 import { useRealtime } from '../../realtime/RealtimeProvider';
@@ -94,6 +94,46 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
 
   const isDeleted = !!message.deleted_at;
 
+  const setReplyingTo = useChatStore(state => state.setReplyingTo);
+  const setForwardingMessageIds = useChatStore(state => state.setForwardingMessageIds);
+  const setEditingMessageId = useChatStore(state => state.setEditingMessageId);
+  const updateMessageReactions = useChatStore(state => state.updateMessageReactions);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const handleReaction = (emoji: string) => {
+    // Optimistic update
+    updateMessageReactions(message.id, user?.id || '', emoji);
+    sendEvent('message.reaction', {
+      message_id: message.id,
+      conversation_id: message.conversation_id,
+      reaction_ciphertext: emoji ? btoa(unescape(encodeURIComponent(emoji))) : null,
+      nonce: 'pending',
+      signature: 'UNVERIFIED',
+      key_version: 1,
+      algorithm: 'AES-256-GCM'
+    });
+    setShowEmojiPicker(false);
+    setIsMenuOpen(false);
+  };
+
+  const handleReply = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setReplyingTo(message.id);
+    setIsMenuOpen(false);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingMessageId(message.id);
+    setIsMenuOpen(false);
+  };
+
+  const handleForward = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setForwardingMessageIds([message.id]);
+    setIsMenuOpen(false);
+  };
+
   const handleSelection = () => {
     toggleMessageSelection(message.id);
   };const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -115,7 +155,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
     >
       <div className={`flex flex-col max-w-[85%] md:max-w-[65%] relative ${isOwn ? 'items-end' : 'items-start'}`}>
         <div 
-          onMouseLeave={() => setIsMenuOpen(false)}
+          onMouseLeave={() => { setIsMenuOpen(false); setShowEmojiPicker(false); }}
           className={`px-3 py-1.5 pb-[22px] min-w-[100px] shadow-sm text-[15px] leading-relaxed break-words relative group/bubble
             ${isDeleted ? 'bg-[#202c33] text-[#8696a0] italic rounded-lg border border-[#222d34]' :
               isOwn 
@@ -126,16 +166,38 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
         >
           {/* Context Menu Button */}
           {!isDeleted && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); }}
-              className={`absolute top-1 right-1 p-1 rounded-full text-[#8696a0] hover:text-[#d1d7db] bg-gradient-to-l from-[#005c4b] via-[#005c4b]/80 to-transparent opacity-0 group-hover/bubble:opacity-100 transition-opacity z-10 ${!isOwn ? 'from-[#202c33] via-[#202c33]/80' : ''}`}
-            >
-              <ChevronDown size={18} />
-            </button>
+            <div className={`absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover/bubble:opacity-100 transition-opacity z-10 bg-gradient-to-l from-[#005c4b] via-[#005c4b]/80 to-transparent ${!isOwn ? 'from-[#202c33] via-[#202c33]/80' : ''}`}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowEmojiPicker(!showEmojiPicker); setIsMenuOpen(false); }}
+                className="p-1 rounded-full text-[#8696a0] hover:text-[#d1d7db]"
+              >
+                <Smile size={18} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); setShowEmojiPicker(false); }}
+                className="p-1 rounded-full text-[#8696a0] hover:text-[#d1d7db]"
+              >
+                <ChevronDown size={18} />
+              </button>
+            </div>
+          )}
+
+          {showEmojiPicker && (
+            <div className="absolute top-8 right-2 bg-[#2a3942] rounded-lg shadow-xl p-2 z-50 border border-[#222d34] flex gap-2">
+              {['👍', '❤️', '😂', '😮', '😢', '🙏'].map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={(e) => { e.stopPropagation(); handleReaction(emoji); }}
+                  className="hover:scale-125 transition-transform text-xl"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           )}
 
           {/* Context Menu Dropdown */}
-          {isMenuOpen && (
+          {isMenuOpen && !showEmojiPicker && (
             <motion.div 
               variants={layoutVariants.popoverMenu}
               initial="initial"
@@ -144,13 +206,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               transition={springPresets.fast}
               className="absolute top-8 right-2 w-40 bg-[#2a3942] rounded-lg shadow-xl py-2 z-50 border border-[#222d34]"
             >
-              <button className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3">
+              <button
+                onClick={handleReply}
+                className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3"
+              >
                 <CornerUpLeft size={16} /> Reply
               </button>
               <button className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3">
                 <Copy size={16} /> Copy
               </button>
-              <button className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3">
+              <button
+                onClick={handleForward}
+                className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3"
+              >
                 <CornerUpRight size={16} /> Forward
               </button>
               <button 
@@ -161,12 +229,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                 {isBookmarked ? 'Unstar' : 'Star'}
               </button>
               {isOwn && (
-                <button 
-                  onClick={(e) => { handleDelete(e); setIsMenuOpen(false); }}
-                  className="w-full px-4 py-2 text-left text-[14px] text-[#f15c6d] hover:bg-[#202c33] flex items-center gap-3"
-                >
-                  <Trash2 size={16} /> Delete
-                </button>
+                <>
+                  <button
+                    onClick={handleEdit}
+                    className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3"
+                  >
+                    <Edit2 size={16} /> Edit
+                  </button>
+                  <button
+                    onClick={(e) => { handleDelete(e); setIsMenuOpen(false); }}
+                    className="w-full px-4 py-2 text-left text-[14px] text-[#f15c6d] hover:bg-[#202c33] flex items-center gap-3"
+                  >
+                    <Trash2 size={16} /> Delete
+                  </button>
+                </>
               )}
             </motion.div>
           )}
@@ -213,6 +289,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
             </div>
           )}
 
+          {!isDeleted && message.is_edited && (
+            <div className="text-[11px] text-[#8696a0] italic mt-1">(edited)</div>
+          )}
+
+          {/* Reactions */}
+          {message.reactions && message.reactions.length > 0 && !isDeleted && (
+            <div className="absolute -bottom-3 right-0 bg-[#2a3942] rounded-full px-1.5 py-0.5 text-sm flex gap-1 border border-[#222d34] shadow-sm cursor-pointer z-10">
+              {message.reactions.map((r, i) => {
+                const emoji = r.reaction_plaintext || (r.reaction_ciphertext ? decodeURIComponent(escape(atob(r.reaction_ciphertext))) : '');
+                return <span key={i}>{emoji}</span>;
+              })}
+            </div>
+          )}
+
           {/* Timestamp and Read Receipt inside bubble */}
           <div className="absolute bottom-1 right-2 flex items-center gap-1 text-[11px] text-[#8696a0]">
             <span>{new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -244,6 +334,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
           <ClientLinkPreview key={idx} url={url} />
         ))}
         
+        {/* Reply To Rendering */}
+        {!isDeleted && message.reply_to && useChatStore.getState().messages[message.reply_to] && (
+          <div className={`mt-1 p-2 rounded bg-black/10 border-l-2 ${isOwn ? 'border-[#e9edef]' : 'border-[#00a884]'} opacity-80 text-sm`}>
+            <span className="font-medium">{useChatStore.getState().messages[message.reply_to].sender_id === message.sender_id ? 'You' : 'User'}</span>
+            <p className="truncate text-xs">{useChatStore.getState().messages[message.reply_to].decrypted_text}</p>
+          </div>
+        )}
       </div>
     </motion.div>
   );

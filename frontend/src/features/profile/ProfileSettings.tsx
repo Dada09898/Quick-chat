@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { User, Settings, Save, MapPin, Globe, Moon } from 'lucide-react';
 import { apiJson } from '../../lib/api';
+import { AvatarUpload } from './AvatarUpload';
 
 export const ProfileSettings = () => {
   const user = useAuthStore(state => state.user);
@@ -32,8 +33,13 @@ export const ProfileSettings = () => {
       
       <div className="max-w-2xl bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center border-2 border-cyan-500/50">
-            {user.avatar ? <img src={user.avatar} className="w-full h-full rounded-full" alt="Avatar"/> : <User size={32} className="text-cyan-500"/>}
+          <div className="relative">
+            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center border-2 border-cyan-500/50 overflow-hidden">
+              {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover rounded-full" alt="Avatar"/> : <User size={32} className="text-cyan-500"/>}
+            </div>
+            <div className="absolute inset-0">
+              <AvatarUpload />
+            </div>
           </div>
           <div>
             <h3 className="text-xl font-bold text-white">{user.email}</h3>

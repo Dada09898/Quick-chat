@@ -189,8 +189,8 @@ class MessageViewSet(viewsets.ModelViewSet):
         if not ConversationMember.objects.filter(conversation_id=conversation_id, user=self.request.user).exists():
             return Message.objects.none()
             
-        # Optimize N+1 queries by prefetching sender profiles and attachments
-        return Message.objects.filter(conversation_id=conversation_id).select_related('sender').prefetch_related('attachments')
+        # Optimize N+1 queries by prefetching sender profiles, attachments, and reactions
+        return Message.objects.filter(conversation_id=conversation_id).select_related('sender').prefetch_related('attachments', 'reactions')
 
     def create(self, request, *args, **kwargs):
         conversation_id = request.data.get('conversation_id')

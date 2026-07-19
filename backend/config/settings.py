@@ -236,3 +236,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # DualConnect Federation Configuration
 FEDERATION_QUEUE_BACKEND = 'redis' # Options: 'memory', 'redis', 'database'
 NTP_MONITORING_ENABLED = True # Triggers alerts if clock skew > 1000ms
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
