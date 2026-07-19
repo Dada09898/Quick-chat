@@ -1,4 +1,7 @@
 import os
+import sys
+import dj_database_url
+
 from pathlib import Path
 from datetime import timedelta
 
@@ -76,7 +79,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Database
-import dj_database_url
+
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL', 'postgres://postgres:password@localhost:5432/dualconnect'),
@@ -137,7 +140,7 @@ SIMPLE_JWT = {
 }
 
 # Channels / Redis
-import sys
+
 REDIS_URL = os.environ.get('REDIS_URL', None)
 
 if 'pytest' in sys.modules or not REDIS_URL:
@@ -236,6 +239,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # DualConnect Federation Configuration
 FEDERATION_QUEUE_BACKEND = 'redis' # Options: 'memory', 'redis', 'database'
 NTP_MONITORING_ENABLED = True # Triggers alerts if clock skew > 1000ms
-import os
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
