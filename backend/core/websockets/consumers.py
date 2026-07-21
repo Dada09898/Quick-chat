@@ -30,6 +30,9 @@ class RealtimeConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_add(f"conversation_{conv_id}", self.channel_name)
 
         await self.accept()
+
+        # Add to global stories group for simplified broadcast
+        await self.channel_layer.group_add("global_stories", self.channel_name)
         logger.info(f"WebSocket connected: User {self.user.email}")
         
         # Broadcast presence
@@ -45,6 +48,7 @@ class RealtimeConsumer(AsyncWebsocketConsumer):
             
             # Update presence to offline
             await self.set_online_status(False)
+            await self.channel_layer.group_discard("global_stories", self.channel_name)
             logger.info(f"WebSocket disconnected: User {self.user.email} (Code: {close_code})")
 
     async def receive(self, text_data):

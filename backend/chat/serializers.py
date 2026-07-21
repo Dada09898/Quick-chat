@@ -35,3 +35,36 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = ['id', 'conversation', 'sequence_number', 'sender', 'reply_to', 'ciphertext', 'nonce', 'signature', 'key_version', 'algorithm', 'is_edited', 'created_at', 'server_timestamp', 'attachments', 'reactions']
         read_only_fields = ['id', 'sequence_number', 'sender', 'server_timestamp']
+
+from .models import Story, StoryViewer
+
+class StoryViewerSerializer(serializers.ModelSerializer):
+    viewer = UserSerializer(read_only=True)
+    class Meta:
+        model = StoryViewer
+        fields = ['id', 'viewer', 'viewed_at']
+
+class StorySerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+    media = MediaAttachmentSerializer(read_only=True)
+    viewers = serializers.SerializerMethodField()
+    viewers_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Story
+        fields = ['id', 'author', 'media', 'ciphertext', 'nonce', 'signature', 'key_version', 'algorithm', 'background_color', 'expires_at', 'created_at', 'viewers', 'viewers_count']
+        read_only_fields = ['id', 'created_at']
+
+    def get_viewers(self, obj):
+        request = self.context.get('request')
+        # Only show viewers if the requesting user is the author
+        if request and request.user == obj.author:
+            viewers = obj.viewers.all()
+            return StoryViewerSerializer(viewers, many=True).data
+        return []
+
+    def get_viewers_count(self, obj):
+        request = self.context.get('request')
+        if request and request.user == obj.author:
+            return obj.viewers.count()
+        return 0

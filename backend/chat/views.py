@@ -206,3 +206,40 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+from .models import Story, StoryViewer
+from .serializers import StorySerializer, StoryViewerSerializer
+from rest_framework.decorators import action
+
+class StoryViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = StorySerializer
+
+    def get_queryset(self):
+        # Return all active stories for simplicity (assuming contacts logic is out of scope or implicit)
+        # In a real app, this would filter by user's contacts or federation
+        now = timezone.now()
+        return Story.objects.filter(expires_at__gt=now).select_related('author', 'media').prefetch_related('viewers', 'viewers__viewer')
+
+    def perform_create(self, serializer):
+        media_id = self.request.data.get('media_id')
+        media = None
+        if media_id:
+            try:
+                media = MediaAttachment.objects.get(id=media_id)
+            except MediaAttachment.DoesNotExist:
+                pass
+
+        expires_at = timezone.now() + timedelta(hours=24)
+        story = serializer.save(author=self.request.user, media=media, expires_at=expires_at)
+
+        # We can trigger a websocket event here if we had a global group, but for stories,
+        # clients typically poll or we broadcast via sync.
+
+    @action(detail=True, methods=['post'])
+    def view(self, request, pk=None):
+        story = self.get_object()
+        if story.author != request.user:
+            StoryViewer.objects.get_or_create(story=story, viewer=request.user)
+            # Could broadcast 'story.viewed' here to the author
+        return Response({'status': 'ok'})

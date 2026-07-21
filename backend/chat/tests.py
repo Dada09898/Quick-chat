@@ -1,3 +1,4 @@
+from unittest.mock import patch
 import pytest
 import uuid6
 import base64
@@ -41,7 +42,8 @@ def conversation(test_user_and_device):
     return conv
 
 @pytest.mark.django_db
-def test_process_incoming_message(test_user_and_device, conversation):
+@patch('chat.services._is_e2ee_required', return_value=True)
+def test_process_incoming_message(mock_flag, test_user_and_device, conversation):
     user, device, private_key = test_user_and_device
     
     msg_id = str(uuid6.uuid7())
@@ -63,12 +65,13 @@ def test_process_incoming_message(test_user_and_device, conversation):
     }
     
     msg = ChatService.process_incoming_message(user, data)
-    assert msg.id == uuid6.UUID(msg_id)
+    assert str(msg.id) == msg_id
     assert msg.sequence_number == 2 # Initial version=1, +1 = 2
     assert msg.ciphertext == ciphertext
 
 @pytest.mark.django_db
-def test_message_rejects_invalid_signature(test_user_and_device, conversation):
+@patch('chat.services._is_e2ee_required', return_value=True)
+def test_message_rejects_invalid_signature(mock_flag, test_user_and_device, conversation):
     user, device, private_key = test_user_and_device
     msg_id = str(uuid6.uuid7())
     
@@ -86,7 +89,8 @@ def test_message_rejects_invalid_signature(test_user_and_device, conversation):
         ChatService.process_incoming_message(user, data)
 
 @pytest.mark.django_db
-def test_replay_protection_window(test_user_and_device, conversation):
+@patch('chat.services._is_e2ee_required', return_value=True)
+def test_replay_protection_window(mock_flag, test_user_and_device, conversation):
     user, device, private_key = test_user_and_device
     msg_id = str(uuid6.uuid7())
     

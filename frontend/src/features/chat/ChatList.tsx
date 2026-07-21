@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
+import { StoryList } from './stories/StoryList';
 
 interface ChatListProps {
   isMobileOpen: boolean;
@@ -75,6 +76,8 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
         </div>
       </div>
       
+      <StoryList />
+
       <div className="p-2 border-b border-[#222d34] bg-[#111b21] shrink-0">
         <div className="relative flex items-center bg-[#202c33] rounded-lg px-3 py-1.5 h-9">
           <button className="text-[#8696a0]">
