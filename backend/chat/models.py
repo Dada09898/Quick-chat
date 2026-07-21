@@ -260,3 +260,34 @@ class TypingState(models.Model):
     class Meta:
         unique_together = ('conversation', 'user')
 
+
+class Story(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='stories')
+    media = models.ForeignKey(MediaAttachment, on_delete=models.SET_NULL, null=True, blank=True, related_name='stories')
+
+    ciphertext = models.TextField() # Encrypted text or metadata
+    nonce = models.CharField(max_length=128)
+    signature = models.CharField(max_length=256)
+    key_version = models.IntegerField(default=1)
+    algorithm = models.CharField(max_length=64, default='AES-256-GCM')
+
+    background_color = models.CharField(max_length=32, blank=True, null=True) # For text stories
+
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['author', 'expires_at']),
+        ]
+
+class StoryViewer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    story = models.ForeignKey(Story, on_delete=models.CASCADE, related_name='viewers')
+    viewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='viewed_stories')
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('story', 'viewer')

@@ -24,6 +24,8 @@ class ChatEventRouter:
             await ChatEventRouter.handle_sync_complete(consumer, payload, msg_id)
         elif event_type == 'draft.updated':
             await ChatEventRouter.handle_draft_updated(consumer, payload, msg_id)
+        elif event_type == 'story.new':
+            await ChatEventRouter.handle_story_new(consumer, payload, msg_id)
         elif event_type in ['call.offer', 'call.answer', 'call.ice_candidate', 'call.end', 'call.reject']:
             await ChatEventRouter.handle_call_signaling(consumer, payload, msg_id, event_type)
         elif event_type == 'connection.quality':
@@ -212,3 +214,21 @@ class ChatEventRouter:
             await consumer.send_error(f"Call signaling failed: {str(e)}")
 
 
+
+    @staticmethod
+    async def handle_story_new(consumer, payload, ack_id):
+        try:
+            # We assume payload contains story id and author_id. We broadcast this to a global or user-specific group.
+            # In a real app we might broadcast to all contacts. Here, we broadcast to a 'global_stories' group for simplicity.
+            await consumer.channel_layer.group_send("global_stories", {
+                'type': 'forward_event',
+                'sender_id': str(consumer.user.id),
+                'payload': {
+                    'type': 'story.new',
+                    'payload': payload
+                }
+            })
+            if ack_id:
+                await consumer.send(text_data=json.dumps({'type': 'ack', 'id': ack_id, 'payload': {'status': 'ok'}}))
+        except Exception as e:
+            await consumer.send_error(f"Story processing failed: {str(e)}")
