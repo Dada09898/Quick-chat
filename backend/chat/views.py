@@ -107,7 +107,7 @@ class UploadCompleteView(APIView):
         except Exception:
             return Response({'error': 'Internal error during assembly'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from rest_framework import viewsets, filters  # noqa: E402
+from rest_framework import viewsets, mixins, filters  # noqa: E402
 from rest_framework.decorators import action  # noqa: E402
 from .models import Conversation, ConversationMember, Message  # noqa: E402
 from .serializers import ConversationSerializer, MessageSerializer  # noqa: E402
