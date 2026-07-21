@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import AuditLog, Incident, MaintenanceMode
@@ -18,22 +18,25 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         trace_id = request.query_params.get('trace_id')
         
         queryset = self.queryset
-        if category: queryset = queryset.filter(category=category)
-        if severity: queryset = queryset.filter(severity=severity)
-        if trace_id: queryset = queryset.filter(trace_id=trace_id)
+        if category:
+            queryset = queryset.filter(category=category)
+        if severity:
+            queryset = queryset.filter(severity=severity)
+        if trace_id:
+            queryset = queryset.filter(trace_id=trace_id)
         
         # Paginate in reality. Limiting to 100 for scaffold.
         logs = queryset[:100]
         data = [{
-            'id': str(l.id),
-            'timestamp': l.timestamp,
-            'category': l.category,
-            'action': l.action,
-            'severity': l.severity,
-            'correlation_id': l.correlation_id,
-            'trace_id': l.trace_id,
-            'metadata': l.metadata
-        } for l in logs]
+            'id': str(log.id),
+            'timestamp': log.timestamp,
+            'category': log.category,
+            'action': log.action,
+            'severity': log.severity,
+            'correlation_id': log.correlation_id,
+            'trace_id': log.trace_id,
+            'metadata': log.metadata
+        } for log in logs]
         
         return Response({'results': data})
 

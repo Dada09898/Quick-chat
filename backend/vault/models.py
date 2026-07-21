@@ -2,9 +2,6 @@ import uuid
 from django.db import models
 from users.models import CustomUser
 
-class VaultFolder(models.fields.Field):
-    pass # Dummy field to avoid reference errors before class definition
-
 class VaultFolder(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='vault_folders')

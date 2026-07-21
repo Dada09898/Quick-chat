@@ -126,8 +126,8 @@ class RefreshTokenView(views.APIView):
         except Exception:
             return Response({'error': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
 
-import logging
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+import logging  # noqa: E402
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
