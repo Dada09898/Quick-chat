@@ -17,8 +17,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
 
-from core.websockets.middleware import JWTAuthMiddleware
-from core.websockets.routing import websocket_urlpatterns
+from core.websockets.middleware import JWTAuthMiddleware  # noqa: E402
+from core.websockets.routing import websocket_urlpatterns  # noqa: E402
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,

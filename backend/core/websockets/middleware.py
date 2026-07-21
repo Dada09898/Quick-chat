@@ -17,7 +17,7 @@ def get_user_from_token(token_key):
     except Exception:
         return AnonymousUser()
 
-from http.cookies import SimpleCookie
+from http.cookies import SimpleCookie  # noqa: E402
 
 class JWTAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
