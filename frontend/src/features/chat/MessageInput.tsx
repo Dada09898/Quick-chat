@@ -16,6 +16,11 @@ export const MessageInput: React.FC = () => {
   const activeDraft = useChatStore(state => state.activeConversationId ? state.drafts[state.activeConversationId] : '');
   const setDraft = useChatStore(state => state.setDraft);
   const user = useAuthStore(state => state.user);
+  const replyingTo = useChatStore(state => state.replyingTo);
+  const setReplyingTo = useChatStore(state => state.setReplyingTo);
+  const editingMessageId = useChatStore(state => state.editingMessageId);
+  const setEditingMessageId = useChatStore(state => state.setEditingMessageId);
+  const messages = useChatStore(state => state.messages);
   const { sendEvent } = useRealtime();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -24,9 +29,17 @@ export const MessageInput: React.FC = () => {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Restore draft when conversation changes
+  // Restore draft or edit text
   React.useEffect(() => {
-    if (activeConversationId) {
+    if (editingMessageId) {
+      const editMsg = messages[editingMessageId];
+      if (editMsg) {
+        setText(editMsg.decrypted_text || '');
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }
+    } else if (activeConversationId) {
       const draft = activeDraft || '';
       setText(draft);
       if (textareaRef.current) {
@@ -96,41 +109,62 @@ export const MessageInput: React.FC = () => {
     const signature = 'UNVERIFIED';
     const nonce = 'pending';
 
-    // 1. Optimistic UI update
-    const newMsg = {
-      id: msgId,
-      conversation_id: activeConversationId,
-      sender_id: user.id,
-      ciphertext,
-      nonce,
-      signature,
-      key_version: 1,
-      algorithm: 'AES-256-GCM',
-      created_at: createdAt,
-      is_edited: false,
-      deleted_at: null,
-      status: 'queued' as const,
-      decrypted_text: text,
-    };
-    
-    enqueueMessage(newMsg);
+    if (editingMessageId) {
+      const editMsg = messages[editingMessageId];
+      if (editMsg) {
+        const updatedMsg = { ...editMsg, ciphertext, decrypted_text: text, is_edited: true };
+        enqueueMessage(updatedMsg); // updates locally
+        sendEvent('message.edit', {
+          id: editingMessageId,
+          conversation_id: activeConversationId,
+          ciphertext,
+          nonce,
+          signature,
+          key_version: 1,
+          algorithm: 'AES-256-GCM',
+        });
+      }
+      setEditingMessageId(null);
+    } else {
+      // 1. Optimistic UI update
+      const newMsg = {
+        id: msgId,
+        conversation_id: activeConversationId,
+        sender_id: user.id,
+        ciphertext,
+        nonce,
+        signature,
+        key_version: 1,
+        algorithm: 'AES-256-GCM',
+        created_at: createdAt,
+        is_edited: false,
+        deleted_at: null,
+        status: 'queued' as const,
+        decrypted_text: text,
+        reply_to: replyingTo
+      };
+
+      enqueueMessage(newMsg);
+      // 2. Transmit via WebSocket
+      sendEvent('message.send', {
+        id: msgId,
+        conversation_id: activeConversationId,
+        ciphertext,
+        nonce,
+        signature,
+        key_version: 1,
+        algorithm: 'AES-256-GCM',
+        created_at: createdAt,
+        reply_to_id: replyingTo
+      });
+    }
+
     setText('');
+    setReplyingTo(null);
     if (activeConversationId) setDraft(activeConversationId, '');
     if (textareaRef.current) {
       textareaRef.current.style.height = '24px';
     }
-    
-    // 2. Transmit via WebSocket
-    sendEvent('message.send', {
-      id: msgId,
-      conversation_id: activeConversationId,
-      ciphertext,
-      nonce,
-      signature,
-      key_version: 1,
-      algorithm: 'AES-256-GCM',
-      created_at: createdAt
-    });
 
     sendEvent('typing.stop', { conversation_id: activeConversationId });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -192,8 +226,49 @@ export const MessageInput: React.FC = () => {
     e.target.value = ''; // Reset input
   };
 
+  const replyingToMessage = replyingTo ? messages[replyingTo] : null;
+
   return (
-    <div className="relative bg-[#202c33] px-4 py-2 pb-[max(8px,env(safe-area-inset-bottom))] border-t border-[#222d34] flex items-center gap-2">
+    <div className="relative bg-[#202c33] px-4 py-2 pb-[max(8px,env(safe-area-inset-bottom))] border-t border-[#222d34] flex flex-col gap-2">
+      {/* Edit Preview */}
+      {editingMessageId && messages[editingMessageId] && (
+        <div className="flex items-center justify-between bg-[#2a3942] p-2 rounded-lg border-l-4 border-[#53bdeb] mb-2">
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-[#53bdeb] text-xs font-medium mb-1">Editing Message</span>
+            <span className="text-[#d1d7db] text-sm truncate">
+              {messages[editingMessageId].decrypted_text || 'Media'}
+            </span>
+          </div>
+          <button
+            onClick={() => { setEditingMessageId(null); setText(''); }}
+            className="text-[#8696a0] hover:text-[#d1d7db] p-1"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
+
+      {/* Reply Preview */}
+      {replyingToMessage && !editingMessageId && (
+        <div className="flex items-center justify-between bg-[#2a3942] p-2 rounded-lg border-l-4 border-[#00a884] mb-2">
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-[#00a884] text-xs font-medium mb-1">
+              {replyingToMessage.sender_id === user?.id ? 'You' : 'User'}
+            </span>
+            <span className="text-[#d1d7db] text-sm truncate">
+              {replyingToMessage.decrypted_text || 'Media'}
+            </span>
+          </div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="text-[#8696a0] hover:text-[#d1d7db] p-1"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 w-full">
       {/* Upload Progress Bar */}
       {isUploading && (
         <div className="absolute top-0 left-0 w-full h-1 bg-[#202c33] -translate-y-full">
@@ -336,6 +411,7 @@ export const MessageInput: React.FC = () => {
           )}
         </AnimatePresence>
       </button>
+      </div>
     </div>
   );
 };

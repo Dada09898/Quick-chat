@@ -1,6 +1,5 @@
 import pytest
 from rest_framework.test import APIClient
-from chat.models import Conversation, Message
 
 @pytest.fixture
 def api_client():

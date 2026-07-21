@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from .models import FederatedServer, FederatedDirectory, FederationDeliveryState
@@ -13,7 +13,7 @@ def verify_server_signature(domain, signature, payload):
 # Independent Rate Limits (Memory Scaffold)
 RATE_LIMITS = {'handshake': {}, 'discovery': {}, 'relay': {}}
 def check_rate_limit(endpoint_type, domain, limit):
-    now = time.time()
+    time.time()
     count = RATE_LIMITS[endpoint_type].get(domain, 0)
     if count > limit:
         return False
@@ -90,7 +90,7 @@ def relay_message(request):
         METRICS['relays_rejected'] += 1
         return Response(status=status.HTTP_429_TOO_MANY_REQUESTS)
     
-    nonce = request.data.get('nonce')
+    request.data.get('nonce')
     timestamp = request.data.get('timestamp')
     message_id = request.data.get('message_id')
     

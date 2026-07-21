@@ -19,11 +19,19 @@ class MediaAttachmentSerializer(serializers.ModelSerializer):
         model = MediaAttachment
         fields = ['id', 's3_key', 'thumbnail_s3_key', 'file_hash', 'key_version', 'algorithm', 'chunk_count', 'status']
 
+from .models import MessageReaction
+
+class MessageReactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MessageReaction
+        fields = ['id', 'user', 'reaction_ciphertext', 'nonce', 'signature']
+
 class MessageSerializer(serializers.ModelSerializer):
     attachments = MediaAttachmentSerializer(many=True, read_only=True)
     sender = UserSerializer(read_only=True)
+    reactions = MessageReactionSerializer(many=True, read_only=True)
     
     class Meta:
         model = Message
-        fields = ['id', 'conversation', 'sequence_number', 'sender', 'reply_to', 'ciphertext', 'nonce', 'signature', 'key_version', 'algorithm', 'is_edited', 'created_at', 'server_timestamp', 'attachments']
+        fields = ['id', 'conversation', 'sequence_number', 'sender', 'reply_to', 'ciphertext', 'nonce', 'signature', 'key_version', 'algorithm', 'is_edited', 'created_at', 'server_timestamp', 'attachments', 'reactions']
         read_only_fields = ['id', 'sequence_number', 'sender', 'server_timestamp']

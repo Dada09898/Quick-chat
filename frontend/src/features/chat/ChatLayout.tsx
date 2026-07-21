@@ -14,6 +14,7 @@ import { AnimatePresence } from 'framer-motion';
 
 const NewChatModal = React.lazy(() => import('./NewChatModal').then(module => ({ default: module.NewChatModal })));
 const RightPanel = React.lazy(() => import('./RightPanel').then(module => ({ default: module.RightPanel })));
+const ForwardModal = React.lazy(() => import('./ForwardModal').then(module => ({ default: module.ForwardModal })));
 
 export const ChatLayout: React.FC = () => {
   const [isMobileListOpen, setIsMobileListOpen] = useState(false);
@@ -178,6 +179,7 @@ export const ChatLayout: React.FC = () => {
           isOpen={isNewChatModalOpen}
           onClose={() => setIsNewChatModalOpen(false)}
         />
+        <ForwardModal />
       </React.Suspense>
     </div>
   );

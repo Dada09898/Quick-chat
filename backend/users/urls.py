@@ -6,6 +6,7 @@ from .views import (
     RegisterView, ChangePasswordView, PasswordResetView, EmailVerificationView,
     UserSearchView, FriendRequestCreateView, FriendRequestRespondView, ContactListView, PendingRequestsView
 )
+from .views_avatar import AvatarUploadView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -14,6 +15,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('logout/global/', GlobalLogoutView.as_view(), name='global_logout'),
     path('me/', CurrentUserView.as_view(), name='current_user'),
+    path('me/avatar/', AvatarUploadView.as_view(), name='avatar_upload'),
     path('password/change/', ChangePasswordView.as_view(), name='change_password'),
     path('password/reset/', PasswordResetView.as_view(), name='password_reset'),
     path('verify-email/', EmailVerificationView.as_view(), name='verify_email'),

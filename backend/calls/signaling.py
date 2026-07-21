@@ -13,7 +13,7 @@ class CallSignalingRouter:
         # and forwards events between devices of authorized members.
         
         session_id = payload.get('session_id')
-        target_device_id = payload.get('target_device_id') # If addressing a specific peer device
+        payload.get('target_device_id') # If addressing a specific peer device
 
         try:
             # Audit the event (never logging SDP or media metadata)

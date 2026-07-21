@@ -107,12 +107,12 @@ class UploadCompleteView(APIView):
         except Exception:
             return Response({'error': 'Internal error during assembly'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from rest_framework import viewsets, filters  # noqa: E402
-from rest_framework.decorators import action  # noqa: E402
-from .models import Conversation, ConversationMember, Message  # noqa: E402
-from .serializers import ConversationSerializer, MessageSerializer  # noqa: E402
-from .pagination import ConversationPagination, MessageCursorPagination  # noqa: E402
-from .services import ChatService  # noqa: E402
+from rest_framework import viewsets, filters
+from rest_framework.decorators import action
+from .models import Conversation, ConversationMember, Message
+from .serializers import ConversationSerializer, MessageSerializer
+from .pagination import ConversationPagination, MessageCursorPagination
+from .services import ChatService
 
 class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -189,8 +189,8 @@ class MessageViewSet(viewsets.ModelViewSet):
         if not ConversationMember.objects.filter(conversation_id=conversation_id, user=self.request.user).exists():
             return Message.objects.none()
             
-        # Optimize N+1 queries by prefetching sender profiles and attachments
-        return Message.objects.filter(conversation_id=conversation_id).select_related('sender').prefetch_related('attachments')
+        # Optimize N+1 queries by prefetching sender profiles, attachments, and reactions
+        return Message.objects.filter(conversation_id=conversation_id).select_related('sender').prefetch_related('attachments', 'reactions')
 
     def create(self, request, *args, **kwargs):
         conversation_id = request.data.get('conversation_id')

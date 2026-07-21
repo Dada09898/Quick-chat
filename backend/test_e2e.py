@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import uuid
 import asyncio
@@ -35,7 +34,7 @@ async def test_e2e_websockets():
     })
     assert res.status_code == 201, f"Failed to register User A: {res.text}"
     user_a_token = get_token(res)
-    user_a_id = res.json()['user']['id']
+    res.json()['user']['id']
     print("User A registered:", user_a_email)
 
     # 2. Register User B
@@ -52,7 +51,6 @@ async def test_e2e_websockets():
     print("User B registered:", user_b_email)
 
     headers_a = {"Authorization": f"Bearer {user_a_token}"}
-    headers_b = {"Authorization": f"Bearer {user_b_token}"}
 
     # 3. User A Creates Conversation
     res = requests.post(f"{BASE_URL}/api/chat/conversations/", json={}, headers=headers_a)

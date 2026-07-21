@@ -12,6 +12,8 @@ class ChatEventRouter:
             await ChatEventRouter.handle_message_send(consumer, payload, msg_id)
         elif event_type == 'message.edit':
             await ChatEventRouter.handle_message_edit(consumer, payload, msg_id)
+        elif event_type == 'message.reaction':
+            await ChatEventRouter.handle_message_reaction(consumer, payload, msg_id)
         elif event_type == 'message.delete':
             await ChatEventRouter.handle_message_delete(consumer, payload, msg_id)
         elif event_type in ['message.delivered', 'message.read']:
@@ -83,6 +85,25 @@ class ChatEventRouter:
         except Exception as e:
             logger.error(f"Message processing failed: {str(e)}")
             await consumer.send_error("Message processing failed")
+
+    @staticmethod
+    async def handle_message_reaction(consumer, payload, ack_id):
+        try:
+            result = await database_sync_to_async(ChatService.process_message_reaction)(
+                consumer.user,
+                payload
+            )
+            await consumer.send(text_data=json.dumps({'type': 'ack', 'id': ack_id, 'payload': {'status': 'ok'}}))
+            conversation_group = f"conversation_{payload.get('conversation_id')}"
+            await consumer.channel_layer.group_send(conversation_group, {
+                'type': 'forward_event',
+                'sender_id': str(consumer.user.id),
+                'event_type': 'message.reaction',
+                'payload': result
+            })
+        except Exception as e:
+            logger.error(f"Message reaction processing failed: {str(e)}")
+            await consumer.send_error("Message reaction processing failed")
 
     @staticmethod
     async def handle_message_edit(consumer, payload, ack_id):

@@ -137,6 +137,10 @@ export class RealtimeClient {
         case 'message.delete':
           useChatStore.getState().upsertMessage({ ...payload, deleted_at: new Date().toISOString() });
           break;
+        case 'message.reaction':
+          const emoji = payload.reaction ? decodeURIComponent(escape(atob(payload.reaction))) : null;
+          useChatStore.getState().updateMessageReactions(payload.message_id, payload.user_id, emoji);
+          break;
         case 'conversation.delta':
         case 'conversation.sync_response':
           payload.messages.forEach((msg: any) => {

@@ -167,6 +167,34 @@ class ChatService:
         return msg
 
     @staticmethod
+    def process_message_reaction(user, data):
+        from .models import Message, MessageReaction
+
+        msg_id = data.get('message_id')
+        msg = Message.objects.get(id=msg_id)
+
+        reaction_ciphertext = data.get('reaction_ciphertext')
+
+        if not reaction_ciphertext:
+            # Delete reaction
+            MessageReaction.objects.filter(message=msg, user=user).delete()
+            return {'message_id': msg_id, 'user_id': str(user.id), 'action': 'removed'}
+
+        # Create or update reaction
+        reaction, created = MessageReaction.objects.update_or_create(
+            message=msg,
+            user=user,
+            defaults={
+                'reaction_ciphertext': reaction_ciphertext,
+                'nonce': data.get('nonce', 'pending'),
+                'signature': data.get('signature', 'UNVERIFIED'),
+                'key_version': data.get('key_version', 1),
+                'algorithm': data.get('algorithm', 'AES-256-GCM'),
+            }
+        )
+        return {'message_id': msg_id, 'user_id': str(user.id), 'reaction': reaction_ciphertext, 'action': 'added'}
+
+    @staticmethod
     def process_message_delete(user, data):
         from .models import Message
         from django.utils import timezone

@@ -16,6 +16,8 @@ export interface ChatMessage {
   status: 'queued' | 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | 'expired';
   decrypted_text?: string; // Stored only in memory!
   media_attachments?: Array<{ id: string, url: string, type: string, media_key?: string }>;
+  reply_to?: string | null;
+  reactions?: Array<{ user: string, reaction_ciphertext: string, reaction_plaintext?: string }>;
 }
 
 interface ChatState {
@@ -27,8 +29,14 @@ interface ChatState {
   conversations: any[];
   drafts: Record<string, string>;
   isRightPanelOpen: boolean;
+  replyingTo: string | null;
+  forwardingMessageIds: string[];
+  editingMessageId: string | null;
   
   setActiveConversation: (id: string | null) => void;
+  setReplyingTo: (id: string | null) => void;
+  setForwardingMessageIds: (ids: string[]) => void;
+  setEditingMessageId: (id: string | null) => void;
   setConversations: (convs: any[]) => void;
   toggleMessageSelection: (id: string) => void;
   clearSelection: () => void;
@@ -38,6 +46,7 @@ interface ChatState {
   enqueueMessage: (msg: ChatMessage) => void;
   removeFromOutbox: (id: string) => void;
   updateMessageStatus: (id: string, status: ChatMessage['status'], sequence?: number) => void;
+  updateMessageReactions: (messageId: string, userId: string, reaction: string | null) => void;
   setDraft: (conversationId: string, text: string) => void;
   toggleRightPanel: () => void;
 }
@@ -51,8 +60,14 @@ export const useChatStore = create<ChatState>((set) => ({
   bookmarkedMessageIds: [],
   drafts: {},
   isRightPanelOpen: false,
+  replyingTo: null,
+  forwardingMessageIds: [],
+  editingMessageId: null,
   
-  setActiveConversation: (id) => set({ activeConversationId: id, selectedMessageIds: [], isRightPanelOpen: false }),
+  setActiveConversation: (id) => set({ activeConversationId: id, selectedMessageIds: [], isRightPanelOpen: false, replyingTo: null, editingMessageId: null }),
+  setReplyingTo: (id) => set({ replyingTo: id }),
+  setForwardingMessageIds: (ids) => set({ forwardingMessageIds: ids }),
+  setEditingMessageId: (id) => set({ editingMessageId: id }),
   setConversations: (convs) => set({ conversations: convs }),
   
   toggleMessageSelection: (id) => set((state) => ({
@@ -90,6 +105,8 @@ export const useChatStore = create<ChatState>((set) => ({
   removeFromOutbox: (id) => set((state) => ({
     outbox: state.outbox.filter(m => m.id !== id)
   })),
+
+  toggleRightPanel: () => set((state) => ({ isRightPanelOpen: !state.isRightPanelOpen })),
   
   updateMessageStatus: (id, status, sequence) => set((state) => {
     const msg = state.messages[id];
@@ -103,6 +120,31 @@ export const useChatStore = create<ChatState>((set) => ({
           status, 
           sequence_number: sequence ?? msg.sequence_number 
         }
+      }
+    };
+  }),
+
+  updateMessageReactions: (messageId, userId, reaction) => set((state) => {
+    const msg = state.messages[messageId];
+    if (!msg) return state;
+
+    let newReactions = msg.reactions ? [...msg.reactions] : [];
+    if (reaction === null) {
+      newReactions = newReactions.filter(r => r.user !== userId);
+    } else {
+      const reaction_ciphertext = btoa(unescape(encodeURIComponent(reaction)));
+      const existingIdx = newReactions.findIndex(r => r.user === userId);
+      if (existingIdx >= 0) {
+        newReactions[existingIdx] = { user: userId, reaction_ciphertext, reaction_plaintext: reaction };
+      } else {
+        newReactions.push({ user: userId, reaction_ciphertext, reaction_plaintext: reaction });
+      }
+    }
+
+    return {
+      messages: {
+        ...state.messages,
+        [messageId]: { ...msg, reactions: newReactions }
       }
     };
   })
