@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { MessageBubble } from './MessageBubble';
 import { useRealtimeStore } from '../../realtime/store';
 import { apiClient } from '../../lib/api';
-import { decodeCiphertext } from '../../realtime/socket';
+import { decodeCiphertext } from '../../utils/cryptoUtils';
 
 export const MessageList: React.FC = () => {
   const messagesRecord = useChatStore(state => state.messages);

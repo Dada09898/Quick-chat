@@ -1,28 +1,9 @@
 import { useRealtimeStore } from './store';
 import { useChatStore } from '../features/chat/chatStore';
 import { useAuthStore } from '../store/authStore';
+import { decodeCiphertext } from '../utils/cryptoUtils';
 
-/**
- * Decode ciphertext that was encoded as btoa(unescape(encodeURIComponent(text))).
- * This supports full Unicode. When real E2EE is implemented, replace this with
- * actual AES-256-GCM decryption.
- */
-export function decodeCiphertext(ciphertext: string): string {
-  if (!ciphertext) return '';
-  try {
-    // Attempt JSON parse in case it's an EncryptedMessage payload
-    if (ciphertext.trim().startsWith('{')) {
-      const parsed = JSON.parse(ciphertext);
-      if (parsed.sessionId && parsed.payload) {
-        // Will be decrypted asynchronously by SessionManager in UI/store flow
-        return `[Encrypted Message]`;
-      }
-    }
-    return decodeURIComponent(escape(atob(ciphertext)));
-  } catch {
-    try { return atob(ciphertext); } catch { return ciphertext; }
-  }
-}
+export { decodeCiphertext };
 
 export class RealtimeClient {
   private ws: WebSocket | null = null;
