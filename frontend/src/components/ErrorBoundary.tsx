@@ -36,10 +36,24 @@ export class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.message || 'An unexpected error occurred while loading the application session.'}
             </p>
             <button
-              onClick={() => window.location.reload()}
-              className="w-full py-3 bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] font-semibold rounded-xl transition"
+              onClick={() => {
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for (let registration of registrations) {
+                      registration.unregister();
+                    }
+                  });
+                }
+                if ('caches' in window) {
+                  caches.keys().then(names => {
+                    for (let name of names) caches.delete(name);
+                  });
+                }
+                window.location.href = window.location.origin + '?v=' + Date.now();
+              }}
+              className="w-full py-3 bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] font-semibold rounded-xl transition cursor-pointer"
             >
-              Reload Quick Chat
+              Clear Cache & Reload Quick Chat
             </button>
           </div>
         </div>
