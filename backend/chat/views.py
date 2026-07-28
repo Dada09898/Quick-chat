@@ -18,7 +18,11 @@ class UploadStartView(APIView):
         mime_type = request.data.get('mime_type', 'application/octet-stream')
         file_size = request.data.get('file_size', 0)
         
-        ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'video/mp4', 'audio/mpeg']
+        ALLOWED_MIME_TYPES = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+            'application/pdf', 'video/mp4', 'video/webm',
+            'audio/mpeg', 'audio/mp3', 'audio/webm', 'audio/ogg', 'audio/wav', 'audio/mp4'
+        ]
         MAX_FILE_SIZE = 50 * 1024 * 1024 # 50MB
         
         if mime_type not in ALLOWED_MIME_TYPES:
