@@ -12,14 +12,14 @@ import { useCallStore } from '../calls/CallStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { AnimatePresence } from 'framer-motion';
 
-const NewChatModal = React.lazy(() => import('./NewChatModal').then(module => ({ default: module.NewChatModal })));
-const RightPanel = React.lazy(() => import('./RightPanel').then(module => ({ default: module.RightPanel })));
-const ForwardModal = React.lazy(() => import('./ForwardModal').then(module => ({ default: module.ForwardModal })));
-const ChatSearch = React.lazy(() => import('./ChatSearch').then(module => ({ default: module.ChatSearch })));
-const CameraModal = React.lazy(() => import('./CameraModal').then(module => ({ default: module.CameraModal })));
-const ChatCustomization = React.lazy(() => import('./ChatCustomization').then(module => ({ default: module.ChatCustomization })));
-const GroupCreateModal = React.lazy(() => import('./GroupCreateModal').then(module => ({ default: module.GroupCreateModal })));
-const GroupInfoPanel = React.lazy(() => import('./GroupInfoPanel').then(module => ({ default: module.GroupInfoPanel })));
+import { NewChatModal } from './NewChatModal';
+import { RightPanel } from './RightPanel';
+import { ForwardModal } from './ForwardModal';
+import { ChatSearch } from './ChatSearch';
+import { CameraModal } from './CameraModal';
+import { ChatCustomization } from './ChatCustomization';
+import { GroupCreateModal } from './GroupCreateModal';
+import { GroupInfoPanel } from './GroupInfoPanel';
 
 export const ChatLayout: React.FC = () => {
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);

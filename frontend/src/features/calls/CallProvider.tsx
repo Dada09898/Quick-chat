@@ -71,15 +71,24 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
       const { candidate } = (e as CustomEvent).detail;
       pcManager.addIceCandidate(candidate);
     };
+
+    const handleCallEnded = () => {
+      pcManager.close();
+      mediaManager.stopAll();
+      endCall();
+    };
+
     // Use window event listeners which are triggered by socket.ts
     window.addEventListener('webrtc:offer', handleOffer);
     window.addEventListener('webrtc:answer', handleAnswer);
     window.addEventListener('webrtc:ice_candidate', handleIceCandidate);
+    window.addEventListener('webrtc:call_ended', handleCallEnded);
 
     return () => {
       window.removeEventListener('webrtc:offer', handleOffer);
       window.removeEventListener('webrtc:answer', handleAnswer);
       window.removeEventListener('webrtc:ice_candidate', handleIceCandidate);
+      window.removeEventListener('webrtc:call_ended', handleCallEnded);
     };
   }, []);
 

@@ -206,13 +206,7 @@ export class RealtimeClient {
           });
           break;
         case 'call.offer':
-          import('../features/calls/CallStore').then(({ useCallStore }) => {
-            useCallStore.getState().setSession(payload.session_id, payload.caller_id);
-            useCallStore.getState().setState('RINGING');
-            import('../features/calls/PeerConnectionManager').then(({ PeerConnectionManager }) => {
-              window.dispatchEvent(new CustomEvent('webrtc:offer', { detail: payload }));
-            });
-          });
+          window.dispatchEvent(new CustomEvent('webrtc:offer', { detail: payload }));
           break;
         case 'call.answer':
           window.dispatchEvent(new CustomEvent('webrtc:answer', { detail: payload }));
@@ -222,9 +216,7 @@ export class RealtimeClient {
           break;
         case 'call.reject':
         case 'call.end':
-          import('../features/calls/CallStore').then(({ useCallStore }) => {
-            useCallStore.getState().endCall();
-          });
+          window.dispatchEvent(new CustomEvent('webrtc:call_ended', { detail: payload }));
           break;
         case 'error':
           console.error('Realtime Error:', payload.message);

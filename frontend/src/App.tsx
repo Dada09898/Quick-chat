@@ -6,13 +6,11 @@ import { RealtimeProvider } from './realtime/RealtimeProvider'
 import { useAuthStore } from './store/authStore'
 import { Suspense, lazy } from 'react'
 
-// Code Splitting (Lazy Loading)
-const ChatLayout = lazy(() => import('./features/chat/ChatLayout').then(module => ({ default: module.ChatLayout })))
-const LoginPage = lazy(() => import('./features/auth/AuthPages').then(module => ({ default: module.LoginPage })))
-const RegisterPage = lazy(() => import('./features/auth/AuthPages').then(module => ({ default: module.RegisterPage })))
-const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPasswordPage').then(module => ({ default: module.ForgotPasswordPage })))
-const ProfileSettings = lazy(() => import('./features/profile/ProfileSettings').then(module => ({ default: module.ProfileSettings })))
-const CallProvider = lazy(() => import('./features/calls/CallProvider').then(module => ({ default: module.CallProvider })))
+import { ChatLayout } from './features/chat/ChatLayout'
+import { LoginPage, RegisterPage } from './features/auth/AuthPages'
+import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage'
+import { ProfileSettings } from './features/profile/ProfileSettings'
+import { CallProvider } from './features/calls/CallProvider'
 
 const queryClient = new QueryClient()
 
