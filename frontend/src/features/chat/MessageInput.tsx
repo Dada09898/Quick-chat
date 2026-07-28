@@ -431,6 +431,7 @@ export const MessageInput: React.FC = () => {
           value={text}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onFocus={() => { setShowEmojiPicker(false); setShowAttachmentMenu(false); }}
           placeholder="Type a message"
           rows={1}
