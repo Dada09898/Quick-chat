@@ -80,10 +80,36 @@ export class RealtimeClient {
     }));
   }
 
-  private handleOpen() {
+  private async handleOpen() {
     this.reconnectAttempts = 0;
     useRealtimeStore.getState().setConnectionState(true, false, null);
     this.startHeartbeat();
+    await this.flushOutbox();
+  }
+
+  public async flushOutbox() {
+    try {
+      const { offlineDB } = await import('../store/offlineStore');
+      const outboxMessages = await offlineDB.getOutboxMessages();
+      for (const msg of outboxMessages) {
+        this.send('message.send', {
+          id: msg.id,
+          conversation_id: msg.conversationId,
+          ciphertext: msg.ciphertext,
+          nonce: msg.nonce,
+          signature: msg.signature,
+          key_version: msg.keyVersion,
+          algorithm: msg.algorithm,
+          created_at: msg.createdAt,
+          reply_to_id: msg.replyToId,
+          media_id: msg.mediaId,
+          media_key: msg.mediaKey
+        }, msg.id);
+        useChatStore.getState().removeFromOutbox(msg.id);
+      }
+    } catch (err) {
+      console.error('Failed to flush outbox:', err);
+    }
   }
 
   private handleMessage(event: MessageEvent) {
@@ -94,16 +120,37 @@ export class RealtimeClient {
       switch (type) {
         case 'presence.online':
         case 'presence.offline':
+        case 'presence.away':
+        case 'presence.busy':
+        case 'presence.dnd':
+          const statusVal = type.replace('presence.', '') as any;
+          if (payload.user_id) {
+            useRealtimeStore.getState().updateUserPresence(payload.user_id, {
+              status: statusVal,
+              lastSeen: payload.timestamp || Date.now()
+            });
+          }
           useRealtimeStore.getState().setRemotePresence(
-            type === 'presence.online' ? 'online' : 'offline', 
+            statusVal, 
             payload.timestamp || Date.now()
           );
           break;
+        case 'activity.change':
+          if (payload.user_id) {
+            useRealtimeStore.getState().setUserActivity(payload.user_id, payload.activity || 'idle');
+          }
+          break;
         case 'typing.start':
-          useRealtimeStore.getState().setRemoteTyping(true);
+          if (payload.user_id && payload.user_id !== useAuthStore.getState().user?.id) {
+            useRealtimeStore.getState().setUserActivity(payload.user_id, 'typing');
+            useRealtimeStore.getState().setRemoteTyping(true);
+          }
           break;
         case 'typing.stop':
-          useRealtimeStore.getState().setRemoteTyping(false);
+          if (payload.user_id && payload.user_id !== useAuthStore.getState().user?.id) {
+            useRealtimeStore.getState().setUserActivity(payload.user_id, 'idle');
+            useRealtimeStore.getState().setRemoteTyping(false);
+          }
           break;
         case 'ack':
           // The backend sends back an ack when a message is processed
@@ -112,7 +159,6 @@ export class RealtimeClient {
           }
           break;
         case 'message.new':
-          // Decrypt payload here in a real E2EE system, for now decode base64 stub
           useChatStore.getState().upsertMessage({
             ...payload,
             status: 'delivered',
@@ -156,9 +202,6 @@ export class RealtimeClient {
             useCallStore.getState().setSession(payload.session_id, payload.caller_id);
             useCallStore.getState().setState('RINGING');
             import('../features/calls/PeerConnectionManager').then(({ PeerConnectionManager }) => {
-              // We need a singleton or store access to the PC Manager. 
-              // Since it's instantiated in CallProvider, we should ideally route it there.
-              // For simplicity, we can emit a custom event or let CallProvider handle signaling via store.
               window.dispatchEvent(new CustomEvent('webrtc:offer', { detail: payload }));
             });
           });
@@ -174,26 +217,6 @@ export class RealtimeClient {
           import('../features/calls/CallStore').then(({ useCallStore }) => {
             useCallStore.getState().endCall();
           });
-          break;
-        case 'typing.start':
-          if (payload.user_id !== useAuthStore.getState().user?.id) {
-            useRealtimeStore.getState().setRemoteTyping(true);
-          }
-          break;
-        case 'typing.stop':
-          if (payload.user_id !== useAuthStore.getState().user?.id) {
-            useRealtimeStore.getState().setRemoteTyping(false);
-          }
-          break;
-        case 'presence.online':
-          if (payload.user_id !== useAuthStore.getState().user?.id) {
-            useRealtimeStore.getState().setRemotePresence('online', payload.timestamp);
-          }
-          break;
-        case 'presence.offline':
-          if (payload.user_id !== useAuthStore.getState().user?.id) {
-            useRealtimeStore.getState().setRemotePresence('offline', payload.timestamp);
-          }
           break;
         case 'error':
           console.error('Realtime Error:', payload.message);

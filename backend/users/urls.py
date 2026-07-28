@@ -7,6 +7,7 @@ from .views import (
     UserSearchView, FriendRequestCreateView, FriendRequestRespondView, ContactListView, PendingRequestsView
 )
 from .views_avatar import AvatarUploadView
+from .views_keybundle import KeyBundleUploadView, KeyBundleFetchView, PreKeyCountView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -24,6 +25,9 @@ urlpatterns = [
     path('devices/', DeviceListView.as_view(), name='device_list'),
     path('devices/register/', DeviceRegisterView.as_view(), name='device_register'),
     path('devices/<uuid:pk>/', DeviceDetailView.as_view(), name='device_detail'),
+    path('devices/keys/upload/', KeyBundleUploadView.as_view(), name='key_bundle_upload'),
+    path('devices/keys/count/', PreKeyCountView.as_view(), name='prekey_count'),
+    path('devices/keys/<uuid:user_id>/', KeyBundleFetchView.as_view(), name='key_bundle_fetch'),
     path('sessions/', SessionListView.as_view(), name='session_list'),
     path('search/', UserSearchView.as_view(), name='user_search'),
     path('friends/requests/', PendingRequestsView.as_view(), name='pending_requests'),

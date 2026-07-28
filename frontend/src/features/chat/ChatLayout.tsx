@@ -18,12 +18,21 @@ const ForwardModal = React.lazy(() => import('./ForwardModal').then(module => ({
 const ChatSearch = React.lazy(() => import('./ChatSearch').then(module => ({ default: module.ChatSearch })));
 const CameraModal = React.lazy(() => import('./CameraModal').then(module => ({ default: module.CameraModal })));
 const ChatCustomization = React.lazy(() => import('./ChatCustomization').then(module => ({ default: module.ChatCustomization })));
+const GroupCreateModal = React.lazy(() => import('./GroupCreateModal').then(module => ({ default: module.GroupCreateModal })));
+const GroupInfoPanel = React.lazy(() => import('./GroupInfoPanel').then(module => ({ default: module.GroupInfoPanel })));
 
 export const ChatLayout: React.FC = () => {
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+
+  // Hydrate offline store on mount
+  React.useEffect(() => {
+    useChatStore.getState().hydrateFromOfflineStore().catch(console.error);
+  }, []);
   
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const conversations = useChatStore(state => state.conversations);
@@ -78,7 +87,14 @@ export const ChatLayout: React.FC = () => {
             
             <div 
               className="flex items-center gap-3 cursor-pointer group"
-              onClick={() => activeConversationId && useChatStore.getState().toggleRightPanel()}
+              onClick={() => {
+                if (!activeConversationId) return;
+                if (activeConversation && !activeConversation.is_direct) {
+                  setIsGroupInfoOpen(!isGroupInfoOpen);
+                } else {
+                  useChatStore.getState().toggleRightPanel();
+                }
+              }}
             >
               {activeConversationId && (
                 <Avatar name={displayName} url={avatarUrl} size="md" className="group-hover:opacity-90 transition-opacity" />
@@ -207,6 +223,18 @@ export const ChatLayout: React.FC = () => {
             setIsCameraOpen(false);
           }}
         />
+        <GroupCreateModal
+          isOpen={isGroupModalOpen}
+          onClose={() => setIsGroupModalOpen(false)}
+        />
+        <AnimatePresence>
+          {isGroupInfoOpen && (
+            <GroupInfoPanel
+              isOpen={isGroupInfoOpen}
+              onClose={() => setIsGroupInfoOpen(false)}
+            />
+          )}
+        </AnimatePresence>
         <AnimatePresence>
           {isCustomizeOpen && (
             <ChatCustomization isOpen={isCustomizeOpen} onClose={() => setIsCustomizeOpen(false)} />
