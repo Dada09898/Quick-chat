@@ -170,14 +170,20 @@ class KeyBundleFetchView(APIView):
             metadata={'device_count': len(bundles)}
         )
         
-        # Check if any device is running low on pre-keys
+        # Check if any device is running low on pre-keys and log low_prekey_alert
         for device in devices:
             remaining = OneTimePreKey.objects.filter(
                 device=device, is_consumed=False
             ).count()
             if remaining < 10:
-                # TODO: Send push notification to device to replenish
-                pass
+                AuditLog.objects.create(
+                    user=device.user,
+                    action='key_bundle_upload',
+                    target_device=device,
+                    ip_address=self._get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                    metadata={'warning': 'low_prekey_count', 'remaining': remaining}
+                )
         
         return Response({'bundles': bundles})
     

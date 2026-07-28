@@ -17,7 +17,6 @@ const CallProvider = lazy(() => import('./features/calls/CallProvider').then(mod
 const queryClient = new QueryClient()
 
 function App() {
-  console.log("DEBUG: App mounted");
   const { setTheme } = useThemeStore()
 
   useEffect(() => {
@@ -62,7 +61,6 @@ function App() {
                 isAuthenticated ? (
                   <RealtimeProvider>
                     <CallProvider>
-                      {console.log("DEBUG: Route '/' render")}
                       <ChatLayout />
                     </CallProvider>
                   </RealtimeProvider>
