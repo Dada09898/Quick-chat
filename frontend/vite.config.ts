@@ -52,6 +52,30 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    target: 'es2022',
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('lucide-react') || id.includes('framer-motion')) {
+              return 'vendor-ui';
+            }
+            if (id.includes('zustand') || id.includes('idb') || id.includes('@tanstack')) {
+              return 'vendor-state';
+            }
+            if (id.includes('emoji-picker-react')) {
+              return 'vendor-emoji';
+            }
+          }
+        }
+      }
+    }
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/vitest.setup.ts'],
