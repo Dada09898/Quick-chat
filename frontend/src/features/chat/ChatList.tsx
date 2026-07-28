@@ -30,7 +30,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
       }
     };
     fetchConversations();
-  }, [setConversations]); 
+  }, []); 
 
   const handleSelect = (id: string) => {
     setActiveConversation(id);
