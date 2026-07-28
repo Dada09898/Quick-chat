@@ -1,16 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useCallStore } from './CallStore';
 import { MediaManager } from './MediaManager';
 import { PeerConnectionManager } from './PeerConnectionManager';
 import { useRealtimeStore } from '../../realtime/store';
 import { useRealtime } from '../../realtime/RealtimeProvider';
+import { wsClient } from '../../realtime/socket';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const mediaManager = new MediaManager();
-const pcManager = new PeerConnectionManager();
-
 export const CallProvider = ({ children }: { children: React.ReactNode }) => {
+  const mediaManager = useMemo(() => new MediaManager(), []);
+  const pcManager = useMemo(() => new PeerConnectionManager(), []);
+
   const { state, sessionId, isMuted, isVideoOn, toggleMute, toggleVideo, endCall, setState } = useCallStore();
   const { sendEvent } = useRealtime();
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -113,17 +114,17 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   const handleEndCall = () => {
     pcManager.close();
     mediaManager.stopAll();
-    realtimeSocket.send('call.end', { session_id: sessionId });
+    wsClient.send('call.end', { session_id: sessionId });
     endCall();
   };
 
   const handleAcceptCall = () => {
     setState('CONNECTING');
-    realtimeSocket.send('call.accept', { session_id: sessionId });
+    wsClient.send('call.accept', { session_id: sessionId });
   };
 
   const handleRejectCall = () => {
-    realtimeSocket.send('call.reject', { session_id: sessionId });
+    wsClient.send('call.reject', { session_id: sessionId });
     endCall();
   };
 

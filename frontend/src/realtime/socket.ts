@@ -283,3 +283,4 @@ export class RealtimeClient {
 
 // Singleton instance
 export const wsClient = new RealtimeClient();
+export const realtimeSocket = wsClient;
