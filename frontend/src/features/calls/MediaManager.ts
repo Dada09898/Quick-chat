@@ -31,6 +31,19 @@ export class MediaManager {
     }
   }
 
+  async requestDisplayMedia(): Promise<MediaStream | null> {
+    try {
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false
+      });
+      return displayStream;
+    } catch (e) {
+      console.error("Screen sharing cancelled or unavailable.", e);
+      return null;
+    }
+  }
+
   getStream(): MediaStream | null {
     return this.localStream;
   }
