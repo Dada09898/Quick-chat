@@ -325,7 +325,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
             {media.type === 'audio' ? (
               <AudioBubble url={media.url} isOwn={isOwn} />
             ) : media.type === 'image' ? (
-              <img src={media.url || `https://placehold.co/400x300?text=Encrypted+Image`} alt="Attachment" className="w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" decoding="async" />
+              <img src={media.url || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23202c33"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%238696a0" font-family="sans-serif" font-size="16">Encrypted Image</text></svg>`} alt="Attachment" className="w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" decoding="async" />
             ) : (
               <video src={media.url} controls className="w-full h-auto" preload="metadata" />
             )}

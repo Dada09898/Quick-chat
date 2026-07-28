@@ -8,10 +8,18 @@ import { useAuthStore } from '../store/authStore';
  * actual AES-256-GCM decryption.
  */
 export function decodeCiphertext(ciphertext: string): string {
+  if (!ciphertext) return '';
   try {
+    // Attempt JSON parse in case it's an EncryptedMessage payload
+    if (ciphertext.trim().startsWith('{')) {
+      const parsed = JSON.parse(ciphertext);
+      if (parsed.sessionId && parsed.payload) {
+        // Will be decrypted asynchronously by SessionManager in UI/store flow
+        return `[Encrypted Message]`;
+      }
+    }
     return decodeURIComponent(escape(atob(ciphertext)));
   } catch {
-    // Fallback for plain ASCII base64
     try { return atob(ciphertext); } catch { return ciphertext; }
   }
 }

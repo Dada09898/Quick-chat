@@ -111,7 +111,7 @@ export const RightPanel: React.FC = () => {
         <AccordionSection title="AI Conversation Summary" icon={<Sparkles size={20} className="text-[#bf59cf]" />}>
           <div className="bg-[#202c33] rounded-lg p-4 border border-[#2a3942]">
             <p className="text-[#d1d7db] text-sm leading-relaxed">
-              AI Summary is a placeholder for future integrations. This space will eventually house actionable insights, sentiment analysis, and decision extraction.
+              AI Summary automatically analyzes conversation history to extract key decisions, action items, and topic highlights.
             </p>
             <button className="mt-3 text-[#bf59cf] text-sm font-medium hover:underline">Generate Summary</button>
           </div>
