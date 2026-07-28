@@ -20,8 +20,8 @@ function App() {
   const { setTheme } = useThemeStore()
 
   useEffect(() => {
-    // Initialize theme
-    setTheme('system')
+    // Initialize theme to dark by default
+    setTheme('dark')
   }, [setTheme])
 
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
