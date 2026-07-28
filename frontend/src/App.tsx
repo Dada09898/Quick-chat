@@ -22,16 +22,16 @@ function App() {
   useEffect(() => {
     // Initialize theme to dark by default
     setTheme('dark')
-  }, [setTheme])
+  }, [])
 
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const isRestoring = useAuthStore(state => state.isRestoring);
   const restoreSession = useAuthStore(state => state.restoreSession);
 
-  // Restore session from HttpOnly cookies on app mount
+  // Restore session from HttpOnly cookies on app mount (only once)
   useEffect(() => {
     restoreSession();
-  }, [restoreSession]);
+  }, []);
 
   // Show loading while checking session — prevents flash of login page
   if (isRestoring) {
