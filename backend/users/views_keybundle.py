@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, serializers
+from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db import transaction
 
@@ -30,6 +31,7 @@ class KeyBundleUploadView(APIView):
     
     POST /api/auth/devices/keys/upload/
     """
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         serializer = KeyBundleUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -109,6 +111,8 @@ class KeyBundleFetchView(APIView):
     Returns the identity keys, signed pre-key, and one one-time pre-key
     (if available) for the target user's device.
     """
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, user_id):
         devices = Device.objects.filter(
             user_id=user_id
@@ -189,6 +193,8 @@ class PreKeyCountView(APIView):
     
     GET /api/auth/devices/keys/count/?device_id=<uuid>
     """
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         device_id = request.query_params.get('device_id')
         if not device_id:
