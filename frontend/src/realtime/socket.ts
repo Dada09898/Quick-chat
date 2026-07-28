@@ -273,6 +273,22 @@ export class RealtimeClient {
   }
 }
 
-// Singleton instance
-export const wsClient = new RealtimeClient();
+let _wsClientInstance: RealtimeClient | null = null;
+
+export function getWsClient(): RealtimeClient {
+  if (!_wsClientInstance) {
+    _wsClientInstance = new RealtimeClient();
+  }
+  return _wsClientInstance;
+}
+
+// Singleton Proxy wrapper for lazy initialization
+export const wsClient = new Proxy({} as RealtimeClient, {
+  get(_, prop) {
+    const instance = getWsClient() as any;
+    const value = instance[prop];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  }
+});
+
 export const realtimeSocket = wsClient;

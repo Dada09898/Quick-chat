@@ -145,150 +145,174 @@ async function getOfflineDB(): Promise<IDBPDatabase<OfflineDB>> {
   return dbInstance;
 }
 
-export const offlineDB = {
-  // ===== MESSAGES =====
-  async cacheMessage(msg: CachedMessage): Promise<void> {
-    const db = await getOfflineDB();
-    await db.put('messages', msg);
-  },
+// ===== MESSAGES =====
+export async function cacheMessage(msg: CachedMessage): Promise<void> {
+  const db = await getOfflineDB();
+  await db.put('messages', msg);
+}
 
-  async cacheMessages(msgs: CachedMessage[]): Promise<void> {
-    const db = await getOfflineDB();
-    const tx = db.transaction('messages', 'readwrite');
-    await Promise.all([
-      ...msgs.map(m => tx.store.put(m)),
-      tx.done
-    ]);
-  },
+export async function cacheMessages(msgs: CachedMessage[]): Promise<void> {
+  const db = await getOfflineDB();
+  const tx = db.transaction('messages', 'readwrite');
+  await Promise.all([
+    ...msgs.map(m => tx.store.put(m)),
+    tx.done
+  ]);
+}
 
-  async getMessagesForConversation(conversationId: string): Promise<CachedMessage[]> {
-    const db = await getOfflineDB();
-    return db.getAllFromIndex('messages', 'by-conversation', conversationId);
-  },
+export async function getMessagesForConversation(conversationId: string): Promise<CachedMessage[]> {
+  const db = await getOfflineDB();
+  return db.getAllFromIndex('messages', 'by-conversation', conversationId);
+}
 
-  async getMessage(id: string): Promise<CachedMessage | undefined> {
-    const db = await getOfflineDB();
-    return db.get('messages', id);
-  },
+export async function getMessage(id: string): Promise<CachedMessage | undefined> {
+  const db = await getOfflineDB();
+  return db.get('messages', id);
+}
 
-  async deleteMessage(id: string): Promise<void> {
-    const db = await getOfflineDB();
-    await db.delete('messages', id);
-  },
+export async function deleteMessage(id: string): Promise<void> {
+  const db = await getOfflineDB();
+  await db.delete('messages', id);
+}
 
-  // ===== OUTBOX =====
-  async enqueueOutbox(msg: OutboxMessage): Promise<void> {
-    const db = await getOfflineDB();
+// ===== OUTBOX =====
+export async function enqueueOutbox(msg: OutboxMessage): Promise<void> {
+  const db = await getOfflineDB();
+  await db.put('outbox', msg);
+}
+
+export async function getOutboxMessages(): Promise<OutboxMessage[]> {
+  const db = await getOfflineDB();
+  return db.getAll('outbox');
+}
+
+export async function removeFromOutbox(id: string): Promise<void> {
+  const db = await getOfflineDB();
+  await db.delete('outbox', id);
+}
+
+export async function updateOutboxRetry(id: string): Promise<void> {
+  const db = await getOfflineDB();
+  const msg = await db.get('outbox', id);
+  if (msg) {
+    msg.retryCount += 1;
+    msg.lastRetryAt = Date.now();
     await db.put('outbox', msg);
-  },
-
-  async getOutboxMessages(): Promise<OutboxMessage[]> {
-    const db = await getOfflineDB();
-    return db.getAll('outbox');
-  },
-
-  async removeFromOutbox(id: string): Promise<void> {
-    const db = await getOfflineDB();
-    await db.delete('outbox', id);
-  },
-
-  async updateOutboxRetry(id: string): Promise<void> {
-    const db = await getOfflineDB();
-    const msg = await db.get('outbox', id);
-    if (msg) {
-      msg.retryCount += 1;
-      msg.lastRetryAt = Date.now();
-      await db.put('outbox', msg);
-    }
-  },
-
-  async clearOutbox(): Promise<void> {
-    const db = await getOfflineDB();
-    await db.clear('outbox');
-  },
-
-  // ===== CONVERSATIONS =====
-  async cacheConversation(conv: CachedConversation): Promise<void> {
-    const db = await getOfflineDB();
-    await db.put('conversations', conv);
-  },
-
-  async cacheConversations(convs: CachedConversation[]): Promise<void> {
-    const db = await getOfflineDB();
-    const tx = db.transaction('conversations', 'readwrite');
-    await Promise.all([
-      ...convs.map(c => tx.store.put(c)),
-      tx.done
-    ]);
-  },
-
-  async getAllConversations(): Promise<CachedConversation[]> {
-    const db = await getOfflineDB();
-    return db.getAll('conversations');
-  },
-
-  async getConversation(id: string): Promise<CachedConversation | undefined> {
-    const db = await getOfflineDB();
-    return db.get('conversations', id);
-  },
-
-  // ===== DRAFTS =====
-  async saveDraft(draft: CachedDraft): Promise<void> {
-    const db = await getOfflineDB();
-    await db.put('drafts', draft);
-  },
-
-  async getDraft(conversationId: string): Promise<CachedDraft | undefined> {
-    const db = await getOfflineDB();
-    return db.get('drafts', conversationId);
-  },
-
-  async deleteDraft(conversationId: string): Promise<void> {
-    const db = await getOfflineDB();
-    await db.delete('drafts', conversationId);
-  },
-
-  async getAllDrafts(): Promise<CachedDraft[]> {
-    const db = await getOfflineDB();
-    return db.getAll('drafts');
-  },
-
-  // ===== MEDIA CACHE =====
-  async cacheMedia(media: CachedMedia): Promise<void> {
-    const db = await getOfflineDB();
-    await db.put('media', media);
-  },
-
-  async getCachedMedia(id: string): Promise<CachedMedia | undefined> {
-    const db = await getOfflineDB();
-    return db.get('media', id);
-  },
-
-  async evictExpiredMedia(): Promise<number> {
-    const db = await getOfflineDB();
-    const now = Date.now();
-    const tx = db.transaction('media', 'readwrite');
-    const index = tx.store.index('by-expiry');
-    let cursor = await index.openCursor(IDBKeyRange.upperBound(now));
-    let evicted = 0;
-    while (cursor) {
-      await cursor.delete();
-      evicted++;
-      cursor = await cursor.continue();
-    }
-    await tx.done;
-    return evicted;
-  },
-
-  // ===== UTILITY =====
-  async clearAll(): Promise<void> {
-    const db = await getOfflineDB();
-    await Promise.all([
-      db.clear('messages'),
-      db.clear('outbox'),
-      db.clear('conversations'),
-      db.clear('drafts'),
-      db.clear('media')
-    ]);
   }
+}
+
+export async function clearOutbox(): Promise<void> {
+  const db = await getOfflineDB();
+  await db.clear('outbox');
+}
+
+// ===== CONVERSATIONS =====
+export async function cacheConversation(conv: CachedConversation): Promise<void> {
+  const db = await getOfflineDB();
+  await db.put('conversations', conv);
+}
+
+export async function cacheConversations(convs: CachedConversation[]): Promise<void> {
+  const db = await getOfflineDB();
+  const tx = db.transaction('conversations', 'readwrite');
+  await Promise.all([
+    ...convs.map(c => tx.store.put(c)),
+    tx.done
+  ]);
+}
+
+export async function getAllConversations(): Promise<CachedConversation[]> {
+  const db = await getOfflineDB();
+  return db.getAll('conversations');
+}
+
+export async function getConversation(id: string): Promise<CachedConversation | undefined> {
+  const db = await getOfflineDB();
+  return db.get('conversations', id);
+}
+
+// ===== DRAFTS =====
+export async function saveDraft(draft: CachedDraft): Promise<void> {
+  const db = await getOfflineDB();
+  await db.put('drafts', draft);
+}
+
+export async function getDraft(conversationId: string): Promise<CachedDraft | undefined> {
+  const db = await getOfflineDB();
+  return db.get('drafts', conversationId);
+}
+
+export async function deleteDraft(conversationId: string): Promise<void> {
+  const db = await getOfflineDB();
+  await db.delete('drafts', conversationId);
+}
+
+export async function getAllDrafts(): Promise<CachedDraft[]> {
+  const db = await getOfflineDB();
+  return db.getAll('drafts');
+}
+
+// ===== MEDIA CACHE =====
+export async function cacheMedia(media: CachedMedia): Promise<void> {
+  const db = await getOfflineDB();
+  await db.put('media', media);
+}
+
+export async function getCachedMedia(id: string): Promise<CachedMedia | undefined> {
+  const db = await getOfflineDB();
+  return db.get('media', id);
+}
+
+export async function evictExpiredMedia(): Promise<number> {
+  const db = await getOfflineDB();
+  const now = Date.now();
+  const tx = db.transaction('media', 'readwrite');
+  const index = tx.store.index('by-expiry');
+  let cursor = await index.openCursor(IDBKeyRange.upperBound(now));
+  let evicted = 0;
+  while (cursor) {
+    await cursor.delete();
+    evicted++;
+    cursor = await cursor.continue();
+  }
+  await tx.done;
+  return evicted;
+}
+
+// ===== UTILITY =====
+export async function clearAll(): Promise<void> {
+  const db = await getOfflineDB();
+  await Promise.all([
+    db.clear('messages'),
+    db.clear('outbox'),
+    db.clear('conversations'),
+    db.clear('drafts'),
+    db.clear('media')
+  ]);
+}
+
+// Export object alias mapping to hoisted functions for backward compatibility
+export const offlineDB = {
+  cacheMessage,
+  cacheMessages,
+  getMessagesForConversation,
+  getMessage,
+  deleteMessage,
+  enqueueOutbox,
+  getOutboxMessages,
+  removeFromOutbox,
+  updateOutboxRetry,
+  clearOutbox,
+  cacheConversation,
+  cacheConversations,
+  getAllConversations,
+  getConversation,
+  saveDraft,
+  getDraft,
+  deleteDraft,
+  getAllDrafts,
+  cacheMedia,
+  getCachedMedia,
+  evictExpiredMedia,
+  clearAll
 };
