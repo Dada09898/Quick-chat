@@ -1,22 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
-import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck } from 'lucide-react';
+import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
 
 interface ChatListProps {
-  isMobileOpen: boolean;
-  onCloseMobile: () => void;
   onOpenNewChat?: () => void;
 }
 
-export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile, onOpenNewChat }) => {
+export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
   const conversations = useChatStore(state => state.conversations);
   const setConversations = useChatStore(state => state.setConversations);
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const setActiveConversation = useChatStore(state => state.setActiveConversation);
   const user = useAuthStore(state => state.user);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -35,7 +34,6 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
 
   const handleSelect = (id: string) => {
     setActiveConversation(id);
-    onCloseMobile();
   };
 
   const getOtherMember = (conv: any) => {
@@ -44,6 +42,16 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
     }
     return null;
   };
+
+  const filteredConversations = React.useMemo(() => {
+    if (!searchQuery.trim()) return conversations;
+    const q = searchQuery.toLowerCase();
+    return conversations.filter(conv => {
+      const other = getOtherMember(conv);
+      const name = other?.display_name || other?.username || other?.email || '';
+      return name.toLowerCase().includes(q);
+    });
+  }, [conversations, searchQuery]);
 
   const formatTime = React.useCallback((isoString: string) => {
     if (!isoString) return '';
@@ -56,10 +64,7 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
   }, []);
 
   return (
-    <div className={`
-      flex-col w-full md:w-[30vw] min-w-[300px] max-w-[450px] bg-[#111b21] border-r border-[#222d34] h-full
-      ${isMobileOpen ? 'flex absolute inset-0 z-50' : 'hidden md:flex'}
-    `}>
+    <div className="flex flex-col w-full md:w-[30vw] md:min-w-[300px] md:max-w-[450px] bg-[#111b21] border-r border-[#222d34] h-full">
       <div className="p-4 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0">
         <h2 className="text-[22px] font-semibold text-[#e9edef] flex items-center gap-2">
           Chats
@@ -83,25 +88,36 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
           <input 
             type="text" 
             placeholder="Search or start new chat" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-transparent border-none text-[15px] text-[#d1d7db] ml-4 placeholder-[#8696a0] focus:outline-none focus:ring-0"
           />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="text-[#8696a0] hover:text-[#d1d7db] p-1"
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {conversations.length === 0 ? (
+        {filteredConversations.length === 0 ? (
           <div className="p-8 text-center text-[#8696a0] text-[15px]">
-            No conversations found.
+            {searchQuery.trim() ? 'No matching conversations.' : 'No conversations found.'}
           </div>
         ) : (
-          conversations.map((conv, idx) => {
+          filteredConversations.map((conv, idx) => {
             const otherUser = getOtherMember(conv);
             const displayName = otherUser?.display_name || otherUser?.username || otherUser?.email?.split('@')[0] || 'Unknown User';
             const isActive = activeConversationId === conv.id;
             
             // Mock pinned and muted states for UI demonstration (e.g. first conversation pinned)
-            const isPinned = idx === 0;
-            const isMuted = idx === 1;
+            const isPinned = conv.is_pinned || false;
+            const isMuted = conv.is_muted || false;
             
             // Faked typing state if active
             const isTyping = false; // Will connect to global typing later
@@ -141,8 +157,14 @@ export const ChatList: React.FC<ChatListProps> = ({ isMobileOpen, onCloseMobile,
                         <span className="text-[#00a884] font-medium">typing...</span>
                       ) : (
                         <>
-                          <CheckCheck size={16} className="text-[#53bdeb] shrink-0" />
-                          <span className="truncate">Tap to view messages</span>
+                          {conv.last_message_preview ? (
+                            <>
+                              <CheckCheck size={16} className="text-[#53bdeb] shrink-0" />
+                              <span className="truncate">{conv.last_message_preview}</span>
+                            </>
+                          ) : (
+                            <span className="truncate text-[#667781]">Start a conversation</span>
+                          )}
                         </>
                       )}
                     </div>

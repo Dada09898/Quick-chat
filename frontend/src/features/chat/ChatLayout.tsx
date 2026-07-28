@@ -15,10 +15,15 @@ import { AnimatePresence } from 'framer-motion';
 const NewChatModal = React.lazy(() => import('./NewChatModal').then(module => ({ default: module.NewChatModal })));
 const RightPanel = React.lazy(() => import('./RightPanel').then(module => ({ default: module.RightPanel })));
 const ForwardModal = React.lazy(() => import('./ForwardModal').then(module => ({ default: module.ForwardModal })));
+const ChatSearch = React.lazy(() => import('./ChatSearch').then(module => ({ default: module.ChatSearch })));
+const CameraModal = React.lazy(() => import('./CameraModal').then(module => ({ default: module.CameraModal })));
+const ChatCustomization = React.lazy(() => import('./ChatCustomization').then(module => ({ default: module.ChatCustomization })));
 
 export const ChatLayout: React.FC = () => {
-  const [isMobileListOpen, setIsMobileListOpen] = useState(false);
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const conversations = useChatStore(state => state.conversations);
@@ -53,8 +58,6 @@ export const ChatLayout: React.FC = () => {
       {/* Sidebar Chat List */}
       <div className={`${activeConversationId ? 'hidden md:flex' : 'flex'} w-full md:w-auto h-full z-10 shrink-0`}>
         <ChatList 
-          isMobileOpen={isMobileListOpen} 
-          onCloseMobile={() => setIsMobileListOpen(false)} 
           onOpenNewChat={() => setIsNewChatModalOpen(true)}
         />
       </div>
@@ -64,19 +67,12 @@ export const ChatLayout: React.FC = () => {
         {/* Header */}
         <header className="px-3 md:px-4 py-2 pt-[max(8px,env(safe-area-inset-top))] bg-[#202c33]/80 backdrop-blur-md shadow-sm flex items-center justify-between z-10 shrink-0 h-[calc(60px+env(safe-area-inset-top))] relative">
           <div className="flex items-center gap-3">
-            {activeConversationId ? (
+            {activeConversationId && (
               <button 
                 className="md:hidden p-1 -ml-1 text-[#aebac1] hover:text-white flex items-center transition-colors"
                 onClick={() => useChatStore.getState().setActiveConversation(null)}
               >
                 <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-              </button>
-            ) : (
-              <button 
-                className="md:hidden p-2 -ml-2 text-[#aebac1] hover:text-white transition-colors"
-                onClick={() => setIsMobileListOpen(true)}
-              >
-                <Menu size={24} />
               </button>
             )}
             
@@ -120,13 +116,13 @@ export const ChatLayout: React.FC = () => {
                 >
                   <Phone size={20} />
                 </button>
-                <button className="p-2 hover:bg-[#374248] rounded-full transition-colors" title="Search">
+                <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 hover:bg-[#374248] rounded-full transition-colors" title="Search" aria-label="Search messages">
                    <Search size={20} />
                 </button>
                 <button className="p-2 hover:bg-[#374248] rounded-full transition-colors hidden md:block" title="AI Assistant">
                    <Bot size={20} />
                 </button>
-                <button className="p-2 hover:bg-[#374248] rounded-full transition-colors" title="Menu">
+                <button onClick={() => setIsCustomizeOpen(!isCustomizeOpen)} className="p-2 hover:bg-[#374248] rounded-full transition-colors" title="Menu" aria-label="Chat menu">
                    <MoreVertical size={20} />
                 </button>
               </>
@@ -142,6 +138,21 @@ export const ChatLayout: React.FC = () => {
           </div>
         </header>
 
+        {/* Search Bar */}
+        <React.Suspense fallback={null}>
+          <AnimatePresence>
+            {isSearchOpen && activeConversationId && (
+              <ChatSearch
+                onClose={() => setIsSearchOpen(false)}
+                onNavigateToMessage={(messageId: string) => {
+                  // This will be handled by MessageList via store
+                  useChatStore.getState().setScrollToMessageId?.(messageId);
+                }}
+              />
+            )}
+          </AnimatePresence>
+        </React.Suspense>
+
         {/* Messages & Input */}
         {activeConversationId ? (
           <>
@@ -154,7 +165,7 @@ export const ChatLayout: React.FC = () => {
               <div className="w-[120px] h-[120px] rounded-full bg-[#202c33] flex items-center justify-center mb-8 shadow-sm">
                 <MessageSquarePlus size={48} className="text-[#00a884] opacity-80" />
               </div>
-              <h2 className="text-[32px] font-light text-[#e9edef] mb-4">Kryozen Web</h2>
+              <h2 className="text-[24px] sm:text-[32px] font-light text-[#e9edef] mb-4">Kryozen Web</h2>
               <p className="text-[14px] leading-relaxed mb-8">Send and receive messages without keeping your phone online.<br/>Use Kryozen on up to 4 linked devices and 1 phone at the same time.</p>
               <button 
                 onClick={() => setIsNewChatModalOpen(true)}
@@ -171,7 +182,15 @@ export const ChatLayout: React.FC = () => {
       <React.Suspense fallback={null}>
         <AnimatePresence>
           {useChatStore(state => state.isRightPanelOpen) && (
-            <RightPanel />
+            <>
+              {/* Mobile backdrop */}
+              <div 
+                className="fixed inset-0 bg-black/50 z-30 xl:hidden"
+                onClick={() => useChatStore.getState().toggleRightPanel()}
+                aria-hidden="true"
+              />
+              <RightPanel />
+            </>
           )}
         </AnimatePresence>
 
@@ -180,6 +199,19 @@ export const ChatLayout: React.FC = () => {
           onClose={() => setIsNewChatModalOpen(false)}
         />
         <ForwardModal />
+        <CameraModal
+          isOpen={isCameraOpen}
+          onClose={() => setIsCameraOpen(false)}
+          onCapture={(blob, type) => {
+            // Handle camera capture - upload as media attachment
+            setIsCameraOpen(false);
+          }}
+        />
+        <AnimatePresence>
+          {isCustomizeOpen && (
+            <ChatCustomization isOpen={isCustomizeOpen} onClose={() => setIsCustomizeOpen(false)} />
+          )}
+        </AnimatePresence>
       </React.Suspense>
     </div>
   );

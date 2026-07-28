@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
 import { Mail, Lock, User, Globe, Clock, ArrowRight } from 'lucide-react';
 import { apiJson } from '../../lib/api';
+import toast from 'react-hot-toast';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -21,14 +22,14 @@ export const LoginPage = () => {
         setUser(data.user);
       } else {
         const err = await res.json().catch(() => ({}));
-        alert("Login failed: " + JSON.stringify(err));
+        toast.error(err.error || err.detail || 'Login failed. Please check your credentials.');
       }
-    } catch (e) { console.error(e); alert("Network error: " + e); }
+    } catch (e) { console.error(e); toast.error('Network error. Please check your connection.'); }
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
-      <div className="w-full max-w-md p-8 bg-gray-900 rounded-xl border border-gray-800 shadow-2xl">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#111b21] text-white p-4">
+      <div className="w-full max-w-md p-6 sm:p-8 bg-[#202c33] rounded-xl border border-[#222d34] shadow-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-cyan-400">DualConnect</h1>
           <p className="text-gray-400 mt-2">Sign in to your enterprise vault.</p>
@@ -38,14 +39,14 @@ export const LoginPage = () => {
             <label className="block text-sm font-medium text-gray-400">Email Address</label>
             <div className="relative mt-1">
               <Mail className="absolute left-3 top-3 text-gray-500" size={18} />
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-gray-950 border border-gray-800 rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="admin@enterprise.local" />
+              <input type="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="admin@enterprise.local" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400">Password</label>
             <div className="relative mt-1">
               <Lock className="absolute left-3 top-3 text-gray-500" size={18} />
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-gray-950 border border-gray-800 rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="••••••••" />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="••••••••" />
             </div>
           </div>
           <button type="submit" className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg font-semibold transition shadow-lg shadow-cyan-500/20">
@@ -56,6 +57,9 @@ export const LoginPage = () => {
               Don't have an account?{' '}
               <Link to="/register" className="text-cyan-400 hover:text-cyan-300 font-medium">Create one</Link>
             </p>
+            <Link to="/forgot-password" className="text-cyan-400 hover:text-cyan-300 text-sm block mt-2">
+              Forgot your password?
+            </Link>
           </div>
         </form>
       </div>
@@ -81,14 +85,14 @@ export const RegisterPage = () => {
         setUser(data.user);
       } else {
         const err = await res.json().catch(() => ({}));
-        alert("Registration failed: " + JSON.stringify(err));
+        toast.error(err.error || err.detail || 'Registration failed.');
       }
-    } catch (e) { console.error(e); alert("Network error: " + e); }
+    } catch (e) { console.error(e); toast.error('Network error. Please check your connection.'); }
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
-      <div className="w-full max-w-md p-8 bg-gray-900 rounded-xl border border-gray-800 shadow-2xl">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#111b21] text-white p-4">
+      <div className="w-full max-w-md p-6 sm:p-8 bg-[#202c33] rounded-xl border border-[#222d34] shadow-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-cyan-400">DualConnect</h1>
           <p className="text-gray-400 mt-2">Create your enterprise account.</p>
@@ -98,21 +102,21 @@ export const RegisterPage = () => {
             <label className="block text-sm font-medium text-gray-400">Email Address</label>
             <div className="relative mt-1">
               <Mail className="absolute left-3 top-3 text-gray-500" size={18} />
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-gray-950 border border-gray-800 rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500" placeholder="admin@enterprise.local" />
+              <input type="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500" placeholder="admin@enterprise.local" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400">Password</label>
             <div className="relative mt-1">
               <Lock className="absolute left-3 top-3 text-gray-500" size={18} />
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-gray-950 border border-gray-800 rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400">Timezone</label>
             <div className="relative mt-1">
               <Clock className="absolute left-3 top-3 text-gray-500" size={18} />
-              <select value={timezone} onChange={e => setTimezone(e.target.value)} className="w-full bg-gray-950 border border-gray-800 rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 appearance-none text-gray-300">
+              <select value={timezone} onChange={e => setTimezone(e.target.value)} className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 appearance-none text-gray-300">
                 <option value="UTC">UTC (Universal)</option>
                 <option value="America/New_York">EST (New York)</option>
                 <option value="Europe/London">GMT (London)</option>

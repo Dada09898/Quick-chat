@@ -3,7 +3,7 @@ import React from 'react';
 interface AvatarProps {
   url?: string;
   name?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   status?: 'online' | 'offline' | 'away' | 'dnd';
   className?: string;
 }
@@ -20,7 +20,8 @@ export const Avatar: React.FC<AvatarProps> = ({ url, name, size = 'md', status, 
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-12 h-12 text-base',
-    xl: 'w-16 h-16 text-xl'
+    xl: 'w-16 h-16 text-xl',
+    '2xl': 'w-20 h-20 text-2xl'
   };
 
   const statusColors = {
@@ -33,7 +34,7 @@ export const Avatar: React.FC<AvatarProps> = ({ url, name, size = 'md', status, 
   return (
     <div className={`relative inline-block ${className}`}>
       {url ? (
-        <img src={url} alt={name || 'Avatar'} className={`${sizeClasses[size]} rounded-full object-cover bg-gray-800`} />
+        <img src={url} alt={name || 'Avatar'} className={`${sizeClasses[size]} rounded-full object-cover bg-gray-800`} loading="lazy" decoding="async" />
       ) : (
         <div className={`${sizeClasses[size]} rounded-full bg-indigo-600 flex items-center justify-center font-medium text-white`}>
           {getInitials(name)}

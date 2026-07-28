@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import type { VirtuosoHandle } from 'react-virtuoso';
 import { useChatStore } from './chatStore';
@@ -13,8 +13,25 @@ export const MessageList: React.FC = () => {
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const remoteTyping = useRealtimeStore(state => state.remoteTyping);
   const userId = useAuthStore(state => state.user?.id);
+  const scrollToMessageId = useChatStore(state => state.scrollToMessageId);
   
   const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+
+  // Handle scroll-to-message from search
+  useEffect(() => {
+    if (!scrollToMessageId || messages.length === 0) return;
+    const idx = messages.findIndex(m => m.id === scrollToMessageId);
+    if (idx >= 0) {
+      virtuosoRef.current?.scrollToIndex({ index: idx, align: 'center', behavior: 'smooth' });
+      setHighlightedMessageId(scrollToMessageId);
+      setTimeout(() => setHighlightedMessageId(null), 2000);
+    }
+    useChatStore.getState().setScrollToMessageId(null);
+  }, [scrollToMessageId, messages]);
   
   // Memoize sorted messages for 60fps performance (essential for 100k+ messages)
   const messages = useMemo(() => {
@@ -30,6 +47,8 @@ export const MessageList: React.FC = () => {
 
   useEffect(() => {
     if (!activeConversationId) return;
+    setHasMoreMessages(true);
+    setNextCursor(null);
     
     // Fetch initial history for conversation
     const fetchHistory = async () => {
@@ -78,6 +97,54 @@ export const MessageList: React.FC = () => {
     }
   }, [messages.length, remoteTyping]);
 
+  const loadMoreMessages = useCallback(async () => {
+    if (!activeConversationId || isLoadingMore || !hasMoreMessages) return;
+    setIsLoadingMore(true);
+    try {
+      let url = `/api/chat/messages/?conversation_id=${activeConversationId}&limit=30`;
+      if (nextCursor) {
+        url += `&cursor=${nextCursor}`;
+      } else if (messages.length > 0) {
+        // Use the oldest message timestamp as cursor
+        url += `&before=${messages[0].created_at}`;
+      }
+      const res = await apiClient(url);
+      if (res.ok) {
+        const data = await res.json();
+        const msgs = data.results || [];
+        if (msgs.length === 0) {
+          setHasMoreMessages(false);
+        } else {
+          const upsertMessage = useChatStore.getState().upsertMessage;
+          msgs.forEach((msg: any) => {
+            const media_attachments = (msg.attachments || []).map((att: any) => ({
+              id: att.id,
+              url: `http://localhost:8000/media/${att.s3_key}`,
+              type: 'image',
+              media_key: undefined
+            }));
+            upsertMessage({
+              ...msg,
+              conversation_id: msg.conversation || msg.conversation_id,
+              sender_id: msg.sender?.id || msg.sender_id,
+              decrypted_text: decodeCiphertext(msg.ciphertext),
+              status: msg.status || 'delivered',
+              media_attachments
+            });
+          });
+          setNextCursor(data.next_cursor || null);
+          if (!data.next_cursor && msgs.length < 30) {
+            setHasMoreMessages(false);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load more messages', err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [activeConversationId, isLoadingMore, hasMoreMessages, nextCursor, messages]);
+
   if (!activeConversationId) {
     return <div className="flex-1 flex items-center justify-center text-gray-500">Select a conversation</div>;
   }
@@ -98,6 +165,7 @@ export const MessageList: React.FC = () => {
         className="flex-1 w-full h-full"
         data={messages}
         initialTopMostItemIndex={messages.length - 1}
+        startReached={loadMoreMessages}
         itemContent={(index, msg) => {
           const prevMsg = index > 0 ? messages[index - 1] : null;
           let showDateSeparator = false;
@@ -128,7 +196,7 @@ export const MessageList: React.FC = () => {
           }
 
           return (
-            <div className="py-1 flex flex-col">
+            <div className={`py-1 flex flex-col ${highlightedMessageId === msg.id ? 'ring-2 ring-[#00a884] ring-offset-1 ring-offset-transparent rounded-lg transition-all duration-500' : ''}`}>
               {showDateSeparator && (
                 <div className="flex justify-center my-2.5">
                   <span className="bg-[#182229] text-[#8696a0] text-[12.5px] px-3 py-1 rounded-lg shadow-sm font-medium">
@@ -145,6 +213,15 @@ export const MessageList: React.FC = () => {
           );
         }}
         components={{
+          Header: () => isLoadingMore ? (
+            <div className="flex justify-center py-3">
+              <div className="w-6 h-6 border-2 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : !hasMoreMessages && messages.length > 0 ? (
+            <div className="flex justify-center py-3">
+              <span className="bg-[#182229] text-[#8696a0] text-[12px] px-3 py-1 rounded-lg">Beginning of conversation</span>
+            </div>
+          ) : null,
           Footer: () => remoteTyping ? (
             <div className="self-start mb-4 bg-[#202c33] text-[#00a884] px-4 py-2 rounded-lg rounded-tl-none text-[14px] font-medium animate-pulse w-max mt-2">
               typing...

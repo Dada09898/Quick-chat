@@ -32,17 +32,23 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
         onClick={onClose}
       />
-      <div className="relative bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
+      <div 
+        className="relative bg-[#111b21] border-t sm:border border-[#222d34] shadow-2xl w-full sm:max-w-md sm:mx-4 overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh] fixed bottom-0 left-0 right-0 sm:static sm:rounded-xl rounded-t-2xl animate-in fade-in slide-in-from-bottom sm:zoom-in-95 duration-200"
+        role="dialog"
+        aria-modal="true" 
+        aria-label={title}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#222d34] bg-[#202c33] shrink-0">
+          <h2 className="text-lg font-semibold text-[#e9edef]">{title}</h2>
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-gray-800"
+            className="text-[#aebac1] hover:text-[#d1d7db] transition-colors p-2 rounded-lg hover:bg-[#374248] min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="Close dialog"
           >
             <X size={20} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 pb-[max(24px,env(safe-area-inset-bottom))] custom-scrollbar">
           {children}
         </div>
       </div>

@@ -61,24 +61,23 @@ export const RightPanel: React.FC = () => {
 
   return (
     <motion.div 
-      variants={layoutVariants.drawerRight}
-      initial="initial"
-      animate="animate"
-      exit="exit"
+      initial={{ x: '100%', opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: '100%', opacity: 0 }}
       transition={springPresets.drawer}
-      className="bg-[#111b21] border-l border-[#222d34] h-full hidden xl:flex flex-col shrink-0 overflow-hidden relative"
+      className="bg-[#111b21] border-l border-[#222d34] h-full flex flex-col shrink-0 overflow-hidden fixed inset-0 z-40 xl:static xl:z-auto"
     >
-      <div className="px-4 py-2 bg-[#202c33] border-b border-[#222d34] flex items-center gap-4 shrink-0 h-[60px] w-[320px]">
-        <button onClick={toggleRightPanel} className="text-[#aebac1] hover:text-[#d1d7db] transition-colors p-1">
+      <div className="px-4 py-2 bg-[#202c33] border-b border-[#222d34] flex items-center gap-4 shrink-0 h-[60px] w-full xl:w-[320px]">
+        <button onClick={toggleRightPanel} className="text-[#aebac1] hover:text-[#d1d7db] transition-colors p-1" aria-label="Close contact info">
           <X size={24} />
         </button>
         <h2 className="text-[#e9edef] font-medium text-base">Contact info</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar w-[320px]">
+      <div className="flex-1 overflow-y-auto custom-scrollbar w-full xl:w-[320px]">
         {/* Top Section */}
         <div className="flex flex-col items-center py-8 px-4 bg-[#111b21] border-b border-[#222d34]">
-          <Avatar name={displayName} url={otherUser?.avatar} size="2xl" className="mb-4 shadow-lg !w-48 !h-48 text-5xl" />
+          <Avatar name={displayName} url={otherUser?.avatar} size="2xl" className="mb-4 shadow-lg !w-32 !h-32 sm:!w-48 sm:!h-48 text-4xl sm:text-5xl" />
           <h2 className="text-[22px] font-normal text-[#e9edef] mb-1 text-center">{displayName}</h2>
           <p className="text-[14px] text-[#8696a0] mb-6">{otherUser?.email}</p>
           

@@ -12,6 +12,7 @@ import { useRealtime } from '../../realtime/RealtimeProvider';
 import { decryptMediaChunk } from '../media/crypto'; // Mock for actual decryption logic
 // Assuming useCryptoStore or similar provides the actual keys
 import { layoutVariants, springPresets } from '../../motion';
+import { AudioBubble } from './AudioBubble';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -321,10 +322,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
         {/* Media Attachments */}
         {!isDeleted && (message.media_attachments || []).map((media, idx) => (
           <div key={idx} className={`mt-1 rounded-lg overflow-hidden max-w-[280px] ${isOwn ? 'border-[#005c4b]' : 'border-[#202c33]'}`}>
-            {media.type === 'image' ? (
-              <img src={media.url || `https://placehold.co/400x300?text=Encrypted+Image`} alt="Attachment" className="w-full h-auto object-cover" />
+            {media.type === 'audio' ? (
+              <AudioBubble url={media.url} isOwn={isOwn} />
+            ) : media.type === 'image' ? (
+              <img src={media.url || `https://placehold.co/400x300?text=Encrypted+Image`} alt="Attachment" className="w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" decoding="async" />
             ) : (
-              <video src={media.url} controls className="w-full h-auto" />
+              <video src={media.url} controls className="w-full h-auto" preload="metadata" />
             )}
           </div>
         ))}

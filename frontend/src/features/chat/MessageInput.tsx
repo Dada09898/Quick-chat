@@ -6,6 +6,7 @@ import { Smile, Paperclip, Send, Mic, Camera, X, Image, FileText, Video, Contact
 import { UploadManager } from '../media/upload/UploadManager';
 import { motion, AnimatePresence } from 'framer-motion';
 import { layoutVariants, springPresets } from '../../motion';
+import { VoiceRecorder } from './VoiceRecorder';
 
 const LazyEmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
@@ -26,6 +27,7 @@ export const MessageInput: React.FC = () => {
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -228,8 +230,67 @@ export const MessageInput: React.FC = () => {
 
   const replyingToMessage = replyingTo ? messages[replyingTo] : null;
 
+  const handleVoiceSend = (blob: Blob, duration: number) => {
+    if (!activeConversationId || !user) return;
+    setIsRecording(false);
+    setIsUploading(true);
+    setUploadProgress(0);
+    const uploader = new UploadManager(new File([blob], `voice_${Date.now()}.webm`, { type: blob.type }), {
+      onProgress: (progress) => setUploadProgress(progress),
+      onComplete: (attachmentId, url, mediaKeyBase64) => {
+        setIsUploading(false);
+        const msgId = crypto.randomUUID();
+        const createdAt = new Date().toISOString();
+        const ciphertext = btoa(unescape(encodeURIComponent(`🎤 Voice message (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})`)));
+        const newMsg = {
+          id: msgId,
+          conversation_id: activeConversationId,
+          sender_id: user.id,
+          ciphertext,
+          nonce: 'pending',
+          signature: 'UNVERIFIED',
+          key_version: 1,
+          algorithm: 'AES-256-GCM',
+          created_at: createdAt,
+          is_edited: false,
+          deleted_at: null,
+          status: 'queued' as const,
+          decrypted_text: `🎤 Voice message (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})`,
+          media_attachments: [{ id: attachmentId, url, type: 'audio', media_key: mediaKeyBase64 }]
+        };
+        enqueueMessage(newMsg);
+        sendEvent('message.send', {
+          id: msgId,
+          conversation_id: activeConversationId,
+          ciphertext,
+          nonce: 'pending',
+          signature: 'UNVERIFIED',
+          key_version: 1,
+          algorithm: 'AES-256-GCM',
+          created_at: createdAt,
+          media_id: attachmentId,
+          media_key: mediaKeyBase64
+        });
+      },
+      onError: (err) => {
+        setIsUploading(false);
+        console.error('Voice upload failed', err);
+      }
+    });
+    uploader.start().catch(console.error);
+  };
+
   return (
     <div className="relative bg-[#202c33] px-4 py-2 pb-[max(8px,env(safe-area-inset-bottom))] border-t border-[#222d34] flex flex-col gap-2">
+      {/* Voice Recorder Mode */}
+      <AnimatePresence>
+        {isRecording && (
+          <VoiceRecorder
+            onSend={handleVoiceSend}
+            onCancel={() => setIsRecording(false)}
+          />
+        )}
+      </AnimatePresence>
       {/* Edit Preview */}
       {editingMessageId && messages[editingMessageId] && (
         <div className="flex items-center justify-between bg-[#2a3942] p-2 rounded-lg border-l-4 border-[#53bdeb] mb-2">
@@ -384,7 +445,7 @@ export const MessageInput: React.FC = () => {
       </div>
       
       <button 
-        onClick={text.trim() ? handleSend : () => { /* Placeholder for Voice Record Start */ }}
+        onClick={text.trim() ? handleSend : () => { setIsRecording(true); }}
         className="p-3 bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] rounded-full transition-colors flex items-center justify-center shrink-0 w-[44px] h-[44px] relative overflow-hidden"
       >
         <AnimatePresence mode="popLayout">

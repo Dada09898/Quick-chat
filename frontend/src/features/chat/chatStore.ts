@@ -32,8 +32,10 @@ interface ChatState {
   replyingTo: string | null;
   forwardingMessageIds: string[];
   editingMessageId: string | null;
+  scrollToMessageId: string | null;
   
   setActiveConversation: (id: string | null) => void;
+  setScrollToMessageId: (id: string | null) => void;
   setReplyingTo: (id: string | null) => void;
   setForwardingMessageIds: (ids: string[]) => void;
   setEditingMessageId: (id: string | null) => void;
@@ -63,8 +65,10 @@ export const useChatStore = create<ChatState>((set) => ({
   replyingTo: null,
   forwardingMessageIds: [],
   editingMessageId: null,
+  scrollToMessageId: null,
   
   setActiveConversation: (id) => set({ activeConversationId: id, selectedMessageIds: [], isRightPanelOpen: false, replyingTo: null, editingMessageId: null }),
+  setScrollToMessageId: (id) => set({ scrollToMessageId: id }),
   setReplyingTo: (id) => set({ replyingTo: id }),
   setForwardingMessageIds: (ids) => set({ forwardingMessageIds: ids }),
   setEditingMessageId: (id) => set({ editingMessageId: id }),
