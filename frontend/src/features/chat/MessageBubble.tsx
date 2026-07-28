@@ -149,6 +149,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
       exit="exit"
       transition={springPresets.message}
       layout
+      drag="x"
+      dragConstraints={{ left: 0, right: 60 }}
+      dragElastic={0.2}
+      onDragEnd={(_, info) => {
+        if (info.offset.x > 40) {
+          setReplyingTo(message.id);
+        }
+      }}
       onClick={handleSelection}
       className={`group flex flex-col mb-1.5 w-full cursor-pointer transition-colors ${
         isSelected ? 'bg-blue-500/10' : ''
