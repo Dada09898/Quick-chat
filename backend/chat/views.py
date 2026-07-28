@@ -131,7 +131,14 @@ class ConversationViewSet(viewsets.ModelViewSet):
         
     def perform_create(self, serializer):
         conversation = serializer.save()
-        ConversationMember.objects.create(conversation=conversation, user=self.request.user)
+        # Add creator as admin
+        ConversationMember.objects.create(conversation=conversation, user=self.request.user, role='admin')
+        
+        # Add additional member IDs if provided
+        member_ids = self.request.data.get('member_ids', [])
+        for m_id in member_ids:
+            if str(m_id) != str(self.request.user.id):
+                ConversationMember.objects.get_or_create(conversation=conversation, user_id=m_id)
 
     @action(detail=False, methods=['post'])
     def get_or_create(self, request):
@@ -178,6 +185,12 @@ class ConversationViewSet(viewsets.ModelViewSet):
             return Response({'error': 'user_id required'}, status=status.HTTP_400_BAD_REQUEST)
         ConversationMember.objects.get_or_create(conversation=conversation, user_id=user_id)
         return Response({'status': 'Member added'})
+
+    @action(detail=True, methods=['post'])
+    def leave(self, request, pk=None):
+        conversation = self.get_object()
+        ConversationMember.objects.filter(conversation=conversation, user=request.user).delete()
+        return Response({'status': 'Left conversation'})
 
 class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
