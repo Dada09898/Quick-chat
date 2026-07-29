@@ -58,6 +58,15 @@ class ChatEventRouter:
             }))
             
             # 2. Broadcast 'message.new' to the conversation group
+            attachments_data = []
+            if hasattr(msg, 'attachments'):
+                for att in msg.attachments.all():
+                    attachments_data.append({
+                        'id': str(att.id),
+                        's3_key': att.s3_key,
+                        'type': att.s3_key.split('.')[-1] if '.' in att.s3_key else 'file'
+                    })
+
             conversation_group = f"conversation_{msg.conversation_id}"
             await consumer.channel_layer.group_send(conversation_group, {
                 'type': 'forward_event',
@@ -75,6 +84,7 @@ class ChatEventRouter:
                         'key_version': msg.key_version,
                         'algorithm': msg.algorithm,
                         'created_at': created_ts,
+                        'attachments': attachments_data
                     }
                 }
             })

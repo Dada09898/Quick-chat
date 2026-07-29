@@ -147,9 +147,15 @@ export class RealtimeClient {
             useChatStore.getState().updateMessageStatus(data.id, 'sent', payload.sequence_number);
           }
           break;
-        case 'message.new':
+        case 'message.new': {
+          const existingMsg = useChatStore.getState().messages[payload.id];
+          const media_attachments = (payload.media_attachments && payload.media_attachments.length > 0)
+            ? payload.media_attachments
+            : (payload.attachments || existingMsg?.media_attachments);
+
           useChatStore.getState().upsertMessage({
             ...payload,
+            media_attachments,
             status: 'delivered',
             decrypted_text: decodeCiphertext(payload.ciphertext),
           });
@@ -160,6 +166,7 @@ export class RealtimeClient {
             conversation_id: payload.conversation_id
           });
           break;
+        }
         case 'message.delivered':
           useChatStore.getState().updateMessageStatus(payload.message_id, 'delivered');
           break;

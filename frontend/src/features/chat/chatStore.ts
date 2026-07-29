@@ -124,7 +124,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
   
   upsertMessage: (msg) => {
     set((state) => {
-      const updated = { ...state.messages[msg.id], ...msg };
+      const existing = state.messages[msg.id];
+      const media_attachments = (msg.media_attachments && msg.media_attachments.length > 0)
+        ? msg.media_attachments
+        : (existing?.media_attachments || (msg as any).attachments || []);
+
+      const updated = {
+        ...existing,
+        ...msg,
+        media_attachments
+      };
       return {
         messages: {
           ...state.messages,
