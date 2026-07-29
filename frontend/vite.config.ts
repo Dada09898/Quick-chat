@@ -10,6 +10,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'script-defer',
+      includeAssets: ['favicon.svg', 'icon-192x192.png', 'icon-512x512.png'],
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
@@ -23,16 +25,21 @@ export default defineConfig({
         background_color: '#111b21',
         display: 'standalone',
         orientation: 'portrait',
+        start_url: '/',
+        scope: '/',
+        display_override: ['standalone', 'minimal-ui'],
         icons: [
           {
             src: '/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: '/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }
