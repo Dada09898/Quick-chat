@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
-import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X } from 'lucide-react';
+import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X, CircleDashed, Plus, PhoneCall } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
+import { useStatusStore, type UserStatusGroup } from '../status/statusStore';
+import { StatusViewerModal } from '../status/StatusViewerModal';
+import { StatusCreateModal } from '../status/StatusCreateModal';
 
 interface ChatListProps {
   onOpenNewChat?: () => void;
@@ -16,8 +19,18 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
   const setActiveConversation = useChatStore(state => state.setActiveConversation);
   const user = useAuthStore(state => state.user);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'chats' | 'status'>('chats');
+
+  const {
+    myStatuses,
+    contactStatusGroups,
+    openViewer,
+    setCreateModalOpen,
+    cleanExpiredStatuses
+  } = useStatusStore();
 
   useEffect(() => {
+    cleanExpiredStatuses();
     const fetchConversations = async () => {
       try {
         const res = await apiClient('/api/chat/conversations/');
@@ -63,13 +76,43 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   }, []);
 
+  const handleMyStatusClick = () => {
+    if (myStatuses.length > 0) {
+      const myGroup: UserStatusGroup = {
+        userId: user?.id || 'me',
+        userName: 'My Status',
+        userAvatar: user?.avatar,
+        statuses: myStatuses,
+        hasUnviewed: false,
+        lastUpdated: myStatuses[0].createdAt
+      };
+      openViewer(myGroup, 0);
+    } else {
+      setCreateModalOpen(true);
+    }
+  };
+
   return (
     <div className="flex flex-col w-full md:w-[30vw] md:min-w-[300px] md:max-w-[450px] bg-[#111b21] border-r border-[#222d34] h-full">
+      {/* Modals */}
+      <StatusViewerModal />
+      <StatusCreateModal />
+
+      {/* Header */}
       <div className="p-4 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0">
         <h2 className="text-[22px] font-semibold text-[#e9edef] flex items-center gap-2">
-          Chats
+          {activeTab === 'chats' ? 'Chats' : 'Status Updates'}
         </h2>
-        <div className="flex items-center gap-3 text-[#aebac1]">
+        <div className="flex items-center gap-2 text-[#aebac1]">
+          {/* Tab Switchers */}
+          <button
+            onClick={() => setActiveTab(activeTab === 'chats' ? 'status' : 'chats')}
+            className={`p-2 rounded-full transition ${activeTab === 'status' ? 'bg-[#374248] text-[#00a884]' : 'hover:bg-[#374248]'}`}
+            title={activeTab === 'chats' ? 'View Status Updates' : 'View Chats'}
+          >
+            <CircleDashed size={20} />
+          </button>
+          
           <button 
             onClick={onOpenNewChat}
             className="p-2 hover:bg-[#374248] rounded-full transition"
@@ -79,7 +122,50 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
           </button>
         </div>
       </div>
-      
+
+      {/* WhatsApp Status Stories Horizontal Scroll Bar */}
+      <div className="px-3 py-3 border-b border-[#222d34] bg-[#111b21] shrink-0">
+        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-1">
+          {/* My Status */}
+          <div className="flex flex-col items-center gap-1 cursor-pointer shrink-0" onClick={handleMyStatusClick}>
+            <div className="relative">
+              <div className={`p-0.5 rounded-full ${myStatuses.length > 0 ? 'bg-[#00a884]' : 'border-2 border-dashed border-[#8696a0]'}`}>
+                <Avatar name="My Status" url={user?.avatar} size="md" />
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCreateModalOpen(true);
+                }}
+                className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#00a884] text-[#111b21] rounded-full flex items-center justify-center border-2 border-[#111b21] shadow-md font-bold"
+                title="Add status update"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+            <span className="text-[11px] text-[#e9edef] font-medium truncate max-w-[60px]">My status</span>
+          </div>
+
+          {/* Divider */}
+          {contactStatusGroups.length > 0 && <div className="h-8 w-[1px] bg-[#222d34] shrink-0" />}
+
+          {/* Contact Status Stories */}
+          {contactStatusGroups.map((group) => (
+            <div
+              key={group.userId}
+              className="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+              onClick={() => openViewer(group, 0)}
+            >
+              <div className={`p-0.5 rounded-full ${group.hasUnviewed ? 'bg-[#00a884] ring-2 ring-[#00a884]/30' : 'bg-[#8696a0]/40'}`}>
+                <Avatar name={group.userName} url={group.userAvatar} size="md" />
+              </div>
+              <span className="text-[11px] text-[#e9edef] font-medium truncate max-w-[60px]">{group.userName}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Search Input */}
       <div className="p-2 border-b border-[#222d34] bg-[#111b21] shrink-0">
         <div className="relative flex items-center bg-[#202c33] rounded-lg px-3 py-1.5 h-9">
           <button className="text-[#8696a0]">
@@ -104,90 +190,123 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
         </div>
       </div>
 
+      {/* List Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {filteredConversations.length === 0 ? (
-          <div className="p-8 text-center text-[#8696a0] text-[15px]">
-            {searchQuery.trim() ? 'No matching conversations.' : 'No conversations found.'}
+        {activeTab === 'status' ? (
+          /* STATUS UPDATES TAB VIEW */
+          <div className="p-4 flex flex-col gap-4 text-[#e9edef]">
+            <div className="flex items-center gap-3 p-3 bg-[#202c33] rounded-xl cursor-pointer" onClick={handleMyStatusClick}>
+              <div className="relative">
+                <Avatar name="My Status" url={user?.avatar} size="lg" />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#00a884] text-[#111b21] rounded-full flex items-center justify-center border-2 border-[#202c33] font-bold">
+                  <Plus size={14} />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="font-medium text-base">My status</span>
+                <span className="text-xs text-[#8696a0]">
+                  {myStatuses.length > 0 ? `${myStatuses.length} active updates` : 'Tap to add status update'}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-xs font-semibold text-[#8696a0] uppercase tracking-wider mt-2">Recent updates</div>
+            {contactStatusGroups.map((group) => (
+              <div
+                key={group.userId}
+                onClick={() => openViewer(group, 0)}
+                className="flex items-center gap-3 p-2 hover:bg-[#202c33] rounded-xl cursor-pointer transition"
+              >
+                <div className={`p-0.5 rounded-full ${group.hasUnviewed ? 'bg-[#00a884]' : 'bg-[#8696a0]/40'}`}>
+                  <Avatar name={group.userName} url={group.userAvatar} size="lg" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-base text-[#e9edef]">{group.userName}</span>
+                  <span className="text-xs text-[#8696a0]">
+                    {group.statuses.length} update{group.statuses.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
-          filteredConversations.map((conv, idx) => {
-            const otherUser = getOtherMember(conv);
-            const displayName = otherUser?.display_name || otherUser?.username || otherUser?.email?.split('@')[0] || 'Unknown User';
-            const isActive = activeConversationId === conv.id;
-            
-            // Mock pinned and muted states for UI demonstration (e.g. first conversation pinned)
-            const isPinned = conv.is_pinned || false;
-            const isMuted = conv.is_muted || false;
-            
-            // Faked typing state if active
-            const isTyping = false; // Will connect to global typing later
-            
-            return (
-              <button
-                key={conv.id}
-                onClick={() => handleSelect(conv.id)}
-                className={`w-full flex items-center gap-3 transition group relative ${
-                  isActive ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'
-                }`}
-              >
-                <div className="pl-3 py-3 shrink-0 relative">
-                  <Avatar 
-                    name={displayName} 
-                    url={otherUser?.avatar} 
-                    size="lg"
-                  />
-                  {otherUser?.presence_status === 'online' && (
-                    <span className="absolute bottom-3 right-0 w-3.5 h-3.5 bg-[#00a884] border-2 border-[#111b21] rounded-full group-hover:border-[#202c33] transition-colors" />
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0 text-left py-3 pr-4 border-b border-[#222d34] group-last:border-none flex flex-col justify-center">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <h3 className={`font-medium text-[17px] truncate ${isActive ? 'text-[#e9edef]' : 'text-[#e9edef]'}`}>
-                      {displayName}
-                    </h3>
-                    <span className={`text-[12px] whitespace-nowrap ml-2 transition-colors ${conv.unread_count_cache > 0 ? 'text-[#00a884] font-medium' : 'text-[#8696a0]'}`}>
-                      {formatTime(conv.last_activity)}
-                    </span>
+          /* CHATS TAB VIEW */
+          filteredConversations.length === 0 ? (
+            <div className="p-8 text-center text-[#8696a0] text-[15px]">
+              {searchQuery.trim() ? 'No matching conversations.' : 'No conversations found.'}
+            </div>
+          ) : (
+            filteredConversations.map((conv) => {
+              const otherUser = getOtherMember(conv);
+              const displayName = otherUser?.display_name || otherUser?.username || otherUser?.email?.split('@')[0] || 'Unknown User';
+              const isActive = activeConversationId === conv.id;
+              
+              const isPinned = conv.is_pinned || false;
+              const isMuted = conv.is_muted || false;
+              const isTyping = false;
+              
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => handleSelect(conv.id)}
+                  className={`w-full flex items-center gap-3 transition group relative ${
+                    isActive ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'
+                  }`}
+                >
+                  <div className="pl-3 py-3 shrink-0 relative">
+                    <Avatar 
+                      name={displayName} 
+                      url={otherUser?.avatar} 
+                      size="lg"
+                    />
+                    {otherUser?.presence_status === 'online' && (
+                      <span className="absolute bottom-3 right-0 w-3.5 h-3.5 bg-[#00a884] border-2 border-[#111b21] rounded-full group-hover:border-[#202c33] transition-colors" />
+                    )}
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="text-[14px] text-[#8696a0] truncate pr-2 flex items-center gap-1 min-h-[20px] flex-1">
-                      {isTyping ? (
-                        <span className="text-[#00a884] font-medium">typing...</span>
-                      ) : (
-                        <>
-                          {conv.last_message_preview ? (
-                            <>
-                              <CheckCheck size={16} className="text-[#53bdeb] shrink-0" />
-                              <span className="truncate">{conv.last_message_preview}</span>
-                            </>
-                          ) : (
-                            <span className="truncate text-[#667781]">Start a conversation</span>
-                          )}
-                        </>
-                      )}
+                  <div className="flex-1 min-w-0 text-left py-3 pr-4 border-b border-[#222d34] group-last:border-none flex flex-col justify-center">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <h3 className={`font-medium text-[17px] truncate ${isActive ? 'text-[#e9edef]' : 'text-[#e9edef]'}`}>
+                        {displayName}
+                      </h3>
+                      <span className={`text-[12px] whitespace-nowrap ml-2 transition-colors ${conv.unread_count_cache > 0 ? 'text-[#00a884] font-medium' : 'text-[#8696a0]'}`}>
+                        {formatTime(conv.last_activity)}
+                      </span>
                     </div>
                     
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {isMuted && <VolumeX size={15} className="text-[#8696a0]" />}
-                      {isPinned && <Pin size={15} className="text-[#8696a0] rotate-45" />}
-                      {conv.unread_count_cache > 0 && (
-                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#00a884] flex items-center justify-center text-[11px] font-bold text-[#111b21]">
-                          {conv.unread_count_cache}
-                        </span>
-                      )}
+                    <div className="flex items-center justify-between">
+                      <div className="text-[14px] text-[#8696a0] truncate pr-2 flex items-center gap-1 min-h-[20px] flex-1">
+                        {isTyping ? (
+                          <span className="text-[#00a884] font-medium">typing...</span>
+                        ) : (
+                          <>
+                            {conv.last_message_preview ? (
+                              <>
+                                <CheckCheck size={16} className="text-[#53bdeb] shrink-0" />
+                                <span className="truncate">{conv.last_message_preview}</span>
+                              </>
+                            ) : (
+                              <span className="truncate text-[#667781]">Start a conversation</span>
+                            )}
+                          </>
+                        )}
+                      </div>
                       
-                      {/* Hover Action Menu Chevron */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 top-1/2 -translate-y-1/2 bg-[#202c33] pl-2 -mr-1 hidden md:block">
-                        <ChevronDown size={20} className="text-[#8696a0] hover:text-[#d1d7db]" />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isMuted && <VolumeX size={15} className="text-[#8696a0]" />}
+                        {isPinned && <Pin size={15} className="text-[#8696a0] rotate-45" />}
+                        {conv.unread_count_cache > 0 && (
+                          <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#00a884] flex items-center justify-center text-[11px] font-bold text-[#111b21]">
+                            {conv.unread_count_cache}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            );
-          })
+                </button>
+              );
+            })
+          )
         )}
       </div>
     </div>
