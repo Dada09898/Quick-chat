@@ -8,6 +8,10 @@ import { useStatusStore, type UserStatusGroup } from '../status/statusStore';
 import { StatusViewerModal } from '../status/StatusViewerModal';
 import { StatusCreateModal } from '../status/StatusCreateModal';
 
+import { ShieldCheck } from 'lucide-react';
+import { StatusPrivacyModal } from '../status/StatusPrivacyModal';
+import { StatusViewersModal } from '../status/StatusViewersModal';
+
 interface ChatListProps {
   onOpenNewChat?: () => void;
 }
@@ -26,6 +30,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
     contactStatusGroups,
     openViewer,
     setCreateModalOpen,
+    setPrivacyModalOpen,
     cleanExpiredStatuses
   } = useStatusStore();
 
@@ -97,6 +102,8 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
       {/* Modals */}
       <StatusViewerModal />
       <StatusCreateModal />
+      <StatusPrivacyModal />
+      <StatusViewersModal />
 
       {/* Header */}
       <div className="p-4 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0">
@@ -104,6 +111,17 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
           {activeTab === 'chats' ? 'Chats' : 'Status Updates'}
         </h2>
         <div className="flex items-center gap-2 text-[#aebac1]">
+          {/* Privacy Button */}
+          {activeTab === 'status' && (
+            <button
+              onClick={() => setPrivacyModalOpen(true)}
+              className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#00a884]"
+              title="Status Privacy"
+            >
+              <ShieldCheck size={20} />
+            </button>
+          )}
+
           {/* Tab Switchers */}
           <button
             onClick={() => setActiveTab(activeTab === 'chats' ? 'status' : 'chats')}

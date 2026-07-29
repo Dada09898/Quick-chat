@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Pause, Play, Trash2, Send } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Pause, Play, Trash2, Send, Eye } from 'lucide-react';
 import { useStatusStore, type StatusItem } from './statusStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
@@ -9,7 +9,7 @@ import { useRealtime } from '../../realtime/RealtimeProvider';
 import toast from 'react-hot-toast';
 
 export const StatusViewerModal: React.FC = () => {
-  const { activeViewerGroup, activeViewerIndex, closeViewer, nextStatus, prevStatus, deleteStatus } = useStatusStore();
+  const { activeViewerGroup, activeViewerIndex, closeViewer, nextStatus, prevStatus, deleteStatus, setViewersModalStatusId } = useStatusStore();
   const currentUser = useAuthStore(state => state.user);
   const { sendEvent } = useRealtime();
   const enqueueMessage = useChatStore(state => state.enqueueMessage);
@@ -230,6 +230,21 @@ export const StatusViewerModal: React.FC = () => {
         >
           <ChevronRight size={36} />
         </button>
+
+        {/* Viewers Bar for Own Status */}
+        {isOwn && (
+          <div className="w-full max-w-md p-4 bg-gradient-to-t from-black/90 to-transparent flex items-center justify-center pb-safe z-30">
+            <button
+              onClick={() => setViewersModalStatusId(currentStatus.id)}
+              className="flex items-center gap-2 text-white bg-black/40 hover:bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 transition shadow-lg"
+            >
+              <Eye size={18} className="text-[#00a884]" />
+              <span className="text-sm font-medium">
+                {currentStatus.views?.length || 0} {currentStatus.views?.length === 1 ? 'view' : 'views'}
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* Reply Bar (if not own status) */}
         {!isOwn && (
