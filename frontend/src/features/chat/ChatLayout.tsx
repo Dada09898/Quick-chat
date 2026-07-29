@@ -21,6 +21,8 @@ import { ChatCustomization } from './ChatCustomization';
 import { GroupCreateModal } from './GroupCreateModal';
 import { GroupInfoPanel } from './GroupInfoPanel';
 
+import { PwaInstallButton } from '../../components/PwaInstallButton';
+
 export const ChatLayout: React.FC = () => {
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -145,6 +147,7 @@ export const ChatLayout: React.FC = () => {
             )}
             {!activeConversationId && (
               <>
+                <PwaInstallButton />
                 <NotificationBell />
                 <Link to="/settings" className="p-2 hover:bg-[#374248] rounded-full transition-colors">
                   <User size={20} />

@@ -16,11 +16,11 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
       },
       manifest: {
-        name: 'DualConnect',
-        short_name: 'DualConnect',
-        description: 'Private Communication Portal',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        name: 'Kryozen Quick Chat',
+        short_name: 'Quick Chat',
+        description: 'Private E2EE Communication Portal',
+        theme_color: '#111b21',
+        background_color: '#111b21',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

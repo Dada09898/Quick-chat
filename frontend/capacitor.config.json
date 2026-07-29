@@ -1,15 +1,8 @@
 {
-  "appId": "com.enterprise.dualconnect",
-  "appName": "DualConnect",
+  "appId": "com.kryozen.quickchat",
+  "appName": "Kryozen Quick Chat",
   "webDir": "dist",
   "bundledWebRuntime": false,
-  "server": {
-    "url": "https://api.dualconnect.internal",
-    "cleartext": false,
-    "allowNavigation": [
-      "api.dualconnect.internal"
-    ]
-  },
   "plugins": {
     "PushNotifications": {
       "presentationOptions": [
@@ -20,7 +13,7 @@
     },
     "SplashScreen": {
       "launchShowDuration": 2000,
-      "backgroundColor": "#111827",
+      "backgroundColor": "#111b21",
       "androidSplashResourceName": "splash",
       "androidScaleType": "CENTER_CROP"
     },
