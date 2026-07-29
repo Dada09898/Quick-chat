@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'script-defer',
+      injectRegister: 'inline',
       includeAssets: ['favicon.svg', 'icon-192x192.png', 'icon-512x512.png'],
       workbox: {
         skipWaiting: true,
