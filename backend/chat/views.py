@@ -35,10 +35,14 @@ class UploadStartView(APIView):
         if int(file_size or 0) > MAX_FILE_SIZE:
             return Response({'error': 'File exceeds maximum size'}, status=status.HTTP_400_BAD_REQUEST)
         
+        original_filename = request.data.get('filename', '')
+
         session = UploadSession.objects.create(
             user=request.user,
             status='uploading',
             chunk_count=chunk_count,
+            mime_type=mime_type,
+            original_filename=original_filename,
             expires_at=timezone.now() + timedelta(hours=24)
         )
         
@@ -89,8 +93,14 @@ class UploadCompleteView(APIView):
             return Response({'error': 'Missing file_hash'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-            # Assembly and checksum verification
-            s3_key = storage_provider.assemble_chunks(str(session.id), session.chunk_count, file_hash)
+            ext = 'bin'
+            if session.original_filename and '.' in session.original_filename:
+                ext = session.original_filename.split('.')[-1].lower()
+            elif '/' in session.mime_type:
+                ext = session.mime_type.split('/')[-1].lower()
+
+            # Assembly and checksum verification with extension preservation
+            s3_key = storage_provider.assemble_chunks(str(session.id), session.chunk_count, file_hash, ext)
             
             session.status = 'completed'
             session.save()
@@ -101,12 +111,16 @@ class UploadCompleteView(APIView):
                 s3_key=s3_key,
                 file_hash=file_hash,
                 chunk_count=session.chunk_count,
+                mime_type=session.mime_type,
+                original_filename=session.original_filename,
                 status='completed'
             )
             
             return Response({
                 'attachment_id': str(attachment.id),
-                'url': storage_provider.get_presigned_url(s3_key)
+                'url': storage_provider.get_presigned_url(s3_key),
+                'mime_type': attachment.mime_type,
+                'filename': attachment.original_filename
             })
             
         except ValueError as e:

@@ -9,7 +9,7 @@ class StorageProvider(ABC):
         pass
         
     @abstractmethod
-    def assemble_chunks(self, session_id: str, chunk_count: int, expected_hash: str) -> str:
+    def assemble_chunks(self, session_id: str, chunk_count: int, expected_hash: str, extension: str = 'bin') -> str:
         pass
         
     @abstractmethod
@@ -32,8 +32,8 @@ class LocalStorageProvider(StorageProvider):
             f.write(data)
         return path
 
-    def assemble_chunks(self, session_id: str, chunk_count: int, expected_hash: str) -> str:
-        final_key = f"media/{session_id}.bin"
+    def assemble_chunks(self, session_id: str, chunk_count: int, expected_hash: str, extension: str = 'bin') -> str:
+        final_key = f"media/{session_id}.{extension}"
         final_path = os.path.join(settings.MEDIA_ROOT, final_key)
         os.makedirs(os.path.dirname(final_path), exist_ok=True)
         

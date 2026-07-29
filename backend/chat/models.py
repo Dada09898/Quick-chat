@@ -135,6 +135,8 @@ class UploadSession(models.Model):
     chunk_count = models.IntegerField(default=0)
     completed_chunks = models.IntegerField(default=0)
     upload_url = models.CharField(max_length=1024, blank=True, null=True)
+    mime_type = models.CharField(max_length=128, default='application/octet-stream')
+    original_filename = models.CharField(max_length=255, blank=True, default='')
     expires_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -145,6 +147,8 @@ class MediaAttachment(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     
     s3_key = models.CharField(max_length=512)
+    mime_type = models.CharField(max_length=128, default='application/octet-stream')
+    original_filename = models.CharField(max_length=255, blank=True, default='')
     thumbnail_s3_key = models.CharField(max_length=512, null=True, blank=True)
     file_hash = models.CharField(max_length=128) # e.g. SHA-256 of the assembled ciphertext
     

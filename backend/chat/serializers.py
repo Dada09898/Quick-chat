@@ -20,9 +20,18 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 
 class MediaAttachmentSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
     class Meta:
         model = MediaAttachment
-        fields = ['id', 's3_key', 'thumbnail_s3_key', 'file_hash', 'key_version', 'algorithm', 'chunk_count', 'status']
+        fields = [
+            'id', 's3_key', 'thumbnail_s3_key', 'file_hash', 'key_version',
+            'algorithm', 'chunk_count', 'status', 'mime_type', 'original_filename', 'url'
+        ]
+
+    def get_url(self, obj):
+        from core.storage import LocalStorageProvider
+        return LocalStorageProvider().get_presigned_url(obj.s3_key)
 
 
 class MessageReactionSerializer(serializers.ModelSerializer):

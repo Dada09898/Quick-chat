@@ -45,7 +45,8 @@ export class UploadManager {
         body: { 
           chunk_count: chunkManager.getChunkCount(),
           mime_type: processedFile.type || 'application/octet-stream',
-          file_size: processedFile.size
+          file_size: processedFile.size,
+          filename: processedFile.name
         }
       });
       const { session_id } = await startRes.json();

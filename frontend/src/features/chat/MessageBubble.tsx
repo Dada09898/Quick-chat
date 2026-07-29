@@ -163,12 +163,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
 
   // Determine media type
   const getMediaType = (mediaItem?: any) => {
-    if (mediaItem?.type) {
-      if (['image', 'photo', 'jpeg', 'jpg', 'png', 'webp', 'gif'].includes(mediaItem.type)) return 'image';
-      if (['video', 'mp4', 'webm', 'mov'].includes(mediaItem.type)) return 'video';
-      if (['audio', 'mp3', 'wav', 'ogg', 'm4a'].includes(mediaItem.type)) return 'audio';
-      if (['document', 'pdf', 'doc', 'docx', 'zip', 'rar', 'xls', 'xlsx'].includes(mediaItem.type)) return 'document';
-    }
+    const mime = mediaItem?.mime_type || mediaItem?.type || '';
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('video/')) return 'video';
+    if (mime.startsWith('audio/')) return 'audio';
+    if (mime && mime !== 'application/octet-stream') return 'document';
+
+    const filename = mediaItem?.original_filename || mediaItem?.filename || mediaItem?.s3_key || '';
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'].includes(ext)) return 'image';
+    if (['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext)) return 'video';
+    if (['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext)) return 'audio';
+    if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar', 'txt'].includes(ext)) return 'document';
+
     if (mediaEmojiPrefix === '📷') return 'image';
     if (mediaEmojiPrefix === '🎥') return 'video';
     if (mediaEmojiPrefix === '🎵') return 'audio';
@@ -346,7 +353,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                   return <AudioBubble key={idx} url={mediaUrl} isOwn={isOwn} />;
                 }
                 if (type === 'document') {
-                  return <DocumentCard key={idx} url={mediaUrl} filename={mediaFilenameText || 'Document'} isOwn={isOwn} />;
+                  return <DocumentCard key={idx} url={mediaUrl} filename={media.original_filename || mediaFilenameText || 'Document'} isOwn={isOwn} />;
                 }
                 if (type === 'video') {
                   return (

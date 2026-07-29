@@ -67,8 +67,10 @@ export const MessageList: React.FC = () => {
           msgs.forEach((msg: any) => {
             const media_attachments = (msg.attachments || []).map((att: any) => ({
               id: att.id,
-              url: `${BASE_URL}/media/${att.s3_key}`,
-              type: 'image', // Basic fallback
+              url: att.url || (att.s3_key?.startsWith('http') ? att.s3_key : `${BASE_URL}/media/${att.s3_key}`),
+              mime_type: att.mime_type,
+              original_filename: att.original_filename,
+              type: att.mime_type || (att.s3_key ? att.s3_key.split('.').pop() : 'file'),
               media_key: undefined
             }));
 
