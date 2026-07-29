@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import type { VirtuosoHandle } from 'react-virtuoso';
+import { ChevronDown } from 'lucide-react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { MessageBubble } from './MessageBubble';
@@ -22,6 +23,7 @@ export const MessageList: React.FC = () => {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   // Memoize sorted messages for 60fps performance (essential for 100k+ messages)
   const messages = useMemo(() => {
@@ -167,6 +169,7 @@ export const MessageList: React.FC = () => {
         className="flex-1 w-full h-full"
         data={messages}
         initialTopMostItemIndex={messages.length - 1}
+        atBottomStateChange={(atBottom) => setShowScrollBottom(!atBottom)}
         startReached={loadMoreMessages}
         itemContent={(index, msg) => {
           const prevMsg = index > 0 ? messages[index - 1] : null;
@@ -231,6 +234,17 @@ export const MessageList: React.FC = () => {
           ) : null
         }}
       />
+
+      {/* Floating Jump to Bottom Button */}
+      {showScrollBottom && (
+        <button
+          onClick={() => virtuosoRef.current?.scrollToIndex({ index: 'LAST', align: 'end', behavior: 'smooth' })}
+          className="absolute bottom-4 right-4 bg-[#202c33] hover:bg-[#2a3942] text-[#8696a0] hover:text-[#e9edef] p-2.5 rounded-full shadow-xl border border-[#222d34] transition-all duration-200 z-30 flex items-center justify-center group"
+          title="Scroll to latest messages"
+        >
+          <ChevronDown size={22} className="group-hover:translate-y-0.5 transition-transform" />
+        </button>
+      )}
     </div>
   );
 };
