@@ -203,11 +203,12 @@ export const MessageInput: React.FC = () => {
         const msgId = crypto.randomUUID();
         const createdAt = new Date().toISOString();
 
-        const isAudio = file.type.startsWith('audio');
-        const isVideo = file.type.startsWith('video');
-        const isImage = file.type.startsWith('image');
-        const mediaType = isAudio ? 'audio' : isVideo ? 'video' : isImage ? 'image' : 'document';
-        const displayPrefix = isAudio ? '🎵 ' : isVideo ? '🎥 ' : isImage ? '📷 ' : '📄 ';
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        const isImage = file.type.startsWith('image') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg', 'heic'].includes(ext);
+        const isVideo = file.type.startsWith('video') || ['mp4', 'webm', 'mov', 'm4v', 'mkv', 'avi'].includes(ext);
+        const isAudio = file.type.startsWith('audio') || ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(ext);
+        const mediaType = isImage ? 'image' : isVideo ? 'video' : isAudio ? 'audio' : 'document';
+        const displayPrefix = isImage ? '📷 ' : isVideo ? '🎥 ' : isAudio ? '🎵 ' : '📄 ';
         const decrypted_text = `${displayPrefix}${file.name}`;
         const ciphertext = btoa(unescape(encodeURIComponent(decrypted_text)));
         
