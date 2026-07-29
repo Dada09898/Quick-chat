@@ -1,10 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useThemeStore } from './store/themeStore'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RealtimeProvider } from './realtime/RealtimeProvider'
 import { useAuthStore } from './store/authStore'
-import { Suspense, lazy } from 'react'
+import { Toaster } from 'react-hot-toast'
 
 import { ChatLayout } from './features/chat/ChatLayout'
 import { LoginPage, RegisterPage } from './features/auth/AuthPages'
@@ -45,6 +45,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster position="top-center" toastOptions={{ style: { background: '#202c33', color: '#e9edef', border: '1px solid #222d34' } }} />
       <BrowserRouter>
         <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
           <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-950 text-white">Loading...</div>}>

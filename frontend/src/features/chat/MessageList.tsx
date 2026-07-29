@@ -8,6 +8,8 @@ import { useRealtimeStore } from '../../realtime/store';
 import { apiClient } from '../../lib/api';
 import { decodeCiphertext } from '../../utils/cryptoUtils';
 
+const BASE_URL = import.meta.env.VITE_API_URL || '';
+
 export const MessageList: React.FC = () => {
   const messagesRecord = useChatStore(state => state.messages);
   const activeConversationId = useChatStore(state => state.activeConversationId);
@@ -21,18 +23,6 @@ export const MessageList: React.FC = () => {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
-  // Handle scroll-to-message from search
-  useEffect(() => {
-    if (!scrollToMessageId || messages.length === 0) return;
-    const idx = messages.findIndex(m => m.id === scrollToMessageId);
-    if (idx >= 0) {
-      virtuosoRef.current?.scrollToIndex({ index: idx, align: 'center', behavior: 'smooth' });
-      setHighlightedMessageId(scrollToMessageId);
-      setTimeout(() => setHighlightedMessageId(null), 2000);
-    }
-    useChatStore.getState().setScrollToMessageId(null);
-  }, [scrollToMessageId, messages]);
-  
   // Memoize sorted messages for 60fps performance (essential for 100k+ messages)
   const messages = useMemo(() => {
     return Object.values(messagesRecord)
@@ -44,6 +34,18 @@ export const MessageList: React.FC = () => {
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       });
   }, [messagesRecord, activeConversationId]);
+
+  // Handle scroll-to-message from search
+  useEffect(() => {
+    if (!scrollToMessageId || messages.length === 0) return;
+    const idx = messages.findIndex(m => m.id === scrollToMessageId);
+    if (idx >= 0) {
+      virtuosoRef.current?.scrollToIndex({ index: idx, align: 'center', behavior: 'smooth' });
+      setHighlightedMessageId(scrollToMessageId);
+      setTimeout(() => setHighlightedMessageId(null), 2000);
+    }
+    useChatStore.getState().setScrollToMessageId(null);
+  }, [scrollToMessageId, messages]);
 
   useEffect(() => {
     if (!activeConversationId) return;
@@ -63,7 +65,7 @@ export const MessageList: React.FC = () => {
           msgs.forEach((msg: any) => {
             const media_attachments = (msg.attachments || []).map((att: any) => ({
               id: att.id,
-              url: `http://localhost:8000/media/${att.s3_key}`,
+              url: `${BASE_URL}/media/${att.s3_key}`,
               type: 'image', // Basic fallback
               media_key: undefined
             }));
@@ -119,7 +121,7 @@ export const MessageList: React.FC = () => {
           msgs.forEach((msg: any) => {
             const media_attachments = (msg.attachments || []).map((att: any) => ({
               id: att.id,
-              url: `http://localhost:8000/media/${att.s3_key}`,
+              url: `${BASE_URL}/media/${att.s3_key}`,
               type: 'image',
               media_key: undefined
             }));

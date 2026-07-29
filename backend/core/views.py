@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db import connections
 from django.db.utils import OperationalError
 import redis
@@ -71,3 +71,11 @@ class HealthDeepView(APIView):
             "celery": "up" if celery_ok else "down",
             "storage": "up" if storage_ok else "down"
         }, status=200 if overall == "ok" else 503)
+
+class TelemetryView(APIView):
+    """Endpoint for frontend telemetry data."""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        # Silently accept and discard telemetry data
+        return Response(status=204)

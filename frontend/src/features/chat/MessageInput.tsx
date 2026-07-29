@@ -86,6 +86,22 @@ export const MessageInput: React.FC = () => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file && activeConversationId && user) {
+          const fakeEvent = { target: { files: [file], value: '' } } as any;
+          handleFileUpload(fakeEvent);
+        }
+        return;
+      }
+    }
+  };
+
   const handleEmojiClick = (emojiObject: any) => {
     setText(prev => prev + emojiObject.emoji);
   };

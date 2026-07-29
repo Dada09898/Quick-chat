@@ -9,7 +9,7 @@ import { Bookmark, BookmarkCheck, Trash2, ChevronDown, CornerUpLeft, CornerUpRig
 import { useChatStore } from './chatStore';
 import { ClientLinkPreview } from './ClientLinkPreview';
 import { useRealtime } from '../../realtime/RealtimeProvider';
-import { decryptMediaChunk } from '../media/crypto'; // Mock for actual decryption logic
+// Media crypto is available for future E2EE media decryption
 // Assuming useCryptoStore or similar provides the actual keys
 import { layoutVariants, springPresets } from '../../motion';
 import { AudioBubble } from './AudioBubble';
