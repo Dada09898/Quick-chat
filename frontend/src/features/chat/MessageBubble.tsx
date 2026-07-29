@@ -10,10 +10,11 @@ import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ClientLinkPreview } from './ClientLinkPreview';
 import { useRealtime } from '../../realtime/RealtimeProvider';
-// Media crypto is available for future E2EE media decryption
-// Assuming useCryptoStore or similar provides the actual keys
 import { layoutVariants, springPresets } from '../../motion';
 import { AudioBubble } from './AudioBubble';
+import { DocumentCard } from './DocumentCard';
+
+const VITE_API_URL = import.meta.env.VITE_API_URL || '';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -24,6 +25,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   const [decryptedText, setDecryptedText] = useState<string | null>(message.decrypted_text || null);
   const [isDecrypting, setIsDecrypting] = useState(!message.decrypted_text);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [viewImageFull, setViewImageFull] = useState<string | null>(null);
   const user = useAuthStore(state => state.user);
   
   useEffect(() => {
@@ -150,6 +152,42 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   // Replied-to message
   const replyToMsg = !isDeleted && message.reply_to ? useChatStore.getState().messages[message.reply_to] : null;
 
+  // Normalize attachments (support both media_attachments and backend attachments)
+  const rawAttachments: any[] = message.media_attachments || (message as any).attachments || [];
+
+  // Parse file prefix if text starts with emoji (📷, 🎥, 📄, 🎵)
+  const mediaEmojiMatch = decryptedText ? decryptedText.match(/^(📷|🎥|📄|🎵)\s+(.*)/) : null;
+  const isMediaIndicatorText = !!mediaEmojiMatch;
+  const mediaEmojiPrefix = mediaEmojiMatch ? mediaEmojiMatch[1] : '';
+  const mediaFilenameText = mediaEmojiMatch ? mediaEmojiMatch[2] : '';
+
+  // Determine media type
+  const getMediaType = (mediaItem?: any) => {
+    if (mediaItem?.type) {
+      if (['image', 'photo', 'jpeg', 'jpg', 'png', 'webp', 'gif'].includes(mediaItem.type)) return 'image';
+      if (['video', 'mp4', 'webm', 'mov'].includes(mediaItem.type)) return 'video';
+      if (['audio', 'mp3', 'wav', 'ogg', 'm4a'].includes(mediaItem.type)) return 'audio';
+      if (['document', 'pdf', 'doc', 'docx', 'zip', 'rar', 'xls', 'xlsx'].includes(mediaItem.type)) return 'document';
+    }
+    if (mediaEmojiPrefix === '📷') return 'image';
+    if (mediaEmojiPrefix === '🎥') return 'video';
+    if (mediaEmojiPrefix === '🎵') return 'audio';
+    if (mediaEmojiPrefix === '📄') return 'document';
+    return 'document';
+  };
+
+  // Helper to format attachment media URL
+  const getMediaUrl = (mediaItem?: any) => {
+    if (mediaItem?.url) return mediaItem.url;
+    if (mediaItem?.s3_key) {
+      return mediaItem.s3_key.startsWith('http') ? mediaItem.s3_key : `${VITE_API_URL}/media/${mediaItem.s3_key}`;
+    }
+    return '';
+  };
+
+  const hasAttachments = rawAttachments.length > 0;
+  const hasFallbackMediaText = isMediaIndicatorText && !hasAttachments;
+
   return (
     <motion.div 
       ref={bubbleRef}
@@ -173,11 +211,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
       } ${isOwn ? 'items-end' : 'items-start'}`}
       style={{ paddingLeft: isOwn ? '15%' : '0', paddingRight: isOwn ? '0' : '15%' }}
     >
+      {/* Image Fullscreen Viewer Overlay */}
+      {viewImageFull && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setViewImageFull(null)}
+        >
+          <img src={viewImageFull} alt="Full view" className="max-w-full max-h-full object-contain rounded-lg" />
+        </div>
+      )}
+
       <div className={`flex flex-col relative ${isOwn ? 'items-end' : 'items-start'}`} style={{ maxWidth: '100%' }}>
         {/* Bubble with WhatsApp-style tail */}
         <div 
           onMouseLeave={() => { setIsMenuOpen(false); setShowEmojiPicker(false); }}
-          className={`relative min-w-[80px] shadow-sm text-[14.2px] leading-[19px] break-words
+          className={`relative min-w-[120px] max-w-[340px] md:max-w-[420px] shadow-sm text-[14.2px] leading-[19px] break-words
             ${isDeleted ? 'bg-[#202c33] text-[#8696a0] italic rounded-[7.5px] border border-[#222d34] px-[9px] py-[6px] pb-[20px]' :
               isOwn 
               ? 'wa-bubble-out bg-[#005c4b] text-[#e9edef] rounded-[7.5px] rounded-tr-none px-[9px] py-[6px] pb-[20px]' 
@@ -185,7 +233,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
             }
           `}
         >
-          {/* Context Menu Dropdown Trigger - only on hover/long-press */}
+          {/* Context Menu Dropdown Trigger */}
           {!isDeleted && (
             <div className={`absolute top-[2px] ${isOwn ? 'right-[2px]' : 'right-[2px]'} flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10`}>
               <button
@@ -273,23 +321,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
             </motion.div>
           )}
 
-          {/* Media Attachments (inside bubble, above text) */}
-          {!isDeleted && (message.media_attachments || []).length > 0 && (
-            <div className="-mx-[9px] -mt-[6px] mb-1">
-              {(message.media_attachments || []).map((media, idx) => (
-                <div key={idx} className="rounded-t-[7.5px] overflow-hidden">
-                  {media.type === 'audio' ? (
-                    <AudioBubble url={media.url} isOwn={isOwn} />
-                  ) : media.type === 'image' ? (
-                    <img src={media.url || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23202c33"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%238696a0" font-family="sans-serif" font-size="16">Encrypted Image</text></svg>`} alt="Attachment" className="w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" decoding="async" />
-                  ) : (
-                    <video src={media.url} controls className="w-full h-auto" preload="metadata" />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Reply Quote (inside bubble, WhatsApp style) */}
           {replyToMsg && (
             <div className={`-mx-[5px] -mt-[2px] mb-[3px] p-[5px] pl-[8px] rounded-[5px] border-l-[4px] cursor-pointer ${
@@ -304,6 +335,58 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
             </div>
           )}
 
+          {/* Media Attachments Rendering */}
+          {!isDeleted && hasAttachments && (
+            <div className="-mx-[9px] -mt-[6px] mb-1">
+              {rawAttachments.map((media, idx) => {
+                const mediaUrl = getMediaUrl(media);
+                const type = getMediaType(media);
+
+                if (type === 'audio') {
+                  return <AudioBubble key={idx} url={mediaUrl} isOwn={isOwn} />;
+                }
+                if (type === 'document') {
+                  return <DocumentCard key={idx} url={mediaUrl} filename={mediaFilenameText || 'Document'} isOwn={isOwn} />;
+                }
+                if (type === 'video') {
+                  return (
+                    <div key={idx} className="rounded-t-[7.5px] overflow-hidden bg-black">
+                      <video src={mediaUrl} controls className="w-full h-auto max-h-[300px]" preload="metadata" />
+                    </div>
+                  );
+                }
+                // Image
+                return (
+                  <div key={idx} className="rounded-t-[7.5px] overflow-hidden">
+                    <img 
+                      src={mediaUrl} 
+                      alt="Attachment" 
+                      onClick={() => setViewImageFull(mediaUrl)}
+                      className="w-full h-auto max-h-[320px] object-cover cursor-pointer hover:opacity-95 transition-opacity" 
+                      loading="lazy" 
+                      decoding="async" 
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Fallback Media Indicator (If text starts with 📷, 🎥, 📄, 🎵) */}
+          {!isDeleted && hasFallbackMediaText && (
+            <div className="-mx-[4px] my-0.5">
+              {mediaEmojiPrefix === '📄' ? (
+                <DocumentCard url="" filename={mediaFilenameText || 'Document'} isOwn={isOwn} />
+              ) : mediaEmojiPrefix === '📷' ? (
+                <DocumentCard url="" filename={mediaFilenameText || 'Image File'} isOwn={isOwn} />
+              ) : mediaEmojiPrefix === '🎥' ? (
+                <DocumentCard url="" filename={mediaFilenameText || 'Video File'} isOwn={isOwn} />
+              ) : (
+                <DocumentCard url="" filename={mediaFilenameText || 'Audio File'} isOwn={isOwn} />
+              )}
+            </div>
+          )}
+
           {/* Deleted Message */}
           {isDeleted && (
             <div className="flex items-center gap-2 text-[#8696a0]">
@@ -312,8 +395,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
             </div>
           )}
 
-          {/* Message Text */}
-          {!isDeleted && (
+          {/* Regular Message Text (Hide if it's purely a media header indicator) */}
+          {!isDeleted && !isMediaIndicatorText && (
             <div className="wa-msg-text">
               {isDecrypting ? (
                 <span className="animate-pulse text-[#8696a0] text-[13px]">Decrypting...</span>
@@ -350,7 +433,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
             <span className="text-[11px] text-[#8696a0] italic ml-1">(edited)</span>
           )}
 
-          {/* Timestamp + Read Receipt (WhatsApp style — float at bottom-right of last line) */}
+          {/* Timestamp + Read Receipt */}
           <span className="wa-msg-meta float-right ml-[8px] mt-[3px] relative top-[3px]">
             <span className="text-[11px] text-[#ffffff99] leading-none">
               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
