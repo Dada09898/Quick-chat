@@ -192,6 +192,7 @@ export const MessageInput: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file || !activeConversationId || !user) return;
     
+    setShowAttachmentMenu(false);
     setIsUploading(true);
     setUploadProgress(0);
     
@@ -201,7 +202,14 @@ export const MessageInput: React.FC = () => {
         setIsUploading(false);
         const msgId = crypto.randomUUID();
         const createdAt = new Date().toISOString();
-        const ciphertext = btoa(unescape(encodeURIComponent("📷 Media attachment")));
+
+        const isAudio = file.type.startsWith('audio');
+        const isVideo = file.type.startsWith('video');
+        const isImage = file.type.startsWith('image');
+        const mediaType = isAudio ? 'audio' : isVideo ? 'video' : isImage ? 'image' : 'document';
+        const displayPrefix = isAudio ? '🎵 ' : isVideo ? '🎥 ' : isImage ? '📷 ' : '📄 ';
+        const decrypted_text = `${displayPrefix}${file.name}`;
+        const ciphertext = btoa(unescape(encodeURIComponent(decrypted_text)));
         
         const newMsg = {
           id: msgId,
@@ -216,8 +224,8 @@ export const MessageInput: React.FC = () => {
           is_edited: false,
           deleted_at: null,
           status: 'queued' as const,
-          decrypted_text: "📷 Media attachment",
-          media_attachments: [{ id: attachmentId, url, type: file.type.startsWith('video') ? 'video' : 'image', media_key: mediaKeyBase64 }]
+          decrypted_text,
+          media_attachments: [{ id: attachmentId, url, type: mediaType, media_key: mediaKeyBase64 }]
         };
         enqueueMessage(newMsg);
         
@@ -403,24 +411,46 @@ export const MessageInput: React.FC = () => {
                </div>
                <span className="text-[12px] text-[#e9edef]">Photos</span>
             </label>
-            <div className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
-               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#00a884] to-[#008f6f] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+            <label className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#00a884] to-[#008f6f] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform relative overflow-hidden">
                  <Camera size={24} />
+                 <input 
+                   type="file" 
+                   className="hidden" 
+                   accept="image/*" 
+                   capture="environment"
+                   onChange={handleFileUpload}
+                   disabled={isUploading}
+                 />
                </div>
                <span className="text-[12px] text-[#e9edef]">Camera</span>
-            </div>
-            <div className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
-               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#53bdeb] to-[#3498db] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+            </label>
+            <label className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#53bdeb] to-[#3498db] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform relative overflow-hidden">
                  <FileText size={24} />
+                 <input 
+                   type="file" 
+                   className="hidden" 
+                   accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.csv" 
+                   onChange={handleFileUpload}
+                   disabled={isUploading}
+                 />
                </div>
                <span className="text-[12px] text-[#e9edef]">Document</span>
-            </div>
-            <div className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
-               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#ff7a00] to-[#e66a00] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+            </label>
+            <label className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]">
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#ff7a00] to-[#e66a00] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform relative overflow-hidden">
                  <Headphones size={24} />
+                 <input 
+                   type="file" 
+                   className="hidden" 
+                   accept="audio/*" 
+                   onChange={handleFileUpload}
+                   disabled={isUploading}
+                 />
                </div>
                <span className="text-[12px] text-[#e9edef]">Audio</span>
-            </div>
+            </label>
           </motion.div>
         )}
       </AnimatePresence>
@@ -455,9 +485,17 @@ export const MessageInput: React.FC = () => {
           style={{ height: '24px', lineHeight: '24px' }}
         />
         {!text.trim() && (
-          <button className="p-1 text-[#8696a0] hover:text-[#d1d7db] transition mb-[-2px] ml-2">
+          <label className="p-1 text-[#8696a0] hover:text-[#d1d7db] transition mb-[-2px] ml-2 cursor-pointer relative overflow-hidden">
             <Camera size={22} />
-          </button>
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/*" 
+              capture="environment"
+              onChange={handleFileUpload}
+              disabled={isUploading}
+            />
+          </label>
         )}
       </div>
       
