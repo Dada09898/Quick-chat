@@ -31,8 +31,15 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
     openViewer,
     setCreateModalOpen,
     setPrivacyModalOpen,
+    mutedUserIds,
+    toggleMuteUser,
     cleanExpiredStatuses
   } = useStatusStore();
+
+  const [isMutedExpanded, setIsMutedExpanded] = useState(false);
+
+  const unmutedGroups = contactStatusGroups.filter(g => !mutedUserIds.includes(g.userId));
+  const mutedGroups = contactStatusGroups.filter(g => mutedUserIds.includes(g.userId));
 
   useEffect(() => {
     cleanExpiredStatuses();
@@ -229,23 +236,84 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
             </div>
 
             <div className="text-xs font-semibold text-[#8696a0] uppercase tracking-wider mt-2">Recent updates</div>
-            {contactStatusGroups.map((group) => (
-              <div
-                key={group.userId}
-                onClick={() => openViewer(group, 0)}
-                className="flex items-center gap-3 p-2 hover:bg-[#202c33] rounded-xl cursor-pointer transition"
-              >
-                <div className={`p-0.5 rounded-full ${group.hasUnviewed ? 'bg-[#00a884]' : 'bg-[#8696a0]/40'}`}>
-                  <Avatar name={group.userName} url={group.userAvatar} size="lg" />
+            {unmutedGroups.length === 0 ? (
+              <div className="text-xs text-[#8696a0] italic px-2">No recent updates</div>
+            ) : (
+              unmutedGroups.map((group) => (
+                <div
+                  key={group.userId}
+                  onClick={() => openViewer(group, 0)}
+                  className="flex items-center justify-between p-2 hover:bg-[#202c33] rounded-xl cursor-pointer transition group/item relative"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-0.5 rounded-full ${group.hasUnviewed ? 'bg-[#00a884]' : 'bg-[#8696a0]/40'}`}>
+                      <Avatar name={group.userName} url={group.userAvatar} size="lg" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-base text-[#e9edef]">{group.userName}</span>
+                      <span className="text-xs text-[#8696a0]">
+                        {group.statuses.length} update{group.statuses.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMuteUser(group.userId);
+                    }}
+                    className="opacity-0 group-hover/item:opacity-100 p-2 text-[#8696a0] hover:text-white rounded-full transition"
+                    title="Mute Status"
+                  >
+                    <VolumeX size={16} />
+                  </button>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-base text-[#e9edef]">{group.userName}</span>
-                  <span className="text-xs text-[#8696a0]">
-                    {group.statuses.length} update{group.statuses.length > 1 ? 's' : ''}
-                  </span>
-                </div>
+              ))
+            )}
+
+            {/* Muted Updates Section */}
+            {mutedGroups.length > 0 && (
+              <div className="mt-4 border-t border-[#222d34] pt-3">
+                <button
+                  onClick={() => setIsMutedExpanded(!isMutedExpanded)}
+                  className="w-full flex items-center justify-between text-xs font-semibold text-[#8696a0] uppercase tracking-wider py-2 hover:text-[#e9edef] transition"
+                >
+                  <span>Muted updates ({mutedGroups.length})</span>
+                  <ChevronDown size={16} className={`transition-transform ${isMutedExpanded ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isMutedExpanded && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    {mutedGroups.map((group) => (
+                      <div
+                        key={group.userId}
+                        onClick={() => openViewer(group, 0)}
+                        className="flex items-center justify-between p-2 hover:bg-[#202c33] rounded-xl cursor-pointer transition opacity-60 hover:opacity-100 group/muted relative"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-0.5 rounded-full bg-[#8696a0]/40">
+                            <Avatar name={group.userName} url={group.userAvatar} size="lg" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-base text-[#e9edef]">{group.userName}</span>
+                            <span className="text-xs text-[#8696a0]">Muted</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMuteUser(group.userId);
+                          }}
+                          className="opacity-0 group-hover/muted:opacity-100 p-2 text-[#00a884] hover:bg-[#00a884]/10 rounded-full transition text-xs font-medium"
+                          title="Unmute Status"
+                        >
+                          Unmute
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
+            )}
           </div>
         ) : (
           /* CHATS TAB VIEW */

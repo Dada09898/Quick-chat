@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Pause, Play, Trash2, Send, Eye } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Pause, Play, Trash2, Send, Eye, VolumeX } from 'lucide-react';
 import { useStatusStore, type StatusItem } from './statusStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
@@ -9,7 +9,7 @@ import { useRealtime } from '../../realtime/RealtimeProvider';
 import toast from 'react-hot-toast';
 
 export const StatusViewerModal: React.FC = () => {
-  const { activeViewerGroup, activeViewerIndex, closeViewer, nextStatus, prevStatus, deleteStatus, setViewersModalStatusId } = useStatusStore();
+  const { activeViewerGroup, activeViewerIndex, closeViewer, nextStatus, prevStatus, deleteStatus, setViewersModalStatusId, toggleMuteUser, mutedUserIds } = useStatusStore();
   const currentUser = useAuthStore(state => state.user);
   const { sendEvent } = useRealtime();
   const enqueueMessage = useChatStore(state => state.enqueueMessage);
@@ -159,6 +159,24 @@ export const StatusViewerModal: React.FC = () => {
               >
                 {isPaused ? <Play size={20} /> : <Pause size={20} />}
               </button>
+              {!isOwn && (
+                <button
+                  onClick={() => {
+                    toggleMuteUser(activeViewerGroup.userId);
+                    const isMuted = mutedUserIds.includes(activeViewerGroup.userId);
+                    toast.success(isMuted ? 'Status unmuted' : 'Muted status updates from this user');
+                    closeViewer();
+                  }}
+                  className={`p-2 rounded-full transition ${
+                    mutedUserIds.includes(activeViewerGroup.userId)
+                      ? 'text-yellow-400 hover:bg-yellow-500/20'
+                      : 'hover:bg-white/10 text-white'
+                  }`}
+                  title={mutedUserIds.includes(activeViewerGroup.userId) ? 'Unmute Status' : 'Mute Status'}
+                >
+                  <VolumeX size={20} />
+                </button>
+              )}
               {isOwn && (
                 <button
                   onClick={() => {
@@ -246,29 +264,47 @@ export const StatusViewerModal: React.FC = () => {
           </div>
         )}
 
-        {/* Reply Bar (if not own status) */}
+        {/* Quick Emoji Reactions & Reply Bar (if not own status) */}
         {!isOwn && (
-          <form
-            onSubmit={handleSendReply}
-            className="w-full max-w-md p-4 bg-gradient-to-t from-black/90 to-transparent flex items-center gap-2 pb-safe z-30"
-          >
-            <input
-              type="text"
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              onFocus={() => setIsPaused(true)}
-              onBlur={() => setIsPaused(false)}
-              placeholder={`Reply to ${activeViewerGroup.userName}...`}
-              className="flex-1 bg-white/10 text-white placeholder-white/50 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00a884]"
-            />
-            <button
-              type="submit"
-              disabled={!replyText.trim()}
-              className="p-2.5 bg-[#00a884] hover:bg-[#06cf9c] disabled:opacity-50 text-[#111b21] rounded-full transition"
-            >
-              <Send size={18} />
-            </button>
-          </form>
+          <div className="w-full max-w-md p-4 bg-gradient-to-t from-black/90 to-transparent flex flex-col gap-3 pb-safe z-30">
+            {/* Quick Emoji Bar */}
+            <div className="flex justify-around items-center bg-black/40 backdrop-blur-md py-2 px-3 rounded-full border border-white/10">
+              {['❤️', '😂', '😮', '😢', '🙏', '🔥', '👏', '🎉'].map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    const fakeEvent = { preventDefault: () => {} } as any;
+                    setReplyText(`Reacted ${emoji}`);
+                    setTimeout(() => handleSendReply(fakeEvent), 0);
+                  }}
+                  className="hover:scale-130 active:scale-95 transition-transform text-2xl"
+                  title={`React ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            {/* Reply Input Form */}
+            <form onSubmit={handleSendReply} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onFocus={() => setIsPaused(true)}
+                onBlur={() => setIsPaused(false)}
+                placeholder={`Reply to ${activeViewerGroup.userName}...`}
+                className="flex-1 bg-white/10 text-white placeholder-white/50 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00a884]"
+              />
+              <button
+                type="submit"
+                disabled={!replyText.trim()}
+                className="p-2.5 bg-[#00a884] hover:bg-[#06cf9c] disabled:opacity-50 text-[#111b21] rounded-full transition"
+              >
+                <Send size={18} />
+              </button>
+            </form>
+          </div>
         )}
       </motion.div>
     </AnimatePresence>

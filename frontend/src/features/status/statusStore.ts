@@ -8,16 +8,18 @@ export interface StatusViewerRecord {
 }
 
 export type StatusPrivacySetting = 'contacts' | 'except' | 'only';
+export type StatusFontFamily = 'sans-serif' | 'serif' | 'monospace' | 'cursive' | 'impact';
 
 export interface StatusItem {
   id: string;
   userId: string;
   userName: string;
   userAvatar?: string;
-  type: 'image' | 'video' | 'text';
-  content: string; // Image/video URL or text content
+  type: 'image' | 'video' | 'text' | 'audio';
+  content: string; // Image/video URL or text content or audio URL
   caption?: string;
   backgroundColor?: string; // For text status
+  fontFamily?: StatusFontFamily; // For text status
   createdAt: number; // Timestamp
   expiresAt: number; // 24h later
   isViewed?: boolean;
@@ -44,6 +46,7 @@ interface StatusState {
   isCreateModalOpen: boolean;
   isPrivacyModalOpen: boolean;
   viewersModalStatusId: string | null;
+  mutedUserIds: string[];
   
   // Privacy configuration
   statusPrivacy: StatusPrivacySetting;
@@ -62,12 +65,31 @@ interface StatusState {
   setPrivacyModalOpen: (open: boolean) => void;
   setViewersModalStatusId: (statusId: string | null) => void;
   setStatusPrivacy: (privacy: StatusPrivacySetting, excluded?: string[], included?: string[]) => void;
+  toggleMuteUser: (userId: string) => void;
   deleteStatus: (statusId: string) => void;
   cleanExpiredStatuses: () => void;
 }
 
 const STORAGE_KEY = 'quick_chat_statuses_v2';
 const PRIVACY_KEY = 'quick_chat_status_privacy_v1';
+const MUTED_KEY = 'quick_chat_status_muted_v1';
+
+function loadInitialMuted(): string[] {
+  try {
+    const raw = localStorage.getItem(MUTED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMuted(muted: string[]) {
+  try {
+    localStorage.setItem(MUTED_KEY, JSON.stringify(muted));
+  } catch (e) {
+    console.error('Failed to save muted state:', e);
+  }
+}
 
 function loadInitialPrivacy() {
   try {
@@ -121,22 +143,6 @@ function savePrivacy(privacy: StatusPrivacySetting, excludedUserIds: string[], i
   }
 }
 
-// Rich initial demo status with sample views for "My Status" and contacts
-const demoViews: StatusViewerRecord[] = [
-  {
-    userId: 'user_alex',
-    userName: 'Alex Morgan',
-    userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-    viewedAt: Date.now() - 1200000
-  },
-  {
-    userId: 'user_sarah',
-    userName: 'Sarah Jenkins',
-    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-    viewedAt: Date.now() - 3600000
-  }
-];
-
 const initialDemoGroups: UserStatusGroup[] = [
   {
     userId: 'demo_user_1',
@@ -153,6 +159,7 @@ const initialDemoGroups: UserStatusGroup[] = [
         type: 'text',
         content: 'Welcome to Kryozen Quick Chat! 🚀 E2E Encrypted & Ultra Fast.',
         backgroundColor: '#005c4b',
+        fontFamily: 'sans-serif',
         createdAt: Date.now() - 3600000,
         expiresAt: Date.now() + 82800000,
         isViewed: false,
@@ -177,6 +184,7 @@ const initialDemoGroups: UserStatusGroup[] = [
 
 const initialPrivacy = loadInitialPrivacy();
 const initialLoaded = loadInitialState();
+const initialMuted = loadInitialMuted();
 const defaultContacts = initialLoaded.contactStatusGroups.length > 0 
   ? initialLoaded.contactStatusGroups 
   : initialDemoGroups;
@@ -189,6 +197,7 @@ export const useStatusStore = create<StatusState>((set, get) => ({
   isCreateModalOpen: false,
   isPrivacyModalOpen: false,
   viewersModalStatusId: null,
+  mutedUserIds: initialMuted,
 
   statusPrivacy: initialPrivacy.statusPrivacy,
   excludedUserIds: initialPrivacy.excludedUserIds,
@@ -197,6 +206,17 @@ export const useStatusStore = create<StatusState>((set, get) => ({
   setCreateModalOpen: (open) => set({ isCreateModalOpen: open }),
   setPrivacyModalOpen: (open) => set({ isPrivacyModalOpen: open }),
   setViewersModalStatusId: (statusId) => set({ viewersModalStatusId: statusId }),
+
+  toggleMuteUser: (userId) => {
+    set((state) => {
+      const isMuted = state.mutedUserIds.includes(userId);
+      const updatedMuted = isMuted
+        ? state.mutedUserIds.filter(id => id !== userId)
+        : [...state.mutedUserIds, userId];
+      saveMuted(updatedMuted);
+      return { mutedUserIds: updatedMuted };
+    });
+  },
 
   setStatusPrivacy: (privacy, excluded = [], included = []) => {
     savePrivacy(privacy, excluded, included);

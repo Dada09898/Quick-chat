@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Image as ImageIcon, Send, Type, Palette } from 'lucide-react';
-import { useStatusStore } from './statusStore';
+import { useStatusStore, type StatusFontFamily } from './statusStore';
 import { useAuthStore } from '../../store/authStore';
 
 const COLOR_PALETTE = [
@@ -14,6 +14,14 @@ const COLOR_PALETTE = [
   '#172554', // Dark Navy
 ];
 
+const FONT_FAMILIES: { name: string; value: StatusFontFamily; fontStyle: string }[] = [
+  { name: 'Sans', value: 'sans-serif', fontStyle: 'font-sans' },
+  { name: 'Serif', value: 'serif', fontStyle: 'font-serif' },
+  { name: 'Mono', value: 'monospace', fontStyle: 'font-mono' },
+  { name: 'Cursive', value: 'cursive', fontStyle: 'font-cursive' },
+  { name: 'Impact', value: 'impact', fontStyle: 'font-black uppercase' },
+];
+
 export const StatusCreateModal: React.FC = () => {
   const { isCreateModalOpen, setCreateModalOpen, addStatus } = useStatusStore();
   const currentUser = useAuthStore(state => state.user);
@@ -21,6 +29,7 @@ export const StatusCreateModal: React.FC = () => {
   const [mode, setMode] = useState<'text' | 'media'>('text');
   const [text, setText] = useState('');
   const [colorIndex, setColorIndex] = useState(0);
+  const [fontIndex, setFontIndex] = useState(0);
   const [mediaUrl, setMediaUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
@@ -48,7 +57,8 @@ export const StatusCreateModal: React.FC = () => {
       type: mode === 'text' ? 'text' : mediaType,
       content: mode === 'text' ? text.trim() : mediaUrl,
       caption: mode === 'media' ? caption.trim() : undefined,
-      backgroundColor: mode === 'text' ? COLOR_PALETTE[colorIndex] : undefined
+      backgroundColor: mode === 'text' ? COLOR_PALETTE[colorIndex] : undefined,
+      fontFamily: mode === 'text' ? FONT_FAMILIES[fontIndex].value : undefined
     });
 
     // Reset & Close
@@ -100,7 +110,7 @@ export const StatusCreateModal: React.FC = () => {
             {mode === 'text' ? (
               <div className="flex flex-col gap-4">
                 <div
-                  className="w-full h-48 rounded-xl p-4 flex items-center justify-center relative transition-colors"
+                  className="w-full h-56 rounded-xl p-4 flex items-center justify-center relative transition-colors"
                   style={{ backgroundColor: COLOR_PALETTE[colorIndex] }}
                 >
                   <textarea
@@ -109,16 +119,28 @@ export const StatusCreateModal: React.FC = () => {
                     placeholder="Type a status update..."
                     rows={4}
                     maxLength={200}
+                    style={{ fontFamily: FONT_FAMILIES[fontIndex].value }}
                     className="w-full bg-transparent text-white placeholder-white/60 text-xl font-medium text-center focus:outline-none resize-none"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setColorIndex((prev) => (prev + 1) % COLOR_PALETTE.length)}
-                    className="absolute top-3 right-3 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full transition"
-                    title="Change background color"
-                  >
-                    <Palette size={18} />
-                  </button>
+                  {/* Style Control Buttons */}
+                  <div className="absolute top-3 right-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFontIndex((prev) => (prev + 1) % FONT_FAMILIES.length)}
+                      className="px-2.5 py-1 bg-black/30 hover:bg-black/50 text-white rounded-full transition text-xs font-bold"
+                      title="Change Font Family"
+                    >
+                      {FONT_FAMILIES[fontIndex].name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setColorIndex((prev) => (prev + 1) % COLOR_PALETTE.length)}
+                      className="p-2 bg-black/30 hover:bg-black/50 text-white rounded-full transition"
+                      title="Change background color"
+                    >
+                      <Palette size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
