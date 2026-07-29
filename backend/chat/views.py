@@ -18,16 +18,17 @@ class UploadStartView(APIView):
         mime_type = request.data.get('mime_type', 'application/octet-stream')
         file_size = request.data.get('file_size', 0)
         
-        ALLOWED_MIME_TYPES = [
-            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-            'application/pdf', 'video/mp4', 'video/webm',
-            'audio/mpeg', 'audio/mp3', 'audio/webm', 'audio/ogg', 'audio/wav', 'audio/mp4'
-        ]
-        MAX_FILE_SIZE = 50 * 1024 * 1024 # 50MB
+        MAX_FILE_SIZE = 100 * 1024 * 1024 # 100MB
         
-        if mime_type not in ALLOWED_MIME_TYPES:
+        # Flexible MIME validation allowing images, videos, audio, documents, and encrypted octet-streams
+        is_valid_mime = (
+            mime_type == 'application/octet-stream' or
+            mime_type.startswith(('image/', 'video/', 'audio/', 'text/', 'application/'))
+        )
+        
+        if not is_valid_mime:
             return Response({'error': 'Invalid MIME type'}, status=status.HTTP_400_BAD_REQUEST)
-        if int(file_size) > MAX_FILE_SIZE:
+        if int(file_size or 0) > MAX_FILE_SIZE:
             return Response({'error': 'File exceeds maximum size'}, status=status.HTTP_400_BAD_REQUEST)
         
         session = UploadSession.objects.create(

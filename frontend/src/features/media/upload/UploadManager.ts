@@ -42,7 +42,11 @@ export class UploadManager {
       const chunkManager = new ChunkManager(processedFile);
       const startRes = await apiJson('/api/chat/upload/start/', {
         method: 'POST',
-        body: { chunk_count: chunkManager.getChunkCount() }
+        body: { 
+          chunk_count: chunkManager.getChunkCount(),
+          mime_type: processedFile.type || 'application/octet-stream',
+          file_size: processedFile.size
+        }
       });
       const { session_id } = await startRes.json();
 
