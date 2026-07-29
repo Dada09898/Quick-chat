@@ -115,19 +115,58 @@ body {
   background: var(--accent);
 }
 
+/* ===== WhatsApp-style bubble tails ===== */
+.wa-bubble-out {
+  position: relative;
+}
+.wa-bubble-out::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border-top: 0 solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 8px solid #005c4b;
+}
+.wa-bubble-in {
+  position: relative;
+}
+.wa-bubble-in::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-top: 0 solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #202c33;
+}
+
+/* Message text styling */
+.wa-msg-text {
+  word-break: break-word;
+  white-space: pre-wrap;
+  unicode-bidi: plaintext;
+}
+.wa-msg-text p {
+  margin: 0;
+  display: inline;
+}
+
+/* Ensure metadata flows with text */
+.wa-msg-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* Mobile touch optimizations */
 @media (hover: none) and (pointer: coarse) {
-  /* Disable hover-dependent UI on touch devices */
-  .group-hover\:opacity-100 {
-    opacity: 1 !important;
-  }
-  
-  /* Ensure minimum touch target sizes */
-  button, a, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
   /* Hide scrollbars on mobile for cleaner look */
   ::-webkit-scrollbar {
     display: none;
@@ -136,6 +175,7 @@ body {
     scrollbar-width: none;
   }
 }
+
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {

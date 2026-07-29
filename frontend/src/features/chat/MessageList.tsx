@@ -153,7 +153,7 @@ export const MessageList: React.FC = () => {
 
   return (
     <div 
-      className="flex-1 overflow-hidden p-4 flex flex-col bg-[#0b141a] relative"
+      className="flex-1 overflow-hidden px-[12px] md:px-[6%] lg:px-[15%] flex flex-col bg-[#0b141a] relative"
       style={{
         backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
         backgroundRepeat: 'repeat',
@@ -198,7 +198,7 @@ export const MessageList: React.FC = () => {
           }
 
           return (
-            <div className={`py-1 flex flex-col ${highlightedMessageId === msg.id ? 'ring-2 ring-[#00a884] ring-offset-1 ring-offset-transparent rounded-lg transition-all duration-500' : ''}`}>
+            <div className={`px-[5px] py-[1px] flex flex-col ${highlightedMessageId === msg.id ? 'bg-[#00a884]/10 transition-all duration-500' : ''}`}>
               {showDateSeparator && (
                 <div className="flex justify-center my-2.5">
                   <span className="bg-[#182229] text-[#8696a0] text-[12.5px] px-3 py-1 rounded-lg shadow-sm font-medium">

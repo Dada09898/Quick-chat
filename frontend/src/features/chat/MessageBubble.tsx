@@ -7,6 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Bookmark, BookmarkCheck, Trash2, ChevronDown, CornerUpLeft, CornerUpRight, Copy, Smile, Edit2 } from 'lucide-react';
 import { useChatStore } from './chatStore';
+import { useAuthStore } from '../../store/authStore';
 import { ClientLinkPreview } from './ClientLinkPreview';
 import { useRealtime } from '../../realtime/RealtimeProvider';
 // Media crypto is available for future E2EE media decryption
@@ -23,6 +24,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   const [decryptedText, setDecryptedText] = useState<string | null>(message.decrypted_text || null);
   const [isDecrypting, setIsDecrypting] = useState(!message.decrypted_text);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const user = useAuthStore(state => state.user);
   
   useEffect(() => {
     let isMounted = true;
@@ -31,16 +33,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
       if (message.decrypted_text) return; // Already decrypted
       
       try {
-        // In a real scenario, this fetches the conversation session key, 
-        // decrypts the ciphertext payload (AES-GCM), and sets the plaintext.
-        // We'll simulate the delay to demonstrate lazy decryption.
         await new Promise(resolve => setTimeout(resolve, 50)); 
         const plain = atob(message.ciphertext); // Mock base64 decryption
         
         if (isMounted) {
           setDecryptedText(plain);
           setIsDecrypting(false);
-          // Optional: update chatStore so it doesn't decrypt again during this session
         }
       } catch (err) {
         if (isMounted) setDecryptedText("Decryption failed.");
@@ -102,7 +100,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const handleReaction = (emoji: string) => {
-    // Optimistic update
     updateMessageReactions(message.id, user?.id || '', emoji);
     sendEvent('message.reaction', {
       message_id: message.id,
@@ -137,8 +134,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
 
   const handleSelection = () => {
     toggleMessageSelection(message.id);
-  };const urlRegex = /(https?:\/\/[^\s]+)/g;
+  };
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (decryptedText) {
+      navigator.clipboard.writeText(decryptedText).catch(console.error);
+    }
+    setIsMenuOpen(false);
+  };
+
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
   const urls = decryptedText ? Array.from(decryptedText.matchAll(urlRegex)).map(m => m[0]) : [];
+
+  // Replied-to message
+  const replyToMsg = !isDeleted && message.reply_to ? useChatStore.getState().messages[message.reply_to] : null;
 
   return (
     <motion.div 
@@ -158,46 +168,43 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
         }
       }}
       onClick={handleSelection}
-      className={`group flex flex-col mb-1.5 w-full cursor-pointer transition-colors ${
-        isSelected ? 'bg-blue-500/10' : ''
+      className={`group flex flex-col w-full cursor-pointer transition-colors ${
+        isSelected ? 'bg-[#00a884]/5' : ''
       } ${isOwn ? 'items-end' : 'items-start'}`}
+      style={{ paddingLeft: isOwn ? '15%' : '0', paddingRight: isOwn ? '0' : '15%' }}
     >
-      <div className={`flex flex-col max-w-[85%] md:max-w-[65%] relative ${isOwn ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col relative ${isOwn ? 'items-end' : 'items-start'}`} style={{ maxWidth: '100%' }}>
+        {/* Bubble with WhatsApp-style tail */}
         <div 
           onMouseLeave={() => { setIsMenuOpen(false); setShowEmojiPicker(false); }}
-          className={`px-3 py-1.5 pb-[22px] min-w-[100px] shadow-sm text-[15px] leading-relaxed break-words relative group/bubble
-            ${isDeleted ? 'bg-[#202c33] text-[#8696a0] italic rounded-lg border border-[#222d34]' :
+          className={`relative min-w-[80px] shadow-sm text-[14.2px] leading-[19px] break-words
+            ${isDeleted ? 'bg-[#202c33] text-[#8696a0] italic rounded-[7.5px] border border-[#222d34] px-[9px] py-[6px] pb-[20px]' :
               isOwn 
-              ? 'bg-[#005c4b] text-[#e9edef] rounded-lg rounded-tr-none' 
-              : 'bg-[#202c33] text-[#e9edef] rounded-lg rounded-tl-none'
+              ? 'wa-bubble-out bg-[#005c4b] text-[#e9edef] rounded-[7.5px] rounded-tr-none px-[9px] py-[6px] pb-[20px]' 
+              : 'wa-bubble-in bg-[#202c33] text-[#e9edef] rounded-[7.5px] rounded-tl-none px-[9px] py-[6px] pb-[20px]'
             }
           `}
         >
-          {/* Context Menu Button */}
+          {/* Context Menu Dropdown Trigger - only on hover/long-press */}
           {!isDeleted && (
-            <div className={`absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover/bubble:opacity-100 transition-opacity z-10 bg-gradient-to-l from-[#005c4b] via-[#005c4b]/80 to-transparent ${!isOwn ? 'from-[#202c33] via-[#202c33]/80' : ''}`}>
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowEmojiPicker(!showEmojiPicker); setIsMenuOpen(false); }}
-                className="p-1 rounded-full text-[#8696a0] hover:text-[#d1d7db]"
-              >
-                <Smile size={18} />
-              </button>
+            <div className={`absolute top-[2px] ${isOwn ? 'right-[2px]' : 'right-[2px]'} flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10`}>
               <button
                 onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); setShowEmojiPicker(false); }}
-                className="p-1 rounded-full text-[#8696a0] hover:text-[#d1d7db]"
+                className="p-[3px] rounded-full hover:bg-black/10"
               >
-                <ChevronDown size={18} />
+                <ChevronDown size={16} className="text-[#8696a0]" />
               </button>
             </div>
           )}
 
+          {/* Quick Reactions */}
           {showEmojiPicker && (
-            <div className="absolute top-8 right-2 bg-[#2a3942] rounded-lg shadow-xl p-2 z-50 border border-[#222d34] flex gap-2">
+            <div className="absolute -top-10 right-0 bg-[#233138] rounded-full shadow-xl px-2 py-1.5 z-50 border border-[#222d34] flex gap-1.5">
               {['👍', '❤️', '😂', '😮', '😢', '🙏'].map(emoji => (
                 <button
                   key={emoji}
                   onClick={(e) => { e.stopPropagation(); handleReaction(emoji); }}
-                  className="hover:scale-125 transition-transform text-xl"
+                  className="hover:scale-125 active:scale-90 transition-transform text-[20px] w-8 h-8 flex items-center justify-center"
                 >
                   {emoji}
                 </button>
@@ -213,145 +220,171 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               animate="animate"
               exit="exit"
               transition={springPresets.fast}
-              className="absolute top-8 right-2 w-40 bg-[#2a3942] rounded-lg shadow-xl py-2 z-50 border border-[#222d34]"
+              className={`absolute top-8 ${isOwn ? 'right-0' : 'left-0'} w-[200px] bg-[#233138] rounded-lg shadow-2xl py-1.5 z-50 border border-[#1d2d35]`}
             >
               <button
-                onClick={handleReply}
-                className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3"
+                onClick={(e) => { e.stopPropagation(); setShowEmojiPicker(true); setIsMenuOpen(false); }}
+                className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#e9edef] hover:bg-[#182229] flex items-center gap-3"
               >
-                <CornerUpLeft size={16} /> Reply
+                <Smile size={18} className="text-[#8696a0]" /> React
               </button>
-              <button className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3">
-                <Copy size={16} /> Copy
+              <button
+                onClick={handleReply}
+                className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#e9edef] hover:bg-[#182229] flex items-center gap-3"
+              >
+                <CornerUpLeft size={18} className="text-[#8696a0]" /> Reply
+              </button>
+              <button
+                onClick={handleCopy}
+                className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#e9edef] hover:bg-[#182229] flex items-center gap-3"
+              >
+                <Copy size={18} className="text-[#8696a0]" /> Copy
               </button>
               <button
                 onClick={handleForward}
-                className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3"
+                className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#e9edef] hover:bg-[#182229] flex items-center gap-3"
               >
-                <CornerUpRight size={16} /> Forward
+                <CornerUpRight size={18} className="text-[#8696a0]" /> Forward
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); toggleBookmark(message.id); setIsMenuOpen(false); }}
-                className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3"
+                className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#e9edef] hover:bg-[#182229] flex items-center gap-3"
               >
-                {isBookmarked ? <BookmarkCheck size={16} className="text-[#00a884]"/> : <Bookmark size={16} />} 
+                {isBookmarked ? <BookmarkCheck size={18} className="text-[#00a884]"/> : <Bookmark size={18} className="text-[#8696a0]" />} 
                 {isBookmarked ? 'Unstar' : 'Star'}
               </button>
               {isOwn && (
                 <>
                   <button
                     onClick={handleEdit}
-                    className="w-full px-4 py-2 text-left text-[14px] text-[#e9edef] hover:bg-[#202c33] flex items-center gap-3"
+                    className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#e9edef] hover:bg-[#182229] flex items-center gap-3"
                   >
-                    <Edit2 size={16} /> Edit
+                    <Edit2 size={18} className="text-[#8696a0]" /> Edit
                   </button>
+                  <div className="border-t border-[#1d2d35] my-1" />
                   <button
                     onClick={(e) => { handleDelete(e); setIsMenuOpen(false); }}
-                    className="w-full px-4 py-2 text-left text-[14px] text-[#f15c6d] hover:bg-[#202c33] flex items-center gap-3"
+                    className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#ea4335] hover:bg-[#182229] flex items-center gap-3"
                   >
-                    <Trash2 size={16} /> Delete
+                    <Trash2 size={18} /> Delete
                   </button>
                 </>
               )}
             </motion.div>
           )}
 
-          {/* Decryption Loading State */}
-          {isDecrypting && !isDeleted && <span className="animate-pulse text-gray-300">Decrypting...</span>}
+          {/* Media Attachments (inside bubble, above text) */}
+          {!isDeleted && (message.media_attachments || []).length > 0 && (
+            <div className="-mx-[9px] -mt-[6px] mb-1">
+              {(message.media_attachments || []).map((media, idx) => (
+                <div key={idx} className="rounded-t-[7.5px] overflow-hidden">
+                  {media.type === 'audio' ? (
+                    <AudioBubble url={media.url} isOwn={isOwn} />
+                  ) : media.type === 'image' ? (
+                    <img src={media.url || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23202c33"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%238696a0" font-family="sans-serif" font-size="16">Encrypted Image</text></svg>`} alt="Attachment" className="w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" decoding="async" />
+                  ) : (
+                    <video src={media.url} controls className="w-full h-auto" preload="metadata" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
-          <div className="text-sm md:text-base markdown-body">
-          {message.deleted_at ? 
-            <span className="italic text-gray-400">This message was deleted</span> : 
-            (isDecrypting ? <span className="animate-pulse text-gray-300">Decrypting...</span> : 
-              <ReactMarkdown 
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({node, inline, className, children, ...props}: any) {
-                    const match = /language-(\w+)/.exec(className || '')
-                    return !inline && match ? (
-                      <SyntaxHighlighter
-                        {...props}
-                        children={String(children).replace(/\n$/, '')}
-                        style={vscDarkPlus}
-                        language={match[1]}
-                        PreTag="div"
-                      />
-                    ) : (
-                      <code {...props} className={`${className} bg-black/20 rounded px-1.5 py-0.5 text-[13px] font-mono`}>
-                        {children}
-                      </code>
-                    )
-                  }
-                }}
-              >
-                {decryptedText || ''}
-              </ReactMarkdown>
-            )
-          }
-          </div>
+          {/* Reply Quote (inside bubble, WhatsApp style) */}
+          {replyToMsg && (
+            <div className={`-mx-[5px] -mt-[2px] mb-[3px] p-[5px] pl-[8px] rounded-[5px] border-l-[4px] cursor-pointer ${
+              isOwn 
+                ? 'bg-[#025144] border-l-[#06cf9c]' 
+                : 'bg-[#1d282f] border-l-[#53bdeb]'
+            }`}>
+              <span className={`text-[12.5px] font-medium block ${isOwn ? 'text-[#06cf9c]' : 'text-[#53bdeb]'}`}>
+                {replyToMsg.sender_id === user?.id ? 'You' : 'User'}
+              </span>
+              <p className="text-[13px] text-[#8696a0] truncate mt-[1px]">{replyToMsg.decrypted_text || 'Media'}</p>
+            </div>
+          )}
 
-          {/* Deleted State */}
+          {/* Deleted Message */}
           {isDeleted && (
             <div className="flex items-center gap-2 text-[#8696a0]">
-              <Trash2 size={16} />
-              <span>This message was deleted</span>
+              <Trash2 size={14} />
+              <span className="italic text-[13.5px]">This message was deleted</span>
+            </div>
+          )}
+
+          {/* Message Text */}
+          {!isDeleted && (
+            <div className="wa-msg-text">
+              {isDecrypting ? (
+                <span className="animate-pulse text-[#8696a0] text-[13px]">Decrypting...</span>
+              ) : (
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({children}) => <span className="inline">{children}</span>,
+                    code({node, inline, className, children, ...props}: any) {
+                      const match = /language-(\w+)/.exec(className || '')
+                      return !inline && match ? (
+                        <SyntaxHighlighter
+                          {...props}
+                          children={String(children).replace(/\n$/, '')}
+                          style={vscDarkPlus}
+                          language={match[1]}
+                          PreTag="div"
+                        />
+                      ) : (
+                        <code {...props} className={`${className} bg-black/20 rounded px-1 py-0.5 text-[13px] font-mono`}>
+                          {children}
+                        </code>
+                      )
+                    }
+                  }}
+                >
+                  {decryptedText || ''}
+                </ReactMarkdown>
+              )}
             </div>
           )}
 
           {!isDeleted && message.is_edited && (
-            <div className="text-[11px] text-[#8696a0] italic mt-1">(edited)</div>
+            <span className="text-[11px] text-[#8696a0] italic ml-1">(edited)</span>
           )}
+
+          {/* Timestamp + Read Receipt (WhatsApp style — float at bottom-right of last line) */}
+          <span className="wa-msg-meta float-right ml-[8px] mt-[3px] relative top-[3px]">
+            <span className="text-[11px] text-[#ffffff99] leading-none">
+              {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            {isOwn && !isDeleted && (
+              <span className="inline-flex ml-[3px] align-bottom">
+                {message.status === 'sending' && <svg viewBox="0 0 16 16" width="16" height="11" fill="#ffffff80"><path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2zm0 10.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm.5-7H7v4l3.5 2 .5-1.25-2.5-1.5v-3.25z"/></svg>}
+                {message.status === 'queued' && <svg viewBox="0 0 16 16" width="16" height="11" fill="#ffffff80"><path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2zm0 10.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm.5-7H7v4l3.5 2 .5-1.25-2.5-1.5v-3.25z"/></svg>}
+                {message.status === 'sent' && <svg viewBox="0 0 16 15" width="16" height="11" fill="#ffffff99"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.88a.32.32 0 0 1-.484.032l-.358-.325a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.54l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512z"/></svg>}
+                {message.status === 'delivered' && <svg viewBox="0 0 16 15" width="16" height="11" fill="#ffffff99"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.88a.32.32 0 0 1-.484.032l-.358-.325a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.54l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512z"/><path d="M12.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L5.666 9.88a.32.32 0 0 1-.484.032l-.358-.325a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.54l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512z"/></svg>}
+                {message.status === 'read' && <svg viewBox="0 0 16 15" width="16" height="11" fill="#53bdeb"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.88a.32.32 0 0 1-.484.032l-.358-.325a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.54l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512z"/><path d="M12.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L5.666 9.88a.32.32 0 0 1-.484.032l-.358-.325a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.54l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512z"/></svg>}
+                {message.status === 'failed' && <span className="text-[#ea4335] text-[12px] font-bold">!</span>}
+              </span>
+            )}
+          </span>
 
           {/* Reactions */}
           {message.reactions && message.reactions.length > 0 && !isDeleted && (
-            <div className="absolute -bottom-3 right-0 bg-[#2a3942] rounded-full px-1.5 py-0.5 text-sm flex gap-1 border border-[#222d34] shadow-sm cursor-pointer z-10">
+            <div className="absolute -bottom-[14px] right-[4px] bg-[#233138] rounded-full px-[6px] py-[2px] text-[14px] flex gap-[2px] border border-[#1d2d35] shadow-md cursor-pointer z-10">
               {message.reactions.map((r, i) => {
                 const emoji = r.reaction_plaintext || (r.reaction_ciphertext ? decodeURIComponent(escape(atob(r.reaction_ciphertext))) : '');
                 return <span key={i}>{emoji}</span>;
               })}
+              {message.reactions.length > 1 && (
+                <span className="text-[11px] text-[#8696a0] ml-[2px]">{message.reactions.length}</span>
+              )}
             </div>
           )}
-
-          {/* Timestamp and Read Receipt inside bubble */}
-          <div className="absolute bottom-1 right-2 flex items-center gap-1 text-[11px] text-[#8696a0]">
-            <span>{new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            {isOwn && !isDeleted && (
-              <span className="flex">
-                {message.status === 'sending' && <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2zm0 10.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm.5-7H7v4l3.5 2 .5-1.25-2.5-1.5v-3.25z"/></svg>}
-                {message.status === 'sent' && <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M12.5 4.5l-6 6-2.5-2.5-1 1 3.5 3.5 7-7-1-1z"/></svg>}
-                {message.status === 'delivered' && <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M11 4.5l-6 6-2.5-2.5-1 1 3.5 3.5 7-7-1-1zm3.5-1l-7 7-1-1 7-7 1 1z"/></svg>}
-                {message.status === 'read' && <svg viewBox="0 0 16 16" width="16" height="16" fill="#53bdeb"><path d="M11 4.5l-6 6-2.5-2.5-1 1 3.5 3.5 7-7-1-1zm3.5-1l-7 7-1-1 7-7 1 1z"/></svg>}
-                {message.status === 'failed' && <span className="text-[#f15c6d]">!</span>}
-              </span>
-            )}
-          </div>
         </div>
-        
-        {/* Media Attachments */}
-        {!isDeleted && (message.media_attachments || []).map((media, idx) => (
-          <div key={idx} className={`mt-1 rounded-lg overflow-hidden max-w-[280px] ${isOwn ? 'border-[#005c4b]' : 'border-[#202c33]'}`}>
-            {media.type === 'audio' ? (
-              <AudioBubble url={media.url} isOwn={isOwn} />
-            ) : media.type === 'image' ? (
-              <img src={media.url || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23202c33"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%238696a0" font-family="sans-serif" font-size="16">Encrypted Image</text></svg>`} alt="Attachment" className="w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" decoding="async" />
-            ) : (
-              <video src={media.url} controls className="w-full h-auto" preload="metadata" />
-            )}
-          </div>
-        ))}
 
         {/* Link Previews */}
         {!isDeleted && urls.slice(0, 1).map((url, idx) => (
           <ClientLinkPreview key={idx} url={url} />
         ))}
-        
-        {/* Reply To Rendering */}
-        {!isDeleted && message.reply_to && useChatStore.getState().messages[message.reply_to] && (
-          <div className={`mt-1 p-2 rounded bg-black/10 border-l-2 ${isOwn ? 'border-[#e9edef]' : 'border-[#00a884]'} opacity-80 text-sm`}>
-            <span className="font-medium">{useChatStore.getState().messages[message.reply_to].sender_id === message.sender_id ? 'You' : 'User'}</span>
-            <p className="truncate text-xs">{useChatStore.getState().messages[message.reply_to].decrypted_text}</p>
-          </div>
-        )}
       </div>
     </motion.div>
   );
