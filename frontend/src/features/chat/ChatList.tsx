@@ -11,6 +11,7 @@ import { StatusCreateModal } from '../status/StatusCreateModal';
 import { ShieldCheck } from 'lucide-react';
 import { StatusPrivacyModal } from '../status/StatusPrivacyModal';
 import { StatusViewersModal } from '../status/StatusViewersModal';
+import { PwaInstallButton } from '../../components/PwaInstallButton';
 
 interface ChatListProps {
   onOpenNewChat?: () => void;
@@ -117,7 +118,10 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
         <h2 className="text-[22px] font-semibold text-[#e9edef] flex items-center gap-2">
           {activeTab === 'chats' ? 'Chats' : 'Status Updates'}
         </h2>
-        <div className="flex items-center gap-2 text-[#aebac1]">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[#aebac1]">
+          {/* PWA Install Button for Mobile & Desktop */}
+          <PwaInstallButton />
+
           {/* Privacy Button */}
           {activeTab === 'status' && (
             <button

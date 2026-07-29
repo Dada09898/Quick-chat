@@ -118,6 +118,7 @@ export const ChatLayout: React.FC = () => {
           
           {/* Actions */}
           <div className="flex items-center gap-3 sm:gap-4 text-[#aebac1]">
+            <PwaInstallButton />
             {activeConversationId && (
               <>
                 <button 
@@ -147,7 +148,6 @@ export const ChatLayout: React.FC = () => {
             )}
             {!activeConversationId && (
               <>
-                <PwaInstallButton />
                 <NotificationBell />
                 <Link to="/settings" className="p-2 hover:bg-[#374248] rounded-full transition-colors">
                   <User size={20} />
