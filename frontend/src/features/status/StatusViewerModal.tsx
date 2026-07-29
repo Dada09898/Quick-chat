@@ -1,13 +1,19 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Pause, Play, Trash2, Send } from 'lucide-react';
 import { useStatusStore, type StatusItem } from './statusStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
+import { useChatStore } from '../chat/chatStore';
+import { useRealtime } from '../../realtime/RealtimeProvider';
+import toast from 'react-hot-toast';
 
 export const StatusViewerModal: React.FC = () => {
   const { activeViewerGroup, activeViewerIndex, closeViewer, nextStatus, prevStatus, deleteStatus } = useStatusStore();
   const currentUser = useAuthStore(state => state.user);
+  const { sendEvent } = useRealtime();
+  const enqueueMessage = useChatStore(state => state.enqueueMessage);
+
   const [isPaused, setIsPaused] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [progress, setProgress] = useState(0);
@@ -42,8 +48,48 @@ export const StatusViewerModal: React.FC = () => {
 
   const handleSendReply = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim()) return;
-    alert(`Reply sent to ${activeViewerGroup.userName}: "${replyText}"`);
+    if (!replyText.trim() || !currentUser) return;
+
+    const activeConvId = useChatStore.getState().activeConversationId;
+    if (activeConvId) {
+      const msgId = crypto.randomUUID();
+      const createdAt = new Date().toISOString();
+      const statusRef = currentStatus.type === 'text' ? `"${currentStatus.content}"` : `📷 Status Attachment`;
+      const replyMessageText = `Replied to status: ${statusRef}\n${replyText.trim()}`;
+      const ciphertext = btoa(unescape(encodeURIComponent(replyMessageText)));
+
+      const newMsg = {
+        id: msgId,
+        conversation_id: activeConvId,
+        sender_id: currentUser.id,
+        ciphertext,
+        nonce: 'pending',
+        signature: 'UNVERIFIED',
+        key_version: 1,
+        algorithm: 'AES-256-GCM',
+        created_at: createdAt,
+        is_edited: false,
+        deleted_at: null,
+        status: 'queued' as const,
+        decrypted_text: replyMessageText
+      };
+
+      enqueueMessage(newMsg);
+      sendEvent('message.send', {
+        id: msgId,
+        conversation_id: activeConvId,
+        ciphertext,
+        nonce: 'pending',
+        signature: 'UNVERIFIED',
+        key_version: 1,
+        algorithm: 'AES-256-GCM',
+        created_at: createdAt
+      });
+      toast.success('Status reply sent!');
+    } else {
+      toast.success(`Reply sent to ${activeViewerGroup.userName}!`);
+    }
+
     setReplyText('');
     closeViewer();
   };
@@ -63,7 +109,15 @@ export const StatusViewerModal: React.FC = () => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-between select-none"
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.4}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 100) {
+            closeViewer();
+          }
+        }}
+        className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-between select-none touch-none"
         style={{ backgroundColor: currentStatus.type === 'text' ? (currentStatus.backgroundColor || '#005c4b') : '#000000' }}
       >
         {/* Top Header & Progress Bars */}
@@ -124,9 +178,13 @@ export const StatusViewerModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Content Area */}
+        {/* Content Area - Supports Tap & Press-and-Hold to Pause */}
         <div
           className="relative flex-1 w-full max-w-md flex items-center justify-center p-4 cursor-pointer"
+          onMouseDown={() => setIsPaused(true)}
+          onMouseUp={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -134,8 +192,6 @@ export const StatusViewerModal: React.FC = () => {
               prevStatus();
             } else if (x > (rect.width * 2) / 3) {
               nextStatus();
-            } else {
-              setIsPaused(!isPaused);
             }
           }}
         >
@@ -161,7 +217,7 @@ export const StatusViewerModal: React.FC = () => {
           )}
         </div>
 
-        {/* Navigation Touch Areas / Arrows */}
+        {/* Navigation Touch Arrows (Desktop) */}
         <button
           onClick={prevStatus}
           className="absolute left-4 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white transition hidden md:block"
@@ -179,7 +235,7 @@ export const StatusViewerModal: React.FC = () => {
         {!isOwn && (
           <form
             onSubmit={handleSendReply}
-            className="w-full max-w-md p-4 bg-gradient-to-t from-black/90 to-transparent flex items-center gap-2 pb-safe"
+            className="w-full max-w-md p-4 bg-gradient-to-t from-black/90 to-transparent flex items-center gap-2 pb-safe z-30"
           >
             <input
               type="text"
