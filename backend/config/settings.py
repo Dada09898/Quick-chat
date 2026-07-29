@@ -79,7 +79,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Database
-import dj_database_url  # noqa: E402
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL', 'postgres://postgres:password@localhost:5432/dualconnect'),
@@ -140,7 +139,6 @@ SIMPLE_JWT = {
 }
 
 # Channels / Redis
-import sys  # noqa: E402
 REDIS_URL = os.environ.get('REDIS_URL', None)
 
 if 'pytest' in sys.modules or not REDIS_URL:

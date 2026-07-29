@@ -1,11 +1,15 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
+from rest_framework import status, viewsets, filters
+from rest_framework.decorators import action
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import UploadSession, MediaAttachment
+from .models import UploadSession, MediaAttachment, Conversation, ConversationMember, Message
+from .serializers import ConversationSerializer, MessageSerializer
+from .pagination import ConversationPagination, MessageCursorPagination
+from .services import ChatService
 from core.storage import LocalStorageProvider
 
 storage_provider = LocalStorageProvider()
@@ -112,12 +116,6 @@ class UploadCompleteView(APIView):
         except Exception:
             return Response({'error': 'Internal error during assembly'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from rest_framework import viewsets, filters
-from rest_framework.decorators import action
-from .models import Conversation, ConversationMember, Message
-from .serializers import ConversationSerializer, MessageSerializer
-from .pagination import ConversationPagination, MessageCursorPagination
-from .services import ChatService
 
 class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
