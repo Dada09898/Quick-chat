@@ -9,6 +9,9 @@ import { useChatStore } from '../chat/chatStore';
 import { useRealtime } from '../../realtime/RealtimeProvider';
 import toast from 'react-hot-toast';
 
+import { apiJson } from '../../lib/api';
+import { encryptMessageText } from '../../utils/cryptoUtils';
+
 export const StatusViewerModal: React.FC = () => {
   const { activeViewerGroup, activeViewerIndex, closeViewer, nextStatus, prevStatus, deleteStatus, setViewersModalStatusId, toggleMuteUser, mutedUserIds } = useStatusStore();
   const currentUser = useAuthStore(state => state.user);
@@ -47,21 +50,29 @@ export const StatusViewerModal: React.FC = () => {
 
   if (!activeViewerGroup || !currentStatus) return null;
 
-  const handleSendReply = (e: React.FormEvent) => {
+  const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim() || !currentUser) return;
+    if (!replyText.trim() || !currentUser || !activeViewerGroup) return;
 
-    const activeConvId = useChatStore.getState().activeConversationId;
-    if (activeConvId) {
+    try {
+      const targetUserId = activeViewerGroup.userId;
+      const convRes = await apiJson('/api/chat/conversations/get_or_create/', {
+        method: 'POST',
+        body: { target_user_id: targetUserId }
+      });
+      if (!convRes.ok) throw new Error('Failed to start conversation');
+      const conversation = await convRes.json();
+
+      const statusRef = currentStatus.type === 'text' ? `"${currentStatus.content.slice(0, 40)}"` : `📷 Status Attachment`;
+      const replyMessageText = `Replied to status: ${statusRef}\n${replyText.trim()}`;
+      const ciphertext = await encryptMessageText(targetUserId, replyMessageText);
+
       const msgId = crypto.randomUUID();
       const createdAt = new Date().toISOString();
-      const statusRef = currentStatus.type === 'text' ? `"${currentStatus.content}"` : `📷 Status Attachment`;
-      const replyMessageText = `Replied to status: ${statusRef}\n${replyText.trim()}`;
-      const ciphertext = btoa(unescape(encodeURIComponent(replyMessageText)));
 
       const newMsg = {
         id: msgId,
-        conversation_id: activeConvId,
+        conversation_id: conversation.id,
         sender_id: currentUser.id,
         ciphertext,
         nonce: 'pending',
@@ -78,7 +89,7 @@ export const StatusViewerModal: React.FC = () => {
       enqueueMessage(newMsg);
       sendEvent('message.send', {
         id: msgId,
-        conversation_id: activeConvId,
+        conversation_id: conversation.id,
         ciphertext,
         nonce: 'pending',
         signature: 'UNVERIFIED',
@@ -87,8 +98,9 @@ export const StatusViewerModal: React.FC = () => {
         created_at: createdAt
       });
       toast.success('Status reply sent!');
-    } else {
-      toast.success(`Reply sent to ${activeViewerGroup.userName}!`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to send status reply');
     }
 
     setReplyText('');

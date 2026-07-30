@@ -293,6 +293,7 @@ class StatusView(models.Model):
     status = models.ForeignKey(UserStatus, on_delete=models.CASCADE, related_name='views')
     viewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     viewed_at = models.DateTimeField(auto_now_add=True)
+    reaction = models.CharField(max_length=10, blank=True, null=True)
 
     class Meta:
         unique_together = ('status', 'viewer')

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Image as ImageIcon, Send, Type, Palette } from 'lucide-react';
+import { X, Image as ImageIcon, Send, Type, Palette, Loader2 } from 'lucide-react';
 import { useStatusStore, type StatusFontFamily } from './statusStore';
 import { useAuthStore } from '../../store/authStore';
+import { UploadManager } from '../media/upload/UploadManager';
+import toast from 'react-hot-toast';
 
 const COLOR_PALETTE = [
   '#005c4b', // WhatsApp Dark Green
@@ -34,6 +36,8 @@ export const StatusCreateModal: React.FC = () => {
   const [mediaUrl, setMediaUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   if (!isCreateModalOpen) return null;
 
@@ -41,15 +45,31 @@ export const StatusCreateModal: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setMediaUrl(event.target.result as string);
-        setMediaType(file.type.startsWith('video') ? 'video' : 'image');
-        setMode('media');
+    setMediaType(file.type.startsWith('video') ? 'video' : 'image');
+    setMode('media');
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const uploader = new UploadManager(file, {
+      onProgress: (progress) => setUploadProgress(progress),
+      onComplete: (_attachmentId, url) => {
+        setIsUploading(false);
+        setMediaUrl(url);
+      },
+      onError: (err) => {
+        setIsUploading(false);
+        console.error(err);
+        toast.error('Failed to upload status media');
+        setMode('text');
       }
-    };
-    reader.readAsDataURL(file);
+    });
+
+    uploader.start().catch((err) => {
+      setIsUploading(false);
+      console.error(err);
+      toast.error('Failed to upload status media');
+      setMode('text');
+    });
   };
 
   const handlePost = async (e: React.FormEvent) => {
@@ -194,10 +214,11 @@ export const StatusCreateModal: React.FC = () => {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                disabled={(mode === 'text' && !text.trim()) || (mode === 'media' && !mediaUrl)}
+                disabled={(mode === 'text' && !text.trim()) || (mode === 'media' && (!mediaUrl || isUploading))}
                 className="px-6 py-2.5 bg-[#00a884] hover:bg-[#06cf9c] disabled:opacity-50 text-[#111b21] font-semibold rounded-full flex items-center gap-2 transition shadow-lg"
               >
-                Send <Send size={16} />
+                {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                <span>{isUploading ? `Uploading ${uploadProgress}%...` : 'Post Status'}</span>
               </button>
             </div>
           </form>

@@ -309,8 +309,26 @@ class UserStatusViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         from .models import UserStatus
+        from users.models import Contact
         now = timezone.now()
-        return UserStatus.objects.filter(expires_at__gt=now).select_related('user').prefetch_related('views__viewer')
+        user = self.request.user
+
+        base = UserStatus.objects.filter(expires_at__gt=now).select_related('user').prefetch_related('views__viewer')
+
+        # Always include the requester's own statuses
+        own = base.filter(user=user)
+
+        # Contacts-only visibility: only show a status if its owner has the
+        # viewer in their contact list, and the owner hasn't blocked the viewer.
+        contact_owner_ids = Contact.objects.filter(
+            owner__in=UserStatus.objects.filter(expires_at__gt=now).values_list('user_id', flat=True).distinct(),
+            user=user,
+            is_blocked=False
+        ).values_list('owner_id', flat=True)
+
+        visible_others = base.filter(user_id__in=contact_owner_ids).exclude(user=user)
+
+        return (own | visible_others).distinct().order_by('-created_at')
 
     def get_serializer_class(self):
         from .serializers import UserStatusSerializer
@@ -353,17 +371,40 @@ class UserStatusViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def react(self, request, pk=None):
+        from .models import StatusView
         status_obj = self.get_object()
         reaction_emoji = request.data.get('reaction', '❤️')
-        reply_text = request.data.get('reply_text', '')
 
-        return Response({
-            'status': 'reacted',
-            'reaction': reaction_emoji,
-            'reply_text': reply_text,
-            'status_id': str(status_obj.id),
-            'target_user_id': str(status_obj.user_id)
-        }, status=status.HTTP_200_OK)
+        view, _ = StatusView.objects.get_or_create(status=status_obj, viewer=request.user)
+        view.reaction = reaction_emoji
+        view.save()
+
+        # Notify the status owner in real time
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    f"user_{status_obj.user_id}",
+                    {
+                        'type': 'forward_event',
+                        'sender_id': str(request.user.id),
+                        'payload': {
+                            'type': 'status.reaction',
+                            'payload': {
+                                'status_id': str(status_obj.id),
+                                'from_user_id': str(request.user.id),
+                                'from_display_name': request.user.display_name,
+                                'reaction': reaction_emoji
+                            }
+                        }
+                    }
+                )
+        except Exception as e:
+            logger.warning(f"Failed to push status reaction notification: {e}")
+
+        return Response({'status': 'reacted', 'reaction': reaction_emoji}, status=status.HTTP_200_OK)
 
 
 class CommunityViewSet(viewsets.ModelViewSet):
