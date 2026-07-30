@@ -7,6 +7,7 @@ import { useRealtime } from '../../realtime/RealtimeProvider';
 import { wsClient } from '../../realtime/socket';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { callRingtone } from '../../utils/callRingtone';
 
 export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   const mediaManager = useMemo(() => new MediaManager(), []);
@@ -18,6 +19,14 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   
   const [networkQuality, setNetworkQuality] = useState<'Excellent' | 'Good' | 'Fair' | 'Poor'>('Excellent');
+
+  useEffect(() => {
+    if (state === 'RINGING') {
+      callRingtone.startRingtone();
+    } else {
+      callRingtone.stopRingtone();
+    }
+  }, [state]);
 
   // Initialize WebRTC on incoming or outgoing call
   useEffect(() => {
