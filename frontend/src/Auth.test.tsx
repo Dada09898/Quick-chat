@@ -19,7 +19,7 @@ describe('Auth Flow', () => {
   it('renders login page when unauthenticated', async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('Sign in to your enterprise vault.')).toBeInTheDocument();
+      expect(screen.getByText('Welcome to Kryozen Quick Chat')).toBeInTheDocument();
     });
   })
 })

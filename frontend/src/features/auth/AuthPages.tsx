@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, User, Globe, Clock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Clock, ArrowRight, MessageSquare, ShieldCheck } from 'lucide-react';
 import { apiJson } from '../../lib/api';
 import toast from 'react-hot-toast';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showForm, setShowForm] = useState(false);
   const setUser = useAuthStore(state => state.setUser);
   
   const handleLogin = async (e: React.FormEvent) => {
@@ -28,40 +29,104 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[#111b21] text-white p-4">
-      <div className="w-full max-w-md p-6 sm:p-8 bg-[#202c33] rounded-xl border border-[#222d34] shadow-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-cyan-400">DualConnect</h1>
-          <p className="text-gray-400 mt-2">Sign in to your enterprise vault.</p>
-        </div>
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-400">Email Address</label>
-            <div className="relative mt-1">
-              <Mail className="absolute left-3 top-3 text-gray-500" size={18} />
-              <input type="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="admin@enterprise.local" />
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#0b141a] text-[#e9edef] p-4 sm:p-6">
+      {/* Outer WhatsApp Desktop Phone Frame Container */}
+      <div className="w-full max-w-[680px] bg-[#111b21] rounded-[24px] border border-[#222d34] shadow-2xl p-6 sm:p-12 min-h-[500px] flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300">
+        
+        {!showForm ? (
+          /* WhatsApp Desktop Welcome View */
+          <div className="flex flex-col items-center text-center max-w-[480px] py-4 animate-in fade-in zoom-in-95 duration-300">
+            {/* QuickChat Green Logo Icon */}
+            <div className="w-20 h-20 bg-[#00a884]/15 border-2 border-[#00a884]/40 rounded-full flex items-center justify-center mb-6 shadow-xl text-[#00a884]">
+              <MessageSquare size={40} className="fill-[#00a884]/20" />
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-400">Password</label>
-            <div className="relative mt-1">
-              <Lock className="absolute left-3 top-3 text-gray-500" size={18} />
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="••••••••" />
-            </div>
-          </div>
-          <button type="submit" className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg font-semibold transition shadow-lg shadow-cyan-500/20">
-            Sign In <ArrowRight size={18} />
-          </button>
-          <div className="text-center mt-4">
-            <p className="text-gray-400 text-sm">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-cyan-400 hover:text-cyan-300 font-medium">Create one</Link>
+
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#e9edef] mb-3 tracking-tight">
+              Welcome to Kryozen Quick Chat
+            </h1>
+
+            <p className="text-[#8696a0] text-sm sm:text-base leading-relaxed mb-8 font-normal">
+              Simple, reliable and private. Message privately, make calls and share files with your friends, family and colleagues.
             </p>
-            <Link to="/forgot-password" className="text-cyan-400 hover:text-cyan-300 text-sm block mt-2">
-              Forgot your password?
-            </Link>
+
+            <button
+              onClick={() => setShowForm(true)}
+              className="w-full sm:w-64 py-3 bg-[#00a884] hover:bg-[#008f6f] text-[#111b21] font-semibold text-base rounded-full transition-all duration-200 shadow-lg hover:shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
+            >
+              Log in <ArrowRight size={18} />
+            </button>
+
+            <div className="mt-8 flex items-center gap-2 text-xs text-[#8696a0]">
+              <ShieldCheck size={16} className="text-[#00a884]" />
+              <span>End-to-End Encrypted & Private</span>
+            </div>
           </div>
-        </form>
+        ) : (
+          /* Log in Form View */
+          <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="text-center mb-8">
+              <div className="w-14 h-14 bg-[#00a884]/15 border border-[#00a884]/40 rounded-full flex items-center justify-center mx-auto mb-3 text-[#00a884]">
+                <MessageSquare size={28} />
+              </div>
+              <h2 className="text-2xl font-bold text-[#e9edef]">Sign in to QuickChat</h2>
+              <p className="text-[#8696a0] text-xs mt-1">Enter your account credentials to continue.</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-[#8696a0] mb-1">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-3 text-[#8696a0]" size={16} />
+                  <input 
+                    type="email" 
+                    inputMode="email" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    required 
+                    className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[#e9edef] focus:ring-2 focus:ring-[#00a884] focus:border-transparent outline-none transition" 
+                    placeholder="name@company.com" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#8696a0] mb-1">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3 text-[#8696a0]" size={16} />
+                  <input 
+                    type="password" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    required 
+                    className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[#e9edef] focus:ring-2 focus:ring-[#00a884] focus:border-transparent outline-none transition" 
+                    placeholder="••••••••" 
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full py-3 bg-[#00a884] hover:bg-[#008f6f] text-[#111b21] font-semibold text-sm rounded-full transition shadow-md active:scale-95 flex items-center justify-center gap-2 mt-2"
+              >
+                Sign In <ArrowRight size={16} />
+              </button>
+
+              <div className="text-center pt-3 border-t border-[#222d34] mt-4 space-y-2">
+                <p className="text-[#8696a0] text-xs">
+                  Don't have an account?{' '}
+                  <Link to="/register" className="text-[#00a884] hover:underline font-medium">Create one</Link>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="text-xs text-[#8696a0] hover:text-[#e9edef] block mx-auto pt-1"
+                >
+                  ← Back to Welcome Screen
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -91,49 +156,82 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[#111b21] text-white p-4">
-      <div className="w-full max-w-md p-6 sm:p-8 bg-[#202c33] rounded-xl border border-[#222d34] shadow-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-cyan-400">DualConnect</h1>
-          <p className="text-gray-400 mt-2">Create your enterprise account.</p>
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#0b141a] text-[#e9edef] p-4 sm:p-6">
+      <div className="w-full max-w-[680px] bg-[#111b21] rounded-[24px] border border-[#222d34] shadow-2xl p-6 sm:p-12 min-h-[500px] flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 bg-[#00a884]/15 border border-[#00a884]/40 rounded-full flex items-center justify-center mx-auto mb-3 text-[#00a884]">
+              <MessageSquare size={28} />
+            </div>
+            <h1 className="text-2xl font-bold text-[#e9edef]">Create QuickChat Account</h1>
+            <p className="text-[#8696a0] text-xs mt-1">Get started with private E2EE messaging.</p>
+          </div>
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-[#8696a0] mb-1">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3 text-[#8696a0]" size={16} />
+                <input 
+                  type="email" 
+                  inputMode="email" 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  required 
+                  className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[#e9edef] focus:ring-2 focus:ring-[#00a884] focus:border-transparent outline-none transition" 
+                  placeholder="name@company.com" 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#8696a0] mb-1">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3 text-[#8696a0]" size={16} />
+                <input 
+                  type="password" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  required 
+                  className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[#e9edef] focus:ring-2 focus:ring-[#00a884] focus:border-transparent outline-none transition" 
+                  placeholder="••••••••" 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#8696a0] mb-1">Timezone</label>
+              <div className="relative">
+                <Clock className="absolute left-3.5 top-3 text-[#8696a0]" size={16} />
+                <select 
+                  value={timezone} 
+                  onChange={e => setTimezone(e.target.value)} 
+                  className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[#e9edef] focus:ring-2 focus:ring-[#00a884] outline-none appearance-none cursor-pointer"
+                >
+                  <option value="UTC">UTC (Universal)</option>
+                  <option value="America/New_York">EST (New York)</option>
+                  <option value="Europe/London">GMT (London)</option>
+                  <option value="Asia/Kolkata">IST (India)</option>
+                  <option value="Asia/Tokyo">JST (Tokyo)</option>
+                </select>
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full py-3 bg-[#00a884] hover:bg-[#008f6f] text-[#111b21] font-semibold text-sm rounded-full transition shadow-md active:scale-95 flex items-center justify-center gap-2 mt-2"
+            >
+              Create Account <ArrowRight size={16} />
+            </button>
+
+            <div className="text-center pt-3 border-t border-[#222d34] mt-4">
+              <p className="text-[#8696a0] text-xs">
+                Already have an account?{' '}
+                <Link to="/login" className="text-[#00a884] hover:underline font-medium">Sign in here</Link>
+              </p>
+            </div>
+          </form>
         </div>
-        <form onSubmit={handleRegister} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-400">Email Address</label>
-            <div className="relative mt-1">
-              <Mail className="absolute left-3 top-3 text-gray-500" size={18} />
-              <input type="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500" placeholder="admin@enterprise.local" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-400">Password</label>
-            <div className="relative mt-1">
-              <Lock className="absolute left-3 top-3 text-gray-500" size={18} />
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-400">Timezone</label>
-            <div className="relative mt-1">
-              <Clock className="absolute left-3 top-3 text-gray-500" size={18} />
-              <select value={timezone} onChange={e => setTimezone(e.target.value)} className="w-full bg-[#111b21] border border-[#222d34] rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-cyan-500 appearance-none text-gray-300">
-                <option value="UTC">UTC (Universal)</option>
-                <option value="America/New_York">EST (New York)</option>
-                <option value="Europe/London">GMT (London)</option>
-                <option value="Asia/Tokyo">JST (Tokyo)</option>
-              </select>
-            </div>
-          </div>
-          <button type="submit" className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg font-semibold transition shadow-lg shadow-cyan-500/20">
-            Create Account <ArrowRight size={18} />
-          </button>
-          <div className="text-center mt-4">
-            <p className="text-gray-400 text-sm">
-              Already have an account?{' '}
-              <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-medium">Sign in here</Link>
-            </p>
-          </div>
-        </form>
       </div>
     </div>
   );
