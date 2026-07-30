@@ -4,7 +4,7 @@ from .models import CustomUser, Device, Session, FriendRequest, Contact
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'username', 'display_name', 'is_user_a', 'avatar', 'bio', 'presence_status', 'last_seen', 'timezone', 'preferred_language', 'last_login']
+        fields = ['id', 'email', 'username', 'display_name', 'is_user_a', 'avatar', 'bio', 'presence_status', 'last_seen', 'timezone', 'preferred_language', 'privacy_settings', 'last_login']
         read_only_fields = ['id', 'email', 'is_user_a', 'last_login', 'last_seen']
 
 class UserSearchSerializer(serializers.ModelSerializer):

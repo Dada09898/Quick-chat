@@ -11,10 +11,21 @@ export const StatusPrivacyModal: React.FC = () => {
 
   if (!isPrivacyModalOpen) return null;
 
-  const handleSave = () => {
-    setStatusPrivacy(selectedPrivacy);
-    toast.success('Status privacy updated');
-    setPrivacyModalOpen(false);
+  const handleSave = async () => {
+    try {
+      const { apiJson } = await import('../../lib/api');
+      await apiJson('/api/auth/me/', {
+        method: 'PATCH',
+        body: { privacy_settings: { status_privacy: selectedPrivacy } }
+      });
+      setStatusPrivacy(selectedPrivacy);
+      toast.success('Status privacy saved to account!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error saving status privacy');
+    } finally {
+      setPrivacyModalOpen(false);
+    }
   };
 
   return createPortal(
