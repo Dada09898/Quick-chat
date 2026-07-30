@@ -149,23 +149,45 @@ export const LoginPage = () => {
 
 export const RegisterPage = () => {
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
   const [password, setPassword] = useState('');
   const [timezone, setTimezone] = useState('UTC');
   const setUser = useAuthStore(state => state.setUser);
   
+  React.useEffect(() => {
+    if (username.length < 3) { setUsernameStatus('idle'); return; }
+    setUsernameStatus('checking');
+    const t = setTimeout(async () => {
+      try {
+        const res = await apiJson(`/api/auth/username/available/?u=${encodeURIComponent(username)}`);
+        const data = await res.json();
+        setUsernameStatus(data.available ? 'available' : (data.reason === 'invalid_format' ? 'invalid' : 'taken'));
+      } catch (err) {
+        console.error(err);
+        setUsernameStatus('invalid');
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [username]);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (usernameStatus !== 'available') {
+      toast.error('Please choose an available username.');
+      return;
+    }
     try {
       const res = await apiJson('/api/auth/register/', {
         method: 'POST',
-        body: { email, password, timezone, preferred_language: 'en' }
+        body: { email, username, password, timezone, preferred_language: 'en' }
       });
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
       } else {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || err.detail || 'Registration failed.');
+        toast.error(err.error || err.username?.[0] || err.detail || 'Registration failed.');
       }
     } catch (e) { console.error(e); toast.error('Network error. Please check your connection.'); }
   };
@@ -196,6 +218,28 @@ export const RegisterPage = () => {
                   className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[#e9edef] focus:ring-2 focus:ring-[#00a884] focus:border-transparent outline-none transition" 
                   placeholder="name@company.com" 
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#8696a0] mb-1">Username (@handle)</label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-2.5 text-[#8696a0] font-bold text-sm">@</span>
+                <input 
+                  type="text" 
+                  value={username} 
+                  onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} 
+                  required 
+                  maxLength={20}
+                  className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl py-2.5 pl-8 pr-10 text-sm text-[#e9edef] focus:ring-2 focus:ring-[#00a884] focus:border-transparent outline-none transition" 
+                  placeholder="ankit_kumar" 
+                />
+                <div className="absolute right-3 top-3">
+                  {usernameStatus === 'checking' && <span className="text-xs text-amber-400 font-mono animate-pulse">...</span>}
+                  {usernameStatus === 'available' && <span className="text-xs text-[#00a884] font-bold">✓ Available</span>}
+                  {usernameStatus === 'taken' && <span className="text-xs text-red-400 font-bold">✗ Taken</span>}
+                  {usernameStatus === 'invalid' && <span className="text-xs text-red-400">Invalid</span>}
+                </div>
               </div>
             </div>
 
@@ -234,7 +278,8 @@ export const RegisterPage = () => {
 
             <button 
               type="submit" 
-              className="w-full py-3 bg-[#00a884] hover:bg-[#008f6f] text-[#111b21] font-semibold text-sm rounded-full transition shadow-md active:scale-95 flex items-center justify-center gap-2 mt-2"
+              disabled={usernameStatus !== 'available'}
+              className="w-full py-3 bg-[#00a884] hover:bg-[#008f6f] disabled:opacity-50 text-[#111b21] font-semibold text-sm rounded-full transition shadow-md active:scale-95 flex items-center justify-center gap-2 mt-2"
             >
               Create Account <ArrowRight size={16} />
             </button>

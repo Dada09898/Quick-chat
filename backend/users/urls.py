@@ -9,6 +9,7 @@ from .views import (
 )
 from .views_avatar import AvatarUploadView
 from .views_keybundle import KeyBundleUploadView, KeyBundleFetchView, PreKeyCountView
+from .views_username import UsernameAvailabilityView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -32,6 +33,7 @@ urlpatterns = [
     path('devices/keys/<uuid:user_id>/', KeyBundleFetchView.as_view(), name='key_bundle_fetch'),
     path('sessions/', SessionListView.as_view(), name='session_list'),
     path('search/', UserSearchView.as_view(), name='user_search'),
+    path('username/available/', UsernameAvailabilityView.as_view(), name='username_available'),
     path('friends/requests/', PendingRequestsView.as_view(), name='pending_requests'),
     path('friends/request/', FriendRequestCreateView.as_view(), name='send_request'),
     path('friends/request/<uuid:pk>/respond/', FriendRequestRespondView.as_view(), name='respond_request'),

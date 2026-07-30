@@ -1,5 +1,8 @@
+import re
 from rest_framework import serializers
 from .models import CustomUser, Device, Session, FriendRequest, Contact
+
+USERNAME_RE = re.compile(r'^[a-z0-9_]{3,20}$')
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -10,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
 class UserSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'username', 'display_name', 'avatar', 'presence_status', 'last_seen']
+        fields = ['id', 'username', 'display_name', 'avatar', 'presence_status', 'last_seen']
 
 class FriendRequestSerializer(serializers.ModelSerializer):
     sender_details = UserSearchSerializer(source='sender', read_only=True)
@@ -31,17 +34,31 @@ class ContactSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    username = serializers.CharField(required=True, max_length=20)
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'password', 'timezone', 'preferred_language']
+        fields = ['email', 'password', 'username', 'timezone', 'preferred_language']
+
+    def validate_username(self, value):
+        value = value.strip().lower()
+        if not USERNAME_RE.match(value):
+            raise serializers.ValidationError(
+                'Username must be 3-20 characters, lowercase letters, numbers, and underscores only.'
+            )
+        if CustomUser.objects.filter(username=value).exists():
+            raise serializers.ValidationError('This username is already taken.')
+        return value
 
     def create(self, validated_data):
         user = CustomUser.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
+            username=validated_data['username'],
+            display_name=validated_data['username'],
             timezone=validated_data.get('timezone', 'UTC'),
-            preferred_language=validated_data.get('preferred_language', 'en')
+            preferred_language=validated_data.get('preferred_language', 'en'),
+            privacy_settings={'discoverable_by_username': True}
         )
         return user
 

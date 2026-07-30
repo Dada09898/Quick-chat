@@ -347,20 +347,28 @@ class SessionListView(views.APIView):
         sessions = Session.objects.filter(user=request.user, is_active=True)
         return Response(SessionSerializer(sessions, many=True).data)
 
+from rest_framework.throttling import ScopedRateThrottle
+
 class UserSearchView(generics.ListAPIView):
     serializer_class = UserSearchSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'user_search'
 
     def get_queryset(self):
-        query = self.request.query_params.get('q', '')
+        query = self.request.query_params.get('q', '').strip().lower()
         if not query or len(query) < 2:
             return CustomUser.objects.none()
-        
+
         return CustomUser.objects.filter(
-            Q(email__icontains=query) | Q(username__icontains=query) | Q(display_name__icontains=query),
+            Q(username__istartswith=query) | Q(display_name__icontains=query),
             is_active=True,
             deleted_at__isnull=True
-        ).exclude(id=self.request.user.id)[:20]
+        ).exclude(
+            id=self.request.user.id
+        ).exclude(
+            privacy_settings__discoverable_by_username=False
+        )[:20]
 
 class FriendRequestCreateView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]

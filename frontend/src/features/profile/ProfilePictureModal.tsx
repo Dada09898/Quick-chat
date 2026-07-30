@@ -519,6 +519,45 @@ export const ProfilePictureModal: React.FC<ProfilePictureModalProps> = ({
               <h4 className="text-xs font-semibold text-[#00a884] uppercase tracking-wider px-1">Privacy Controls</h4>
 
               <div className="bg-[#202c33] rounded-xl border border-[#2a3942] divide-y divide-[#2a3942]">
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-[#e9edef]">Who can find me by username</span>
+                    <span className="text-xs text-[#8696a0]">Allow non-contacts to find your profile via @username</span>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      const currentPrivacy = user?.privacy_settings || {};
+                      const nextValue = !(currentPrivacy.discoverable_by_username ?? true);
+                      try {
+                        const res = await apiJson('/api/auth/me/', {
+                          method: 'PATCH',
+                          body: {
+                            privacy_settings: {
+                              ...currentPrivacy,
+                              discoverable_by_username: nextValue
+                            }
+                          }
+                        });
+                        if (res.ok) {
+                          const updatedUser = await res.json();
+                          setUser(updatedUser);
+                          toast.success(`Username discovery turned ${nextValue ? 'ON' : 'OFF'}`);
+                        }
+                      } catch (err) {
+                        console.error(err);
+                        toast.error('Failed to update privacy setting');
+                      }
+                    }}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition border ${
+                      (user?.privacy_settings?.discoverable_by_username ?? true)
+                        ? 'bg-[#00a884]/10 text-[#00a884] border-[#00a884]/30'
+                        : 'bg-red-500/10 text-red-400 border-red-500/30'
+                    }`}
+                  >
+                    {(user?.privacy_settings?.discoverable_by_username ?? true) ? 'On (Everyone)' : 'Off (Nobody)'}
+                  </button>
+                </div>
+
                 {[
                   { label: 'Profile Photo Visibility', value: 'Everyone' },
                   { label: 'Last Seen & Online Status', value: 'My Contacts' },
