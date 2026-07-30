@@ -14,6 +14,7 @@ import { layoutVariants, springPresets } from '../../motion';
 import { AudioBubble } from './AudioBubble';
 import { DocumentCard } from './DocumentCard';
 import { MessageInfoModal } from './MessageInfoModal';
+import { VoiceNotePlayer } from './VoiceNotePlayer';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -376,7 +377,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                 const type = getMediaType(media);
 
                 if (type === 'audio') {
-                  return <AudioBubble key={idx} url={mediaUrl} isOwn={isOwn} />;
+                  return <VoiceNotePlayer key={idx} url={mediaUrl} isOwn={isOwn} />;
                 }
                 if (type === 'document') {
                   return <DocumentCard key={idx} url={mediaUrl} filename={media.original_filename || mediaFilenameText || 'Document'} isOwn={isOwn} />;
