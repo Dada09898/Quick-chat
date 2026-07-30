@@ -2,13 +2,14 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     UploadStartView, UploadChunkView, UploadCompleteView,
-    ConversationViewSet, MessageViewSet, UserStatusViewSet
+    ConversationViewSet, MessageViewSet, UserStatusViewSet, CommunityViewSet
 )
 
 router = DefaultRouter()
 router.register(r'conversations', ConversationViewSet, basename='conversation')
 router.register(r'messages', MessageViewSet, basename='message')
 router.register(r'statuses', UserStatusViewSet, basename='status')
+router.register(r'communities', CommunityViewSet, basename='community')
 
 urlpatterns = [
     path('upload/start/', UploadStartView.as_view(), name='media-upload-start'),

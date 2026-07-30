@@ -16,14 +16,41 @@ export const CommunityModal: React.FC<CommunityModalProps> = ({ isOpen, onClose 
 
   if (!isOpen) return null;
 
-  const handleCreateCommunity = (e: React.FormEvent) => {
+  const handleCreateCommunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!communityName.trim()) return;
 
-    toast.success(`Community "${communityName.trim()}" created successfully!`);
-    setCommunityName('');
-    setDescription('');
-    onClose();
+    try {
+      const { apiJson } = await import('../../lib/api');
+      const res = await apiJson('/api/chat/communities/', {
+        method: 'POST',
+        body: {
+          name: communityName.trim(),
+          description: description.trim(),
+          sub_groups: subGroups
+        }
+      });
+
+      if (res.ok) {
+        toast.success(`Community "${communityName.trim()}" created successfully!`);
+        setCommunityName('');
+        setDescription('');
+        // Refresh conversations in chat store
+        const { apiClient } = await import('../../lib/api');
+        const convRes = await apiClient('/api/chat/conversations/');
+        if (convRes.ok) {
+          const convData = await convRes.json();
+          useChatStore.getState().setConversations(convData.results || []);
+        }
+      } else {
+        toast.error('Failed to create community.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error creating community.');
+    } finally {
+      onClose();
+    }
   };
 
   return (

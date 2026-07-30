@@ -298,3 +298,26 @@ class StatusView(models.Model):
         unique_together = ('status', 'viewer')
 
 
+class Community(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default='')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_communities')
+    announcement_conversation = models.ForeignKey(Conversation, on_delete=models.SET_NULL, null=True, blank=True, related_name='community_announcements')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class CommunityGroup(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='groups')
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    group_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+

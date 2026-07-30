@@ -300,3 +300,47 @@ class UserStatusViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
 
+class CommunityViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from .models import Community
+        return Community.objects.filter(creator=self.request.user).select_related('creator').prefetch_related('groups')
+
+    def get_serializer_class(self):
+        from .serializers import CommunitySerializer
+        return CommunitySerializer
+
+    def create(self, request, *args, **kwargs):
+        from .models import Community, Conversation, ConversationMember, CommunityGroup
+        from .serializers import CommunitySerializer
+
+        name = request.data.get('name', '').strip()
+        description = request.data.get('description', '').strip()
+
+        if not name:
+            return Response({'error': 'Community name is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Create Announcement Conversation
+        announcement_conv = Conversation.objects.create(is_direct=False)
+        ConversationMember.objects.create(conversation=announcement_conv, user=request.user, role='admin')
+
+        # 2. Create Community
+        community = Community.objects.create(
+            name=name,
+            description=description,
+            creator=request.user,
+            announcement_conversation=announcement_conv
+        )
+
+        # 3. Add default sub-groups if specified
+        sub_groups = request.data.get('sub_groups', ['General Updates', 'Announcements'])
+        for group_title in sub_groups:
+            sub_conv = Conversation.objects.create(is_direct=False)
+            ConversationMember.objects.create(conversation=sub_conv, user=request.user, role='admin')
+            CommunityGroup.objects.create(community=community, conversation=sub_conv, group_name=group_title)
+
+        return Response(CommunitySerializer(community).data, status=status.HTTP_201_CREATED)
+
+
+

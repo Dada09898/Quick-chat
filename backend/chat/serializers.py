@@ -85,3 +85,22 @@ class UserStatusSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at', 'expires_at']
 
+
+class CommunityGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        from .models import CommunityGroup
+        model = CommunityGroup
+        fields = ['id', 'community', 'conversation', 'group_name', 'created_at']
+
+
+class CommunitySerializer(serializers.ModelSerializer):
+    creator = UserSerializer(read_only=True)
+    groups = CommunityGroupSerializer(many=True, read_only=True)
+
+    class Meta:
+        from .models import Community
+        model = Community
+        fields = ['id', 'name', 'description', 'creator', 'announcement_conversation', 'groups', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'creator', 'created_at', 'updated_at']
+
+
