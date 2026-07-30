@@ -60,3 +60,28 @@ class MessageSerializer(serializers.ModelSerializer):
             'is_edited', 'created_at', 'server_timestamp', 'attachments', 'reactions', 'read_receipts'
         ]
         read_only_fields = ['id', 'sequence_number', 'sender', 'server_timestamp']
+
+
+class StatusViewSerializer(serializers.ModelSerializer):
+    viewer = UserSerializer(read_only=True)
+
+    class Meta:
+        from .models import StatusView
+        model = StatusView
+        fields = ['id', 'viewer', 'viewed_at']
+
+
+class UserStatusSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    views = StatusViewSerializer(many=True, read_only=True)
+
+    class Meta:
+        from .models import UserStatus
+        model = UserStatus
+        fields = [
+            'id', 'user', 'status_type', 'content', 'caption',
+            'background_color', 'font_family', 'privacy',
+            'created_at', 'expires_at', 'views'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'expires_at']
+

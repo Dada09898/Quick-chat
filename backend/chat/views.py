@@ -236,3 +236,52 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserStatusViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from .models import UserStatus
+        now = timezone.now()
+        return UserStatus.objects.filter(expires_at__gt=now).select_related('user').prefetch_related('views__viewer')
+
+    def get_serializer_class(self):
+        from .serializers import UserStatusSerializer
+        return UserStatusSerializer
+
+    def create(self, request, *args, **kwargs):
+        from .models import UserStatus
+        from .serializers import UserStatusSerializer
+
+        status_type = request.data.get('status_type', request.data.get('type', 'text'))
+        content = request.data.get('content', '')
+        caption = request.data.get('caption', '')
+        bg_color = request.data.get('background_color', request.data.get('backgroundColor', '#005c4b'))
+        font_family = request.data.get('font_family', request.data.get('fontFamily', 'sans-serif'))
+        privacy = request.data.get('privacy', 'contacts')
+
+        if not content:
+            return Response({'error': 'content is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        expires_at = timezone.now() + timedelta(hours=24)
+        status_obj = UserStatus.objects.create(
+            user=request.user,
+            status_type=status_type,
+            content=content,
+            caption=caption,
+            background_color=bg_color,
+            font_family=font_family,
+            privacy=privacy,
+            expires_at=expires_at
+        )
+
+        return Response(UserStatusSerializer(status_obj).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def view(self, request, pk=None):
+        from .models import StatusView
+        status_obj = self.get_object()
+        StatusView.objects.get_or_create(status=status_obj, viewer=request.user)
+        return Response({'status': 'viewed'}, status=status.HTTP_200_OK)
+

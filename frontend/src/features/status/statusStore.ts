@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiJson } from '../../lib/api';
 
 export interface StatusViewerRecord {
   userId: string;
@@ -47,6 +48,7 @@ interface StatusState {
   isPrivacyModalOpen: boolean;
   viewersModalStatusId: string | null;
   mutedUserIds: string[];
+  isLoading: boolean;
   
   // Privacy configuration
   statusPrivacy: StatusPrivacySetting;
@@ -54,8 +56,9 @@ interface StatusState {
   includedUserIds: string[];
 
   // Actions
-  addStatus: (status: Omit<StatusItem, 'id' | 'createdAt' | 'expiresAt' | 'views'>) => void;
-  markStatusAsViewed: (statusId: string) => void;
+  fetchStatuses: () => Promise<void>;
+  addStatus: (status: Omit<StatusItem, 'id' | 'createdAt' | 'expiresAt' | 'views'>) => Promise<void>;
+  markStatusAsViewed: (statusId: string) => Promise<void>;
   recordStatusView: (statusId: string, viewer: { userId: string; userName: string; userAvatar?: string }) => void;
   openViewer: (group: UserStatusGroup, initialIndex?: number) => void;
   closeViewer: () => void;
@@ -66,7 +69,7 @@ interface StatusState {
   setViewersModalStatusId: (statusId: string | null) => void;
   setStatusPrivacy: (privacy: StatusPrivacySetting, excluded?: string[], included?: string[]) => void;
   toggleMuteUser: (userId: string) => void;
-  deleteStatus: (statusId: string) => void;
+  deleteStatus: (statusId: string) => Promise<void>;
   cleanExpiredStatuses: () => void;
 }
 
@@ -101,103 +104,19 @@ function loadInitialPrivacy() {
   }
 }
 
-function loadInitialState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { myStatuses: [], contactStatusGroups: [] };
-    const parsed = JSON.parse(raw);
-    const now = Date.now();
-    
-    // Filter out expired (>24h)
-    const validMy = (parsed.myStatuses || []).filter((s: StatusItem) => s.expiresAt > now);
-    const validContacts: UserStatusGroup[] = (parsed.contactStatusGroups || [])
-      .map((group: UserStatusGroup) => {
-        const validStatuses = group.statuses.filter(s => s.expiresAt > now);
-        return {
-          ...group,
-          statuses: validStatuses,
-          hasUnviewed: validStatuses.some(s => !s.isViewed)
-        };
-      })
-      .filter((group: UserStatusGroup) => group.statuses.length > 0);
-
-    return { myStatuses: validMy, contactStatusGroups: validContacts };
-  } catch {
-    return { myStatuses: [], contactStatusGroups: [] };
-  }
-}
-
-function saveState(myStatuses: StatusItem[], contactStatusGroups: UserStatusGroup[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ myStatuses, contactStatusGroups }));
-  } catch (e) {
-    console.error('Failed to save status state:', e);
-  }
-}
-
-function savePrivacy(privacy: StatusPrivacySetting, excludedUserIds: string[], includedUserIds: string[]) {
-  try {
-    localStorage.setItem(PRIVACY_KEY, JSON.stringify({ statusPrivacy: privacy, excludedUserIds, includedUserIds }));
-  } catch (e) {
-    console.error('Failed to save privacy state:', e);
-  }
-}
-
-const initialDemoGroups: UserStatusGroup[] = [
-  {
-    userId: 'demo_user_1',
-    userName: 'Kryozen Team',
-    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-    hasUnviewed: true,
-    lastUpdated: Date.now() - 3600000,
-    statuses: [
-      {
-        id: 'demo_s1',
-        userId: 'demo_user_1',
-        userName: 'Kryozen Team',
-        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        type: 'text',
-        content: 'Welcome to Kryozen Quick Chat! 🚀 E2E Encrypted & Ultra Fast.',
-        backgroundColor: '#005c4b',
-        fontFamily: 'sans-serif',
-        createdAt: Date.now() - 3600000,
-        expiresAt: Date.now() + 82800000,
-        isViewed: false,
-        views: []
-      },
-      {
-        id: 'demo_s2',
-        userId: 'demo_user_1',
-        userName: 'Kryozen Team',
-        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        type: 'image',
-        content: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800',
-        caption: 'Enjoy private communication anywhere 🔐',
-        createdAt: Date.now() - 1800000,
-        expiresAt: Date.now() + 84600000,
-        isViewed: false,
-        views: []
-      }
-    ]
-  }
-];
-
 const initialPrivacy = loadInitialPrivacy();
-const initialLoaded = loadInitialState();
 const initialMuted = loadInitialMuted();
-const defaultContacts = initialLoaded.contactStatusGroups.length > 0 
-  ? initialLoaded.contactStatusGroups 
-  : initialDemoGroups;
 
 export const useStatusStore = create<StatusState>((set, get) => ({
-  myStatuses: initialLoaded.myStatuses,
-  contactStatusGroups: defaultContacts,
+  myStatuses: [],
+  contactStatusGroups: [],
   activeViewerGroup: null,
   activeViewerIndex: 0,
   isCreateModalOpen: false,
   isPrivacyModalOpen: false,
   viewersModalStatusId: null,
   mutedUserIds: initialMuted,
+  isLoading: false,
 
   statusPrivacy: initialPrivacy.statusPrivacy,
   excludedUserIds: initialPrivacy.excludedUserIds,
@@ -206,6 +125,72 @@ export const useStatusStore = create<StatusState>((set, get) => ({
   setCreateModalOpen: (open) => set({ isCreateModalOpen: open }),
   setPrivacyModalOpen: (open) => set({ isPrivacyModalOpen: open }),
   setViewersModalStatusId: (statusId) => set({ viewersModalStatusId: statusId }),
+
+  fetchStatuses: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await apiJson('/api/chat/statuses/');
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : data.results || [];
+        
+        // Group statuses by user
+        const myItems: StatusItem[] = [];
+        const contactGroupsMap: Record<string, UserStatusGroup> = {};
+
+        items.forEach((backendItem: any) => {
+          const item: StatusItem = {
+            id: backendItem.id,
+            userId: backendItem.user?.id || 'unknown',
+            userName: backendItem.user?.display_name || backendItem.user?.username || 'User',
+            userAvatar: backendItem.user?.avatar,
+            type: backendItem.status_type || 'text',
+            content: backendItem.content,
+            caption: backendItem.caption,
+            backgroundColor: backendItem.background_color,
+            fontFamily: backendItem.font_family,
+            createdAt: new Date(backendItem.created_at).getTime(),
+            expiresAt: new Date(backendItem.expires_at).getTime(),
+            privacy: backendItem.privacy,
+            views: (backendItem.views || []).map((v: any) => ({
+              userId: v.viewer?.id || 'unknown',
+              userName: v.viewer?.display_name || v.viewer?.username || 'User',
+              userAvatar: v.viewer?.avatar,
+              viewedAt: new Date(v.viewed_at).getTime()
+            }))
+          };
+
+          // Determine if own status or contact status
+          const currentUserId = (window as any).__CURRENT_USER_ID__;
+          if (currentUserId && item.userId === currentUserId) {
+            myItems.push(item);
+          } else {
+            if (!contactGroupsMap[item.userId]) {
+              contactGroupsMap[item.userId] = {
+                userId: item.userId,
+                userName: item.userName,
+                userAvatar: item.userAvatar,
+                statuses: [],
+                hasUnviewed: false,
+                lastUpdated: item.createdAt
+              };
+            }
+            contactGroupsMap[item.userId].statuses.push(item);
+            if (!item.isViewed) contactGroupsMap[item.userId].hasUnviewed = true;
+          }
+        });
+
+        set({
+          myStatuses: myItems,
+          contactStatusGroups: Object.values(contactGroupsMap)
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch statuses from backend:', err);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
   toggleMuteUser: (userId) => {
     set((state) => {
@@ -219,30 +204,31 @@ export const useStatusStore = create<StatusState>((set, get) => ({
   },
 
   setStatusPrivacy: (privacy, excluded = [], included = []) => {
-    savePrivacy(privacy, excluded, included);
     set({ statusPrivacy: privacy, excludedUserIds: excluded, includedUserIds: included });
   },
 
-  addStatus: (newStatusData) => {
-    const now = Date.now();
-    const { statusPrivacy, excludedUserIds, includedUserIds } = get();
-    const newStatus: StatusItem = {
-      ...newStatusData,
-      id: crypto.randomUUID(),
-      createdAt: now,
-      expiresAt: now + 24 * 60 * 60 * 1000, // 24 hours
-      isViewed: true, // own status is always viewed
-      views: [], // starts with 0 views
-      privacy: statusPrivacy,
-      privacyExcludedUserIds: excludedUserIds,
-      privacyIncludedUserIds: includedUserIds
-    };
+  addStatus: async (newStatusData) => {
+    const { statusPrivacy } = get();
 
-    set((state) => {
-      const updatedMy = [newStatus, ...state.myStatuses];
-      saveState(updatedMy, state.contactStatusGroups);
-      return { myStatuses: updatedMy };
-    });
+    try {
+      const res = await apiJson('/api/chat/statuses/', {
+        method: 'POST',
+        body: {
+          status_type: newStatusData.type,
+          content: newStatusData.content,
+          caption: newStatusData.caption || '',
+          background_color: newStatusData.backgroundColor || '#005c4b',
+          font_family: newStatusData.fontFamily || 'sans-serif',
+          privacy: statusPrivacy
+        }
+      });
+
+      if (res.ok) {
+        await get().fetchStatuses();
+      }
+    } catch (err) {
+      console.error('Error creating status:', err);
+    }
   },
 
   recordStatusView: (statusId, viewer) => {
@@ -257,29 +243,27 @@ export const useStatusStore = create<StatusState>((set, get) => ({
         };
         return { ...s, views: [newView, ...existingViews] };
       });
-      saveState(updatedMy, state.contactStatusGroups);
       return { myStatuses: updatedMy };
     });
   },
 
-  markStatusAsViewed: (statusId) => {
+  markStatusAsViewed: async (statusId) => {
+    try {
+      await apiJson(`/api/chat/statuses/${statusId}/view/`, { method: 'POST' });
+    } catch (err) {
+      console.error('Error marking status viewed:', err);
+    }
+
     set((state) => {
-      let changed = false;
       const updatedGroups = state.contactStatusGroups.map((group) => {
         const hasTarget = group.statuses.some(s => s.id === statusId);
         if (!hasTarget) return group;
-        
-        changed = true;
+
         const updatedStatuses = group.statuses.map(s => s.id === statusId ? { ...s, isViewed: true } : s);
         const hasUnviewed = updatedStatuses.some(s => !s.isViewed);
         return { ...group, statuses: updatedStatuses, hasUnviewed };
       });
-
-      if (changed) {
-        saveState(state.myStatuses, updatedGroups);
-        return { contactStatusGroups: updatedGroups };
-      }
-      return state;
+      return { contactStatusGroups: updatedGroups };
     });
   },
 
@@ -319,12 +303,16 @@ export const useStatusStore = create<StatusState>((set, get) => ({
     return false;
   },
 
-  deleteStatus: (statusId) => {
-    set((state) => {
-      const updatedMy = state.myStatuses.filter(s => s.id !== statusId);
-      saveState(updatedMy, state.contactStatusGroups);
-      return { myStatuses: updatedMy };
-    });
+  deleteStatus: async (statusId) => {
+    try {
+      await apiJson(`/api/chat/statuses/${statusId}/`, { method: 'DELETE' });
+    } catch (err) {
+      console.error('Error deleting status:', err);
+    }
+
+    set((state) => ({
+      myStatuses: state.myStatuses.filter(s => s.id !== statusId)
+    }));
   },
 
   cleanExpiredStatuses: () => {
@@ -338,7 +326,6 @@ export const useStatusStore = create<StatusState>((set, get) => ({
         })
         .filter(group => group.statuses.length > 0);
 
-      saveState(validMy, validContacts);
       return { myStatuses: validMy, contactStatusGroups: validContacts };
     });
   }

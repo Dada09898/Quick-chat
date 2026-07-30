@@ -269,3 +269,32 @@ class TypingState(models.Model):
     class Meta:
         unique_together = ('conversation', 'user')
 
+
+class UserStatus(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='statuses')
+    
+    status_type = models.CharField(max_length=20, default='text') # 'image', 'video', 'text', 'audio'
+    content = models.TextField()
+    caption = models.TextField(blank=True, default='')
+    background_color = models.CharField(max_length=20, default='#005c4b')
+    font_family = models.CharField(max_length=30, default='sans-serif')
+    privacy = models.CharField(max_length=20, default='contacts') # 'contacts', 'except', 'only'
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class StatusView(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    status = models.ForeignKey(UserStatus, on_delete=models.CASCADE, related_name='views')
+    viewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('status', 'viewer')
+
+
