@@ -236,6 +236,11 @@ class ConversationViewSet(viewsets.ModelViewSet):
         Message.objects.filter(conversation=conversation).update(deleted_at=timezone.now())
         return Response({'status': 'ok', 'message': 'Chat cleared'})
 
+    @action(detail=False, methods=['post'])
+    def read_all(self, request):
+        ConversationMember.objects.filter(user=request.user).update(unread_count_cache=0)
+        return Response({'status': 'ok', 'message': 'All chats marked as read'})
+
 
 class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]

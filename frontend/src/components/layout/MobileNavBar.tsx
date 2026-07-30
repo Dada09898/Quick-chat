@@ -15,68 +15,64 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
   onOpenSettings,
 }) => {
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#202c33] border-t border-[#222d34] h-14 px-3 flex items-center justify-around select-none">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#111b21] border-t border-[#222d34] h-16 px-4 flex items-center justify-around select-none">
       {/* Chats */}
       <button
         onClick={() => setActiveTab('chats')}
-        className={`relative flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
-          activeTab === 'chats' ? 'text-[#00a884]' : 'text-[#8696a0]'
-        }`}
+        className="flex flex-col items-center justify-center gap-1"
       >
-        <div className="relative">
+        <div className={`relative px-4 py-1 rounded-full transition-all ${
+          activeTab === 'chats' ? 'bg-[#103629] text-[#00a884]' : 'text-[#8696a0]'
+        }`}>
           <MessageSquare size={20} />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 px-1 bg-[#00a884] text-[#111b21] text-[9px] font-bold rounded-full border border-[#202c33]">
+            <span className="absolute -top-1 right-1 px-1.5 py-0.5 bg-[#00a884] text-[#111b21] text-[9px] font-bold rounded-full border border-[#111b21]">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
         </div>
-        <span className="text-[10px] font-medium">Chats</span>
+        <span className={`text-[11px] font-medium ${activeTab === 'chats' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Chats</span>
       </button>
 
-      {/* Status */}
+      {/* Updates / Status */}
       <button
         onClick={() => setActiveTab('status')}
-        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
-          activeTab === 'status' ? 'text-[#00a884]' : 'text-[#8696a0]'
-        }`}
+        className="flex flex-col items-center justify-center gap-1"
       >
-        <CircleDashed size={20} />
-        <span className="text-[10px] font-medium">Status</span>
-      </button>
-
-      {/* Calls */}
-      <button
-        onClick={() => setActiveTab('calls')}
-        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
-          activeTab === 'calls' ? 'text-[#00a884]' : 'text-[#8696a0]'
-        }`}
-      >
-        <PhoneCall size={20} />
-        <span className="text-[10px] font-medium">Calls</span>
+        <div className={`relative px-4 py-1 rounded-full transition-all ${
+          activeTab === 'status' ? 'bg-[#103629] text-[#00a884]' : 'text-[#8696a0]'
+        }`}>
+          <CircleDashed size={20} />
+          <span className="absolute top-1 right-3 w-2 h-2 bg-[#00a884] rounded-full ring-2 ring-[#111b21]" />
+        </div>
+        <span className={`text-[11px] font-medium ${activeTab === 'status' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Updates</span>
       </button>
 
       {/* Communities */}
       <button
         onClick={() => setActiveTab('communities')}
-        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
-          activeTab === 'communities' ? 'text-[#00a884]' : 'text-[#8696a0]'
-        }`}
+        className="flex flex-col items-center justify-center gap-1"
       >
-        <Users size={20} />
-        <span className="text-[10px] font-medium">Communities</span>
+        <div className={`px-4 py-1 rounded-full transition-all ${
+          activeTab === 'communities' ? 'bg-[#103629] text-[#00a884]' : 'text-[#8696a0]'
+        }`}>
+          <Users size={20} />
+        </div>
+        <span className={`text-[11px] font-medium ${activeTab === 'communities' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Communities</span>
       </button>
 
-      {/* Settings */}
-      {onOpenSettings && (
-        <button
-          onClick={onOpenSettings}
-          className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 text-[#8696a0] rounded-xl transition-all"
-        >
-          <Settings size={20} />
-          <span className="text-[10px] font-medium">Settings</span>
-        </button>
-      )}
+      {/* Calls */}
+      <button
+        onClick={() => setActiveTab('calls')}
+        className="flex flex-col items-center justify-center gap-1"
+      >
+        <div className={`px-4 py-1 rounded-full transition-all ${
+          activeTab === 'calls' ? 'bg-[#103629] text-[#00a884]' : 'text-[#8696a0]'
+        }`}>
+          <PhoneCall size={20} />
+        </div>
+        <span className={`text-[11px] font-medium ${activeTab === 'calls' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Calls</span>
+      </button>
     </div>
   );
 };

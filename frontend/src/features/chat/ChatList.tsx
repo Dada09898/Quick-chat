@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
-import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X, CircleDashed, Plus, PhoneCall, Users, QrCode, Laptop, MoreVertical } from 'lucide-react';
+import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X, CircleDashed, Plus, PhoneCall, Users, QrCode, Laptop, MoreVertical, Camera, IndianRupee, Radio, Settings, Star } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
 import { useStatusStore, type UserStatusGroup } from '../status/statusStore';
@@ -156,32 +156,21 @@ export const ChatList: React.FC<ChatListProps> = ({
         onClose={() => setIsLinkedDevicesOpen(false)}
       />
 
-      {/* Clean WhatsApp Web Header */}
-      <div className="px-4 py-3 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0 h-[60px] relative">
-        <h2 className="text-[20px] font-bold text-[#e9edef] tracking-tight">
-          {activeTab === 'chats' ? 'Chats' : activeTab === 'status' ? 'Status Updates' : activeTab === 'calls' ? 'Calls' : 'Communities'}
+      {/* Clean WhatsApp Mobile & Web Header */}
+      <div className="px-4 py-3 border-b border-[#222d34] flex items-center justify-between bg-[#111b21] md:bg-[#202c33] z-10 shrink-0 h-[60px] relative">
+        <h2 className="text-[22px] font-bold text-[#e9edef] tracking-tight font-sans">
+          WhatsApp
         </h2>
         
-        <div className="flex items-center gap-1 text-[#aebac1] relative">
-          {/* New Chat Button */}
+        <div className="flex items-center gap-2 text-[#aebac1] relative">
+          {/* Camera Button */}
           <button 
-            onClick={onOpenNewChat}
+            onClick={() => toast.success('Opening camera...')}
             className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#e9edef]"
-            title="New Chat"
+            title="Camera"
           >
-            <Plus size={20} />
+            <Camera size={22} />
           </button>
-
-          {/* Privacy Button on Status Tab */}
-          {activeTab === 'status' && (
-            <button
-              onClick={() => setPrivacyModalOpen(true)}
-              className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#00a884]"
-              title="Status Privacy"
-            >
-              <ShieldCheck size={20} />
-            </button>
-          )}
 
           {/* Three Dots Menu Button */}
           <button
@@ -189,54 +178,77 @@ export const ChatList: React.FC<ChatListProps> = ({
             className={`p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#e9edef] ${isMenuOpen ? 'bg-[#374248] text-[#00a884]' : ''}`}
             title="Menu & Options"
           >
-            <MoreVertical size={20} />
+            <MoreVertical size={22} />
           </button>
 
-          {/* WhatsApp Web Three Dots Dropdown Menu */}
+          {/* WhatsApp Mobile Three Dots Dropdown Menu (Matching Screenshot Exactly) */}
           {isMenuOpen && (
             <div 
-              className="absolute right-0 top-11 w-56 bg-[#233138] border border-[#2a3942] rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-sm text-[#d1d7db]"
+              className="absolute right-0 top-12 w-60 bg-[#1f2c34] border border-[#2a3942] rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-[15px] text-[#e9edef] font-sans"
               onClick={() => setIsMenuOpen(false)}
             >
               <button
-                onClick={() => setIsCommunityModalOpen(true)}
-                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left transition"
+                onClick={onOpenNewChat}
+                className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
               >
-                <Users size={16} className="text-[#00a884]" />
-                <span>New Community</span>
+                <span>New group</span>
+              </button>
+
+              <button
+                onClick={() => setIsCommunityModalOpen(true)}
+                className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
+              >
+                <span>New community</span>
+              </button>
+
+              <button
+                onClick={() => setIsCommunityModalOpen(true)}
+                className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
+              >
+                <span>Broadcast lists</span>
               </button>
 
               <button
                 onClick={() => setIsLinkedDevicesOpen(true)}
-                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left transition"
+                className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
               >
-                <Laptop size={16} className="text-[#00a884]" />
-                <span>Linked Devices</span>
+                <span>Linked devices</span>
               </button>
 
               <button
-                onClick={() => setIsQrModalOpen(true)}
-                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left transition"
+                onClick={() => toast.success('Starred messages opened')}
+                className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
               >
-                <QrCode size={16} className="text-[#00a884]" />
-                <span>Scan QR Code</span>
+                <span>Starred</span>
+              </button>
+
+              <button
+                onClick={() => toast.success('Payments & UPI service ready')}
+                className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
+              >
+                <span>Payments</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    const { apiJson } = await import('../../lib/api');
+                    await apiJson('/api/chat/conversations/read_all/', { method: 'POST' });
+                    toast.success('All messages marked as read');
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
+                className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
+              >
+                <span>Read all</span>
               </button>
 
               <button
                 onClick={() => setPrivacyModalOpen(true)}
-                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left transition"
+                className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
               >
-                <ShieldCheck size={16} className="text-[#00a884]" />
-                <span>Status Privacy</span>
-              </button>
-
-              <div className="h-[1px] bg-[#2a3942] my-1" />
-
-              <button
-                onClick={() => logout()}
-                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left text-red-400 hover:text-red-300 transition"
-              >
-                <span>Log out</span>
+                <span>Settings</span>
               </button>
             </div>
           )}
