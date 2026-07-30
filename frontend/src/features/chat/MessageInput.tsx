@@ -9,6 +9,7 @@ import { layoutVariants, springPresets } from '../../motion';
 import { VoiceRecorder } from './VoiceRecorder';
 import { PollCreateModal } from './PollCreateModal';
 import { ContactShareModal } from './ContactShareModal';
+import { LocationShareModal } from './LocationShareModal';
 
 const LazyEmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
@@ -32,6 +33,7 @@ export const MessageInput: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -474,6 +476,15 @@ export const MessageInput: React.FC = () => {
                </div>
                <span className="text-[12px] text-[#e9edef]">Contact</span>
             </div>
+            <div 
+              onClick={() => { setShowAttachmentMenu(false); setIsLocationModalOpen(true); }}
+              className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]"
+            >
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#e53935] to-[#c62828] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform relative overflow-hidden">
+                 <MapPin size={24} />
+               </div>
+               <span className="text-[12px] text-[#e9edef]">Location</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -486,6 +497,11 @@ export const MessageInput: React.FC = () => {
       <ContactShareModal
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
+      />
+
+      <LocationShareModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
       />
 
       <button 
