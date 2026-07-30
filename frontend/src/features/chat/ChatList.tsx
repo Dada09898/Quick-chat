@@ -427,10 +427,16 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
                         )}
                         <div className="hidden group-hover:flex items-center gap-1 ml-1">
                           <button
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
                               conv.is_pinned = !conv.is_pinned;
                               useChatStore.setState({ conversations: [...conversations] });
+                              try {
+                                const { apiJson } = await import('../../lib/api');
+                                await apiJson(`/api/chat/conversations/${conv.id}/pin/`, { method: 'POST' });
+                              } catch (err) {
+                                console.error(err);
+                              }
                               toast.success(conv.is_pinned ? 'Chat pinned to top' : 'Chat unpinned');
                             }}
                             className="p-1 hover:bg-[#374248] rounded-full text-[#8696a0] hover:text-[#e9edef] transition"
@@ -439,10 +445,16 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
                             <Pin size={14} className={isPinned ? 'fill-[#00a884] text-[#00a884]' : ''} />
                           </button>
                           <button
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
                               conv.is_muted = !conv.is_muted;
                               useChatStore.setState({ conversations: [...conversations] });
+                              try {
+                                const { apiJson } = await import('../../lib/api');
+                                await apiJson(`/api/chat/conversations/${conv.id}/mute/`, { method: 'POST' });
+                              } catch (err) {
+                                console.error(err);
+                              }
                               toast.success(conv.is_muted ? 'Notifications muted' : 'Notifications unmuted');
                             }}
                             className="p-1 hover:bg-[#374248] rounded-full text-[#8696a0] hover:text-[#e9edef] transition"

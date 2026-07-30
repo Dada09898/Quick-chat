@@ -116,11 +116,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
       : [...state.pinnedMessageIds, id]
   })),
 
-  toggleStar: (id) => set((state) => ({
-    starredMessageIds: state.starredMessageIds.includes(id)
-      ? state.starredMessageIds.filter(x => x !== id)
-      : [...state.starredMessageIds, id]
-  })),
+  toggleStar: async (id) => {
+    try {
+      const { apiJson } = await import('../../lib/api');
+      await apiJson(`/api/chat/messages/${id}/star/`, { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
+    set((state) => ({
+      starredMessageIds: state.starredMessageIds.includes(id)
+        ? state.starredMessageIds.filter(x => x !== id)
+        : [...state.starredMessageIds, id]
+    }));
+  },
   
   upsertMessage: (msg) => {
     set((state) => {
@@ -159,7 +167,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }).catch(console.error);
   },
   
-  removeMessage: (id) => {
+  removeMessage: async (id) => {
+    try {
+      const { apiJson } = await import('../../lib/api');
+      await apiJson(`/api/chat/messages/${id}/`, { method: 'DELETE' });
+    } catch (err) {
+      console.error(err);
+    }
     set((state) => {
       const newMessages = { ...state.messages };
       delete newMessages[id];
@@ -231,7 +245,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
   },
 
-  updateMessageReactions: (messageId, userId, reaction) => {
+  updateMessageReactions: async (messageId, userId, reaction) => {
+    try {
+      const { apiJson } = await import('../../lib/api');
+      await apiJson(`/api/chat/messages/${messageId}/react/`, {
+        method: 'POST',
+        body: { reaction }
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
     set((state) => {
       const msg = state.messages[messageId];
       if (!msg) return state;

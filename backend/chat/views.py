@@ -205,6 +205,31 @@ class ConversationViewSet(viewsets.ModelViewSet):
         ConversationMember.objects.filter(conversation=conversation, user=request.user).delete()
         return Response({'status': 'Left conversation'})
 
+    @action(detail=True, methods=['post'])
+    def pin(self, request, pk=None):
+        conversation = self.get_object()
+        member, _ = ConversationMember.objects.get_or_create(conversation=conversation, user=request.user)
+        member.is_pinned = not member.is_pinned
+        member.save()
+        return Response({'status': 'ok', 'is_pinned': member.is_pinned})
+
+    @action(detail=True, methods=['post'])
+    def mute(self, request, pk=None):
+        conversation = self.get_object()
+        member, _ = ConversationMember.objects.get_or_create(conversation=conversation, user=request.user)
+        member.is_muted = not member.is_muted
+        member.save()
+        return Response({'status': 'ok', 'is_muted': member.is_muted})
+
+    @action(detail=True, methods=['post'])
+    def archive(self, request, pk=None):
+        conversation = self.get_object()
+        member, _ = ConversationMember.objects.get_or_create(conversation=conversation, user=request.user)
+        member.is_archived = not member.is_archived
+        member.save()
+        return Response({'status': 'ok', 'is_archived': member.is_archived})
+
+
 class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = MessageSerializer
@@ -236,6 +261,35 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def star(self, request, pk=None):
+        from .models import MessageBookmark
+        message = self.get_object()
+        bookmark, created = MessageBookmark.objects.get_or_create(message=message, user=request.user)
+        if not created:
+            bookmark.delete()
+            starred = False
+        else:
+            starred = True
+        return Response({'status': 'ok', 'is_starred': starred})
+
+    @action(detail=True, methods=['post'])
+    def react(self, request, pk=None):
+        from .models import MessageReaction
+        message = self.get_object()
+        reaction_text = request.data.get('reaction', '')
+        if not reaction_text:
+            MessageReaction.objects.filter(message=message, user=request.user).delete()
+            return Response({'status': 'reaction_removed'})
+        
+        MessageReaction.objects.update_or_create(
+            message=message,
+            user=request.user,
+            defaults={'reaction_ciphertext': reaction_text}
+        )
+        return Response({'status': 'reacted', 'reaction': reaction_text})
+
 
 
 class UserStatusViewSet(viewsets.ModelViewSet):
