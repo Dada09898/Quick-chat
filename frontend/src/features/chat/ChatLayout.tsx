@@ -22,6 +22,7 @@ import { ChatCustomization } from './ChatCustomization';
 import { GroupCreateModal } from './GroupCreateModal';
 import { GroupInfoPanel } from './GroupInfoPanel';
 import { AIChatPanel } from '../ai/components/AIChatPanel';
+import { ForwardMessageModal } from './ForwardMessageModal';
 
 import { PwaInstallButton } from '../../components/PwaInstallButton';
 
@@ -295,6 +296,10 @@ export const ChatLayout: React.FC = () => {
             <ChatCustomization isOpen={isCustomizeOpen} onClose={() => setIsCustomizeOpen(false)} />
           )}
         </AnimatePresence>
+        <ForwardMessageModal
+          isOpen={useChatStore.getState().forwardingMessageIds.length > 0}
+          onClose={() => useChatStore.getState().setForwardingMessageIds([])}
+        />
       </React.Suspense>
     </div>
   );
