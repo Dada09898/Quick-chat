@@ -23,6 +23,7 @@ import { GroupCreateModal } from './GroupCreateModal';
 import { GroupInfoPanel } from './GroupInfoPanel';
 import { AIChatPanel } from '../ai/components/AIChatPanel';
 import { ForwardMessageModal } from './ForwardMessageModal';
+import { StarredMessagesModal } from './StarredMessagesModal';
 
 import { PwaInstallButton } from '../../components/PwaInstallButton';
 
@@ -34,6 +35,7 @@ export const ChatLayout: React.FC = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
+  const [isStarredModalOpen, setIsStarredModalOpen] = useState(false);
 
   // Hydrate offline store on mount
   React.useEffect(() => {
@@ -181,6 +183,9 @@ export const ChatLayout: React.FC = () => {
                 <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 hover:bg-[#374248] rounded-full transition-colors" title="Search" aria-label="Search messages">
                    <Search size={20} />
                 </button>
+                <button onClick={() => setIsStarredModalOpen(true)} className="p-2 hover:bg-[#374248] rounded-full transition-colors" title="Starred Messages">
+                   <Star size={20} className="text-[#8696a0] hover:text-yellow-400" />
+                </button>
                 <button onClick={() => setIsAIOpen(!isAIOpen)} className={`p-2 hover:bg-[#374248] rounded-full transition-colors hidden md:block ${isAIOpen ? 'text-[#00a884] bg-[#374248]' : ''}`} title="AI Assistant">
                    <Bot size={20} />
                 </button>
@@ -299,6 +304,10 @@ export const ChatLayout: React.FC = () => {
         <ForwardMessageModal
           isOpen={useChatStore.getState().forwardingMessageIds.length > 0}
           onClose={() => useChatStore.getState().setForwardingMessageIds([])}
+        />
+        <StarredMessagesModal
+          isOpen={isStarredModalOpen}
+          onClose={() => setIsStarredModalOpen(false)}
         />
       </React.Suspense>
     </div>
