@@ -2,11 +2,12 @@ import React, { useState, useRef } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useRealtime } from '../../realtime/RealtimeProvider';
-import { Smile, Paperclip, Send, Mic, Camera, X, Image, FileText, Video, Contact, MapPin, Headphones } from 'lucide-react';
+import { Smile, Paperclip, Send, Mic, Camera, X, Image, FileText, Video, Contact, MapPin, Headphones, BarChart2 } from 'lucide-react';
 import { UploadManager } from '../media/upload/UploadManager';
 import { motion, AnimatePresence } from 'framer-motion';
 import { layoutVariants, springPresets } from '../../motion';
 import { VoiceRecorder } from './VoiceRecorder';
+import { PollCreateModal } from './PollCreateModal';
 
 const LazyEmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
@@ -28,6 +29,7 @@ export const MessageInput: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -452,9 +454,23 @@ export const MessageInput: React.FC = () => {
                </div>
                <span className="text-[12px] text-[#e9edef]">Audio</span>
             </label>
+            <div 
+              onClick={() => { setShowAttachmentMenu(false); setIsPollModalOpen(true); }}
+              className="flex flex-col items-center gap-1 cursor-pointer group w-[70px]"
+            >
+               <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#00a884] to-[#028a6c] flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform relative overflow-hidden">
+                 <BarChart2 size={24} />
+               </div>
+               <span className="text-[12px] text-[#e9edef]">Poll</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PollCreateModal
+        isOpen={isPollModalOpen}
+        onClose={() => setIsPollModalOpen(false)}
+      />
 
       <button 
         type="button" 
