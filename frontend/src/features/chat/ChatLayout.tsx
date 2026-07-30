@@ -18,6 +18,7 @@ import { RightPanel } from './RightPanel';
 import { ForwardModal } from './ForwardModal';
 import { ChatSearch } from './ChatSearch';
 import { CameraModal } from './CameraModal';
+import { TypingIndicator } from './TypingIndicator';
 import { ChatCustomization } from './ChatCustomization';
 import { GroupCreateModal } from './GroupCreateModal';
 import { GroupInfoPanel } from './GroupInfoPanel';
@@ -153,7 +154,7 @@ export const ChatLayout: React.FC = () => {
                 {activeConversationId && (
                   <p className="text-[13px] text-[#8696a0] leading-tight mt-[1px] min-h-[16px]">
                     {remoteTyping ? (
-                      <span className="text-[#00a884] font-medium">typing...</span>
+                      <TypingIndicator />
                     ) : (
                       <span className="transition-opacity duration-300">{status === 'online' ? 'online' : ''}</span>
                     )}
