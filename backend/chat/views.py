@@ -229,6 +229,13 @@ class ConversationViewSet(viewsets.ModelViewSet):
         member.save()
         return Response({'status': 'ok', 'is_archived': member.is_archived})
 
+    @action(detail=True, methods=['post'])
+    def clear(self, request, pk=None):
+        from django.utils import timezone
+        conversation = self.get_object()
+        Message.objects.filter(conversation=conversation).update(deleted_at=timezone.now())
+        return Response({'status': 'ok', 'message': 'Chat cleared'})
+
 
 class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
