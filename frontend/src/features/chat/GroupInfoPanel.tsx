@@ -22,6 +22,7 @@ export const GroupInfoPanel: React.FC<GroupInfoPanelProps> = ({ isOpen, onClose 
   const [groupName, setGroupName] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAdminOnlyMessages, setIsAdminOnlyMessages] = useState(false);
 
   const conversation = conversations.find(c => c.id === activeConversationId);
   if (!isOpen || !conversation || conversation.is_direct) return null;
@@ -160,6 +161,35 @@ export const GroupInfoPanel: React.FC<GroupInfoPanelProps> = ({ isOpen, onClose 
             })}
           </div>
         </section>
+
+        {/* Group Permissions */}
+        {isAdmin && (
+          <section className="pt-2 border-t border-[#222d34] space-y-3">
+            <h4 className="text-[#8696a0] text-xs font-semibold uppercase tracking-wider">Group Settings</h4>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-[#202c33] border border-[#2a3942]">
+              <div>
+                <h5 className="text-sm font-medium text-[#e9edef]">Send Messages</h5>
+                <p className="text-xs text-[#8696a0]">
+                  {isAdminOnlyMessages ? 'Only Admins' : 'All Members'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  const next = !isAdminOnlyMessages;
+                  setIsAdminOnlyMessages(next);
+                  toast.success(next ? 'Set group mode to Only Admins Can Send Messages' : 'All members can send messages');
+                }}
+                className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${
+                  isAdminOnlyMessages ? 'bg-[#00a884]' : 'bg-[#374248]'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                  isAdminOnlyMessages ? 'translate-x-6' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Actions */}
         <section className="pt-2 border-t border-[#222d34] space-y-2">
