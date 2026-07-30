@@ -639,9 +639,9 @@ export const ProfilePictureModal: React.FC<ProfilePictureModalProps> = ({
           {/* SECTION 7: AI ASSISTANT */}
           {activeSection === 'ai' && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h4 className="text-xs font-semibold text-[#a855f7] uppercase tracking-wider px-1">AI Personalization</h4>
+              <h4 className="text-xs font-semibold text-[#a855f7] uppercase tracking-wider px-1">AI Settings & System Prompt</h4>
 
-              <div className="p-5 bg-gradient-to-br from-[#202c33] to-[#182229] rounded-xl border border-[#a855f7]/30 space-y-3">
+              <div className="p-5 bg-gradient-to-br from-[#202c33] to-[#182229] rounded-xl border border-[#a855f7]/30 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-gradient-to-tr from-[#a855f7] to-[#ec4899] text-white rounded-xl">
                     <Sparkles size={20} />
@@ -651,17 +651,95 @@ export const ProfilePictureModal: React.FC<ProfilePictureModalProps> = ({
                     <span className="text-xs text-[#8696a0]">Powered by DeepMind Gemini 2.0</span>
                   </div>
                 </div>
-                <p className="text-xs text-[#aebac1] leading-relaxed">
-                  Your AI assistant is synced across all your linked devices. Use <code className="text-[#a855f7]">/ask</code> in any chat for instant intelligent responses.
-                </p>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] text-[#8696a0] font-semibold">Custom AI System Persona</label>
+                  <textarea 
+                    defaultValue="You are an AI assistant in QuickChat. Be helpful, concise, and smart."
+                    onBlur={async (e) => {
+                      try {
+                        await apiJson('/api/auth/ai/settings/', {
+                          method: 'PATCH',
+                          body: { system_prompt: e.target.value }
+                        });
+                        toast.success('AI System Prompt updated!');
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    rows={3}
+                    className="w-full bg-[#111b21] border border-[#2a3942] rounded-xl p-3 text-xs text-[#e9edef] focus:outline-none focus:border-[#a855f7]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-[#e9edef] font-medium">AI Cross-Device Memory</span>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        await apiJson('/api/auth/ai/settings/', {
+                          method: 'PATCH',
+                          body: { ai_memory_enabled: true }
+                        });
+                        toast.success('AI Memory synced with server!');
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="px-3 py-1 bg-[#a855f7] text-white rounded-full text-xs font-bold"
+                  >
+                    Synced
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* SECTION 8: SUPPORT & ACCOUNT DELETION */}
+          {/* SECTION 8: SUPPORT & FEEDBACK */}
           {activeSection === 'support' && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h4 className="text-xs font-semibold text-[#00a884] uppercase tracking-wider px-1">Account & Support</h4>
+              <h4 className="text-xs font-semibold text-[#00a884] uppercase tracking-wider px-1">Support & Feedback Ticket</h4>
+
+              <div className="p-4 bg-[#202c33] rounded-xl border border-[#2a3942] space-y-3">
+                <span className="text-xs font-semibold text-[#e9edef]">Submit Report / Feedback</span>
+                <input 
+                  type="text"
+                  placeholder="Subject (e.g. Bug report, Feature suggestion)"
+                  id="support-subject"
+                  className="w-full bg-[#111b21] border border-[#2a3942] rounded-lg p-2.5 text-xs text-[#e9edef] focus:outline-none focus:border-[#00a884]"
+                />
+                <textarea 
+                  placeholder="Describe your issue or suggestion..."
+                  id="support-desc"
+                  rows={3}
+                  className="w-full bg-[#111b21] border border-[#2a3942] rounded-lg p-2.5 text-xs text-[#e9edef] focus:outline-none focus:border-[#00a884]"
+                />
+                <button
+                  onClick={async () => {
+                    const subjEl = document.getElementById('support-subject') as HTMLInputElement;
+                    const descEl = document.getElementById('support-desc') as HTMLTextAreaElement;
+                    if (!subjEl?.value || !descEl?.value) {
+                      toast.error('Please enter a subject and description');
+                      return;
+                    }
+                    try {
+                      await apiJson('/api/auth/support/tickets/', {
+                        method: 'POST',
+                        body: { subject: subjEl.value, description: descEl.value, ticket_type: 'feedback' }
+                      });
+                      toast.success('Support ticket submitted to backend team!');
+                      subjEl.value = '';
+                      descEl.value = '';
+                    } catch (err) {
+                      console.error(err);
+                      toast.error('Failed to submit ticket');
+                    }
+                  }}
+                  className="w-full py-2.5 bg-[#00a884] hover:bg-[#008f70] text-[#111b21] rounded-xl text-xs font-bold transition"
+                >
+                  Submit Ticket to Server
+                </button>
+              </div>
 
               <div className="bg-[#202c33] rounded-xl border border-[#2a3942] divide-y divide-[#2a3942]">
                 <div className="p-4 flex items-center justify-between">

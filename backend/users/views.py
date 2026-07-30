@@ -449,3 +449,48 @@ class DeviceQrPairView(views.APIView):
             'expires_in': 180
         })
 
+class SupportTicketView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .models import SupportTicket
+        tickets = SupportTicket.objects.filter(user=request.user).values()
+        return Response(list(tickets))
+
+    def post(self, request):
+        from .models import SupportTicket
+        ticket = SupportTicket.objects.create(
+            user=request.user,
+            ticket_type=request.data.get('ticket_type', 'bug'),
+            subject=request.data.get('subject', 'Feedback'),
+            description=request.data.get('description', '')
+        )
+        return Response({'status': 'Ticket created', 'id': ticket.id}, status=status.HTTP_201_CREATED)
+
+
+class AISettingView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .models import AISetting
+        setting, _ = AISetting.objects.get_or_create(user=request.user)
+        return Response({
+            'system_prompt': setting.system_prompt,
+            'ai_memory_enabled': setting.ai_memory_enabled,
+            'saved_prompts': setting.saved_prompts,
+            'preferred_model': setting.preferred_model
+        })
+
+    def patch(self, request):
+        from .models import AISetting
+        setting, _ = AISetting.objects.get_or_create(user=request.user)
+        if 'system_prompt' in request.data:
+            setting.system_prompt = request.data['system_prompt']
+        if 'ai_memory_enabled' in request.data:
+            setting.ai_memory_enabled = request.data['ai_memory_enabled']
+        if 'saved_prompts' in request.data:
+            setting.saved_prompts = request.data['saved_prompts']
+        if 'preferred_model' in request.data:
+            setting.preferred_model = request.data['preferred_model']
+        setting.save()
+        return Response({'status': 'AI settings saved'})

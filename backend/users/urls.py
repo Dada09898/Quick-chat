@@ -4,7 +4,8 @@ from .views import (
     CurrentUserView, TOTPSetupView, TOTPVerifyView,
     DeviceListView, DeviceRegisterView, DeviceDetailView, DeviceQrPairView, SessionListView,
     RegisterView, ChangePasswordView, PasswordResetView, EmailVerificationView,
-    UserSearchView, FriendRequestCreateView, FriendRequestRespondView, ContactListView, PendingRequestsView
+    UserSearchView, FriendRequestCreateView, FriendRequestRespondView, ContactListView, PendingRequestsView,
+    SupportTicketView, AISettingView
 )
 from .views_avatar import AvatarUploadView
 from .views_keybundle import KeyBundleUploadView, KeyBundleFetchView, PreKeyCountView
@@ -35,4 +36,6 @@ urlpatterns = [
     path('friends/request/', FriendRequestCreateView.as_view(), name='send_request'),
     path('friends/request/<uuid:pk>/respond/', FriendRequestRespondView.as_view(), name='respond_request'),
     path('contacts/', ContactListView.as_view(), name='contact_list'),
+    path('support/tickets/', SupportTicketView.as_view(), name='support_tickets'),
+    path('ai/settings/', AISettingView.as_view(), name='ai_settings'),
 ]

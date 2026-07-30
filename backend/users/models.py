@@ -134,9 +134,30 @@ class Contact(models.Model):
                 name='unique_active_contact'
             )
         ]
-        indexes = [
-            models.Index(fields=['owner', 'is_blocked', 'deleted_at']),
-        ]
+class SupportTicket(models.Model):
+    TICKET_TYPE_CHOICES = [
+        ('bug', 'Bug Report'),
+        ('feature', 'Feature Request'),
+        ('feedback', 'Feedback'),
+        ('help', 'Help / Question')
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='support_tickets')
+    ticket_type = models.CharField(max_length=20, choices=TICKET_TYPE_CHOICES, default='bug')
+    subject = models.CharField(max_length=255)
+    description = models.TextField()
+    status = models.CharField(max_length=20, default='open')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class AISetting(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='ai_setting')
+    system_prompt = models.TextField(default='You are an AI assistant in QuickChat.')
+    ai_memory_enabled = models.BooleanField(default=True)
+    saved_prompts = models.JSONField(default=list, blank=True)
+    preferred_model = models.CharField(max_length=50, default='gemini-2.0')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.owner.email} -> {self.user.email}"
