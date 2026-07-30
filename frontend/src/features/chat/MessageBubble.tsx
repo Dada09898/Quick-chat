@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Bookmark, BookmarkCheck, Trash2, ChevronDown, CornerUpLeft, CornerUpRight, Copy, Smile, Edit2 } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Trash2, ChevronDown, CornerUpLeft, CornerUpRight, Copy, Smile, Edit2, Info } from 'lucide-react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ClientLinkPreview } from './ClientLinkPreview';
@@ -13,6 +13,7 @@ import { useRealtime } from '../../realtime/RealtimeProvider';
 import { layoutVariants, springPresets } from '../../motion';
 import { AudioBubble } from './AudioBubble';
 import { DocumentCard } from './DocumentCard';
+import { MessageInfoModal } from './MessageInfoModal';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -25,6 +26,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   const [decryptedText, setDecryptedText] = useState<string | null>(message.decrypted_text || null);
   const [isDecrypting, setIsDecrypting] = useState(!message.decrypted_text);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [viewImageFull, setViewImageFull] = useState<string | null>(null);
   const user = useAuthStore(state => state.user);
   
@@ -323,6 +325,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               {isOwn && (
                 <>
                   <button
+                    onClick={(e) => { e.stopPropagation(); setIsInfoModalOpen(true); setIsMenuOpen(false); }}
+                    className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#e9edef] hover:bg-[#182229] flex items-center gap-3"
+                  >
+                    <Info size={18} className="text-[#8696a0]" /> Message info
+                  </button>
+                  <button
                     onClick={handleEdit}
                     className="w-full px-4 py-2.5 text-left text-[14.5px] text-[#e9edef] hover:bg-[#182229] flex items-center gap-3"
                   >
@@ -339,6 +347,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               )}
             </motion.div>
           )}
+
+          <MessageInfoModal
+            isOpen={isInfoModalOpen}
+            onClose={() => setIsInfoModalOpen(false)}
+            message={message}
+          />
 
           {/* Reply Quote (inside bubble, WhatsApp style) */}
           {replyToMsg && (
