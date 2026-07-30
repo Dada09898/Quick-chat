@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Paintbrush, Type, Sun, Moon, Monitor, Palette, Image as ImageIcon } from 'lucide-react';
+import { X, Paintbrush, Type, Sun, Moon, Monitor, Palette, Image as ImageIcon, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../../store/themeStore';
+import { useChatStore } from './chatStore';
 
 // Wallpaper options
 const WALLPAPERS = [
@@ -207,6 +208,45 @@ export const ChatCustomization: React.FC<ChatCustomizationProps> = ({ isOpen, on
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Export Chat Backup */}
+        <section className="pt-2 border-t border-[#222d34]">
+          <h3 className="text-[#e9edef] text-sm font-medium mb-2 flex items-center gap-2">
+            <Download size={16} className="text-[#00a884]" /> Backup & Export
+          </h3>
+          <p className="text-xs text-[#8696a0] mb-3">
+            Download a formatted text backup of this conversation history.
+          </p>
+          <button
+            onClick={() => {
+              const activeConversationId = useChatStore.getState().activeConversationId;
+              const messagesRecord = useChatStore.getState().messages;
+              const msgs = Object.values(messagesRecord)
+                .filter(m => m.conversation_id === activeConversationId)
+                .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+              const lines = msgs.map(m => {
+                const time = new Date(m.created_at).toLocaleString();
+                const sender = m.sender_id || 'User';
+                const text = m.decrypted_text || '[Media Attachment]';
+                return `[${time}] ${sender}: ${text}`;
+              });
+
+              const content = `QuickChat Conversation Backup\nExported: ${new Date().toLocaleString()}\nTotal Messages: ${msgs.length}\n----------------------------------------\n\n` + lines.join('\n');
+              
+              const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `quickchat_backup_${Date.now()}.txt`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="w-full py-2 bg.00a884 bg-[#00a884]/20 hover:bg-[#00a884]/30 text-[#00a884] border border-[#00a884]/40 font-medium text-xs rounded-lg transition flex items-center justify-center gap-2"
+          >
+            <Download size={16} /> Export Chat Transcript (.txt)
+          </button>
         </section>
       </div>
     </motion.div>

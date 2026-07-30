@@ -240,14 +240,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
             }
           `}
         >
-          {/* Context Menu Dropdown Trigger */}
+          {/* Context Menu & Quick Hover Reaction Trigger */}
           {!isDeleted && (
-            <div className={`absolute top-[2px] ${isOwn ? 'right-[2px]' : 'right-[2px]'} flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10`}>
+            <div className={`absolute top-[2px] ${isOwn ? 'right-[2px]' : 'right-[2px]'} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-[#202c33]/80 rounded-full px-1 py-0.5 backdrop-blur-sm`}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowEmojiPicker(!showEmojiPicker); setIsMenuOpen(false); }}
+                className="p-[2px] rounded-full hover:bg-white/10 text-[#8696a0] hover:text-[#00a884] transition"
+                title="Quick Reaction"
+              >
+                <Smile size={15} />
+              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); setShowEmojiPicker(false); }}
-                className="p-[3px] rounded-full hover:bg-black/10"
+                className="p-[2px] rounded-full hover:bg-white/10 text-[#8696a0] hover:text-[#e9edef] transition"
+                title="Message Menu"
               >
-                <ChevronDown size={16} className="text-[#8696a0]" />
+                <ChevronDown size={15} />
               </button>
             </div>
           )}
