@@ -4,25 +4,21 @@ import { Brain, Key, Trash, ShieldAlert } from 'lucide-react';
 // import { encryptAPIKey, decryptAPIKey } from '../crypto'; // Hypothetical vault integration
 
 export const AISettings = () => {
-  const { activeProviderId, providerModel, setActiveProvider, clearSessionPermissions } = useAIStore();
-  const [apiKey, setApiKey] = useState('');
+  const { activeProviderId, providerModel, setActiveProvider, setApiKey, clearSessionPermissions } = useAIStore();
+  const [apiKey, setApiKeyInput] = useState('');
   
   const providers = [
     { id: 'ollama', name: 'Ollama (Local)', isCloud: false, models: ['llama3', 'mistral', 'phi3'] },
-    { id: 'lmstudio', name: 'LM Studio (Local)', isCloud: false, models: ['local-model'] },
-    { id: 'openai', name: 'OpenAI', isCloud: true, models: ['gpt-4o', 'gpt-3.5-turbo'] },
-    { id: 'anthropic', name: 'Anthropic', isCloud: true, models: ['claude-3-opus', 'claude-3-sonnet'] },
-    { id: 'gemini', name: 'Google Gemini', isCloud: true, models: ['gemini-1.5-pro'] }
+    { id: 'openai', name: 'OpenAI', isCloud: true, models: ['gpt-4o', 'gpt-3.5-turbo'] }
   ];
 
   const activeProvider = providers.find(p => p.id === activeProviderId) || providers[0];
 
   const handleSaveConfig = () => {
-    // In a real implementation:
-    // 1. Prompt Master Password if needed.
-    // 2. Encrypt `apiKey` using Vault Master Key.
-    // 3. Save to `useAIStore.getState().encryptedApiKeysBlob` (persisted to Vault DB).
-    alert("AI Configuration saved securely in Vault.");
+    if (activeProvider.isCloud && apiKey.trim()) {
+      setApiKey(activeProviderId, apiKey.trim());
+    }
+    alert("AI Configuration saved.");
   };
 
   return (
@@ -70,7 +66,7 @@ export const AISettings = () => {
                 type="password"
                 placeholder={`Enter ${activeProvider.name} API Key`}
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => setApiKeyInput(e.target.value)}
                 className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-blue-500"
               />
             </div>

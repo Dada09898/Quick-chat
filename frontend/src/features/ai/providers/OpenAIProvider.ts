@@ -1,4 +1,4 @@
-import { AIProvider, AIProviderConfig, AIResponse } from './interfaces';
+import type { AIProvider, AIProviderConfig, AIResponse } from './interfaces';
 
 export class OpenAIProvider implements AIProvider {
   id = 'openai';

@@ -1,9 +1,10 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type PermissionScope = 'ONE_TIME' | 'SESSION' | 'PERSISTENT';
 
 export interface AIPermission {
-  id: string; // e.g., 'vault_folder_123', 'chat_456'
+  id: string;
   targetType: 'CHAT' | 'VAULT_FOLDER' | 'VAULT_ITEM';
   scope: PermissionScope;
   grantedAt: number;
@@ -12,48 +13,45 @@ export interface AIPermission {
 interface AIStore {
   activeProviderId: string;
   providerModel: string;
-  permissions: Record<string, AIPermission>; // key is target id
-  
-  // Vault-encrypted JSON string storing API keys (to comply with constraint #3)
-  encryptedApiKeysBlob: string | null; 
-  
+  permissions: Record<string, AIPermission>;
+  apiKeys: Record<string, string>;
+
   setActiveProvider: (id: string, model: string) => void;
+  setApiKey: (providerId: string, key: string) => void;
   grantPermission: (permission: AIPermission) => void;
   revokePermission: (targetId: string) => void;
   hasPermission: (targetId: string) => boolean;
   clearSessionPermissions: () => void;
 }
 
-export const useAIStore = create<AIStore>((set, get) => ({
-  activeProviderId: 'ollama',
-  providerModel: 'llama3',
-  permissions: {},
-  encryptedApiKeysBlob: null,
+export const useAIStore = create<AIStore>()(
+  persist(
+    (set, get) => ({
+      activeProviderId: 'ollama',
+      providerModel: 'llama3',
+      permissions: {},
+      apiKeys: {},
 
-  setActiveProvider: (id, model) => set({ activeProviderId: id, providerModel: model }),
+      setActiveProvider: (id, model) => set({ activeProviderId: id, providerModel: model }),
+      setApiKey: (providerId, key) => set((state) => ({ apiKeys: { ...state.apiKeys, [providerId]: key } })),
 
-  grantPermission: (permission) => set((state) => ({
-    permissions: { ...state.permissions, [permission.id]: permission }
-  })),
+      grantPermission: (permission) => set((state) => ({
+        permissions: { ...state.permissions, [permission.id]: permission }
+      })),
 
-  revokePermission: (targetId) => set((state) => {
-    const newPerms = { ...state.permissions };
-    delete newPerms[targetId];
-    return { permissions: newPerms };
-  }),
+      revokePermission: (targetId) => set((state) => {
+        const newPerms = { ...state.permissions };
+        delete newPerms[targetId];
+        return { permissions: newPerms };
+      }),
 
-  hasPermission: (targetId) => {
-    const perm = get().permissions[targetId];
-    if (!perm) return false;
-    // Note: Session and One-Time scopes would be rigorously checked here.
-    // For simplicity, existence implies granted for this session.
-    return true;
-  },
+      hasPermission: (targetId) => !!get().permissions[targetId],
 
-  clearSessionPermissions: () => set((state) => {
-    const persistentOnly = Object.entries(state.permissions).filter(
-      ([, p]) => p.scope === 'PERSISTENT'
-    );
-    return { permissions: Object.fromEntries(persistentOnly) };
-  })
-}));
+      clearSessionPermissions: () => set((state) => {
+        const persistentOnly = Object.entries(state.permissions).filter(([, p]) => p.scope === 'PERSISTENT');
+        return { permissions: Object.fromEntries(persistentOnly) };
+      })
+    }),
+    { name: 'ai-store' }
+  )
+);

@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { User, Settings, Save, MapPin, Globe, Moon } from 'lucide-react';
 import { apiJson } from '../../lib/api';
 import { AvatarUpload } from './AvatarUpload';
+import { AISettings } from '../ai/components/AISettings';
 
 export const ProfileSettings = () => {
   const user = useAuthStore(state => state.user);
@@ -83,6 +84,10 @@ export const ProfileSettings = () => {
             <Save size={18}/> Save Changes
           </button>
         </div>
+      </div>
+
+      <div className="max-w-2xl mt-8">
+        <AISettings />
       </div>
     </div>
   );

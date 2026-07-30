@@ -20,6 +20,7 @@ import { CameraModal } from './CameraModal';
 import { ChatCustomization } from './ChatCustomization';
 import { GroupCreateModal } from './GroupCreateModal';
 import { GroupInfoPanel } from './GroupInfoPanel';
+import { AIChatPanel } from '../ai/components/AIChatPanel';
 
 import { PwaInstallButton } from '../../components/PwaInstallButton';
 
@@ -30,6 +31,7 @@ export const ChatLayout: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  const [isAIOpen, setIsAIOpen] = useState(false);
 
   // Hydrate offline store on mount
   React.useEffect(() => {
@@ -138,7 +140,7 @@ export const ChatLayout: React.FC = () => {
                 <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 hover:bg-[#374248] rounded-full transition-colors" title="Search" aria-label="Search messages">
                    <Search size={20} />
                 </button>
-                <button className="p-2 hover:bg-[#374248] rounded-full transition-colors hidden md:block" title="AI Assistant">
+                <button onClick={() => setIsAIOpen(!isAIOpen)} className={`p-2 hover:bg-[#374248] rounded-full transition-colors hidden md:block ${isAIOpen ? 'text-[#00a884] bg-[#374248]' : ''}`} title="AI Assistant">
                    <Bot size={20} />
                 </button>
                 <button onClick={() => setIsCustomizeOpen(!isCustomizeOpen)} className="p-2 hover:bg-[#374248] rounded-full transition-colors" title="Menu" aria-label="Chat menu">
@@ -156,6 +158,15 @@ export const ChatLayout: React.FC = () => {
             )}
           </div>
         </header>
+
+        {/* AI Assistant Side Panel */}
+        {isAIOpen && activeConversationId && (
+          <AIChatPanel
+            conversationId={activeConversationId}
+            conversationName={displayName}
+            onClose={() => setIsAIOpen(false)}
+          />
+        )}
 
         {/* Search Bar */}
         <React.Suspense fallback={null}>

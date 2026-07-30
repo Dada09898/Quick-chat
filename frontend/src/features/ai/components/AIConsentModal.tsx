@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAIStore, PermissionScope } from '../store/aiStore';
+import { useAIStore, type PermissionScope } from '../store/aiStore';
 
 interface ConsentModalProps {
   targetId: string;

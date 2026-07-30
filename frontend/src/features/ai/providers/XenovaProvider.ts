@@ -1,4 +1,4 @@
-import { EmbeddingProvider, EmbeddingResponse } from './interfaces';
+import type { EmbeddingProvider, EmbeddingResponse } from './interfaces';
 // Using conditional imports or window overrides to prevent SSR/Node crashes, 
 // assuming @xenova/transformers is loaded via CDN or dynamic import in production.
 
