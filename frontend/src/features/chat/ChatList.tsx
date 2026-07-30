@@ -18,21 +18,33 @@ import { QrLoginModal } from '../auth/QrLoginModal';
 import { LinkedDevicesModal } from '../auth/LinkedDevicesModal';
 
 interface ChatListProps {
+  activeTab?: 'chats' | 'status' | 'calls' | 'communities';
+  setActiveTab?: (tab: 'chats' | 'status' | 'calls' | 'communities') => void;
   onOpenNewChat?: () => void;
 }
 
-export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
+export const ChatList: React.FC<ChatListProps> = ({
+  activeTab: propActiveTab,
+  setActiveTab: propSetActiveTab,
+  onOpenNewChat
+}) => {
   const conversations = useChatStore(state => state.conversations);
   const setConversations = useChatStore(state => state.setConversations);
   const activeConversationId = useChatStore(state => state.activeConversationId);
   const setActiveConversation = useChatStore(state => state.setActiveConversation);
   const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
+
+  const [localActiveTab, setLocalActiveTab] = useState<'chats' | 'status' | 'calls' | 'communities'>('chats');
+  const activeTab = propActiveTab || localActiveTab;
+  const setActiveTab = propSetActiveTab || setLocalActiveTab;
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'chats' | 'status' | 'calls'>('chats');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'unread' | 'favourites' | 'groups'>('all');
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isLinkedDevicesOpen, setIsLinkedDevicesOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const {
     myStatuses,
@@ -145,12 +157,12 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
       />
 
       {/* Clean WhatsApp Web Header */}
-      <div className="px-4 py-3 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0 h-[60px]">
+      <div className="px-4 py-3 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0 h-[60px] relative">
         <h2 className="text-[20px] font-bold text-[#e9edef] tracking-tight">
-          {activeTab === 'chats' ? 'Chats' : activeTab === 'status' ? 'Status Updates' : 'Calls'}
+          {activeTab === 'chats' ? 'Chats' : activeTab === 'status' ? 'Status Updates' : activeTab === 'calls' ? 'Calls' : 'Communities'}
         </h2>
         
-        <div className="flex items-center gap-1 text-[#aebac1]">
+        <div className="flex items-center gap-1 text-[#aebac1] relative">
           {/* New Chat Button */}
           <button 
             onClick={onOpenNewChat}
@@ -173,12 +185,61 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
 
           {/* Three Dots Menu Button */}
           <button
-            onClick={() => setIsCommunityModalOpen(true)}
-            className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#e9edef]"
-            title="Community & Options"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className={`p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#e9edef] ${isMenuOpen ? 'bg-[#374248] text-[#00a884]' : ''}`}
+            title="Menu & Options"
           >
             <MoreVertical size={20} />
           </button>
+
+          {/* WhatsApp Web Three Dots Dropdown Menu */}
+          {isMenuOpen && (
+            <div 
+              className="absolute right-0 top-11 w-56 bg-[#233138] border border-[#2a3942] rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-sm text-[#d1d7db]"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <button
+                onClick={() => setIsCommunityModalOpen(true)}
+                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left transition"
+              >
+                <Users size={16} className="text-[#00a884]" />
+                <span>New Community</span>
+              </button>
+
+              <button
+                onClick={() => setIsLinkedDevicesOpen(true)}
+                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left transition"
+              >
+                <Laptop size={16} className="text-[#00a884]" />
+                <span>Linked Devices</span>
+              </button>
+
+              <button
+                onClick={() => setIsQrModalOpen(true)}
+                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left transition"
+              >
+                <QrCode size={16} className="text-[#00a884]" />
+                <span>Scan QR Code</span>
+              </button>
+
+              <button
+                onClick={() => setPrivacyModalOpen(true)}
+                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left transition"
+              >
+                <ShieldCheck size={16} className="text-[#00a884]" />
+                <span>Status Privacy</span>
+              </button>
+
+              <div className="h-[1px] bg-[#2a3942] my-1" />
+
+              <button
+                onClick={() => logout()}
+                className="w-full px-4 py-2.5 hover:bg-[#182229] flex items-center gap-3 text-left text-red-400 hover:text-red-300 transition"
+              >
+                <span>Log out</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

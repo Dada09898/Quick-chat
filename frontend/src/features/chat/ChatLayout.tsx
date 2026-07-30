@@ -97,6 +97,8 @@ export const ChatLayout: React.FC = () => {
       {/* Sidebar Chat List */}
       <div className={`${activeConversationId ? 'hidden md:flex' : 'flex'} w-full md:w-auto h-full z-10 shrink-0`}>
         <ChatList 
+          activeTab={activeRailTab}
+          setActiveTab={setActiveRailTab}
           onOpenNewChat={() => setIsNewChatModalOpen(true)}
         />
       </div>
