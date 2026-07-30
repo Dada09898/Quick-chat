@@ -213,47 +213,49 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
         </div>
       </div>
 
-      {/* WhatsApp Status Stories Horizontal Scroll Bar */}
-      <div className="px-3 py-3 border-b border-[#222d34] bg-[#111b21] shrink-0">
-        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-1">
-          {/* My Status */}
-          <div className="flex flex-col items-center gap-1 cursor-pointer shrink-0" onClick={handleMyStatusClick}>
-            <div className="relative">
-              <div className={`p-0.5 rounded-full ${myStatuses.length > 0 ? 'bg-[#00a884]' : 'border-2 border-dashed border-[#8696a0]'}`}>
-                <Avatar name="My Status" url={user?.avatar} size="md" />
+      {/* WhatsApp Status Stories Horizontal Scroll Bar (Only on Chats Tab) */}
+      {activeTab === 'chats' && (myStatuses.length > 0 || contactStatusGroups.length > 0) && (
+        <div className="px-4 py-2.5 border-b border-[#222d34] bg-[#111b21] shrink-0">
+          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-0.5">
+            {/* My Status Bubble */}
+            <div className="flex flex-col items-center gap-1 cursor-pointer shrink-0" onClick={handleMyStatusClick}>
+              <div className="relative">
+                <div className={`p-0.5 rounded-full ${myStatuses.length > 0 ? 'bg-[#00a884]' : 'border-2 border-dashed border-[#8696a0]'}`}>
+                  <Avatar name={user?.display_name || 'Me'} url={user?.avatar} size="md" />
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCreateModalOpen(true);
+                  }}
+                  className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-[#00a884] text-[#111b21] rounded-full flex items-center justify-center border-2 border-[#111b21] font-bold"
+                  title="Add status update"
+                >
+                  <Plus size={12} />
+                </button>
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCreateModalOpen(true);
-                }}
-                className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#00a884] text-[#111b21] rounded-full flex items-center justify-center border-2 border-[#111b21] shadow-md font-bold"
-                title="Add status update"
+              <span className="text-[10px] text-[#8696a0] font-medium truncate max-w-[56px]">My status</span>
+            </div>
+
+            {/* Divider */}
+            {contactStatusGroups.length > 0 && <div className="h-6 w-[1px] bg-[#222d34] shrink-0" />}
+
+            {/* Contact Status Stories */}
+            {contactStatusGroups.map((group) => (
+              <div
+                key={group.userId}
+                className="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+                onClick={() => openViewer(group, 0)}
               >
-                <Plus size={14} />
-              </button>
-            </div>
-            <span className="text-[11px] text-[#e9edef] font-medium truncate max-w-[60px]">My status</span>
-          </div>
-
-          {/* Divider */}
-          {contactStatusGroups.length > 0 && <div className="h-8 w-[1px] bg-[#222d34] shrink-0" />}
-
-          {/* Contact Status Stories */}
-          {contactStatusGroups.map((group) => (
-            <div
-              key={group.userId}
-              className="flex flex-col items-center gap-1 cursor-pointer shrink-0"
-              onClick={() => openViewer(group, 0)}
-            >
-              <div className={`p-0.5 rounded-full ${group.hasUnviewed ? 'bg-[#00a884] ring-2 ring-[#00a884]/30' : 'bg-[#8696a0]/40'}`}>
-                <Avatar name={group.userName} url={group.userAvatar} size="md" />
+                <div className={`p-0.5 rounded-full ${group.hasUnviewed ? 'bg-[#00a884] ring-2 ring-[#00a884]/30' : 'bg-[#8696a0]/40'}`}>
+                  <Avatar name={group.userName} url={group.userAvatar} size="md" />
+                </div>
+                <span className="text-[10px] text-[#8696a0] font-medium truncate max-w-[56px]">{group.userName}</span>
               </div>
-              <span className="text-[11px] text-[#e9edef] font-medium truncate max-w-[60px]">{group.userName}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Search Input */}
       <div className="p-2 border-b border-[#222d34] bg-[#111b21] shrink-0">
