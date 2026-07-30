@@ -1,6 +1,6 @@
 import { CryptoError, ErrorCodes } from './errors';
 import { generateNonce, bufferToBase64, base64ToBuffer, wipeMemory } from './random';
-import { EncryptedPayload } from './types';
+import type { EncryptedPayload } from './types';
 
 /**
  * Imports a raw AES key (e.g., from HKDF) into a CryptoKey for AES-GCM.

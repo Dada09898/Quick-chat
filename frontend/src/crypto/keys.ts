@@ -1,6 +1,6 @@
 import { CryptoError, ErrorCodes } from './errors';
 import { bufferToBase64, base64ToBuffer } from './random';
-import { KeyPairBase64 } from './types';
+import type { KeyPairBase64 } from './types';
 
 /**
  * Generates an Ed25519 KeyPair for Identity and Digital Signatures.

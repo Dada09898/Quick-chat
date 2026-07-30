@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Search, Send } from 'lucide-react';
+import { X, User, Search, Send, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
@@ -22,6 +22,22 @@ export const ContactShareModal: React.FC<ContactShareModalProps> = ({ isOpen, on
   const { sendEvent } = useRealtime();
 
   if (!isOpen) return null;
+
+  const isContactPickerSupported = 'contacts' in navigator && 'ContactsManager' in window;
+
+  const handlePickDeviceContact = async () => {
+    try {
+      const contacts = await (navigator as any).contacts.select(['name', 'email', 'tel'], { multiple: false });
+      if (contacts && contacts.length > 0) {
+        const contact = contacts[0];
+        const name = contact.name?.[0] || 'Device Contact';
+        const email = contact.email?.[0] || contact.tel?.[0] || '';
+        handleShareContact({ display_name: name, email });
+      }
+    } catch (err) {
+      console.error('Contact picker error:', err);
+    }
+  };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -49,7 +65,7 @@ export const ContactShareModal: React.FC<ContactShareModalProps> = ({ isOpen, on
     const msgId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
     const contactName = targetUser.display_name || targetUser.username || 'Contact';
-    const contactEmail = targetUser.email || '';
+    const contactEmail = targetUser.email || targetUser.tel || '';
     const text = `👤 CONTACT CARD: ${contactName}\nEmail: ${contactEmail}`;
     const ciphertext = btoa(unescape(encodeURIComponent(text)));
 
@@ -102,14 +118,27 @@ export const ContactShareModal: React.FC<ContactShareModalProps> = ({ isOpen, on
           </button>
         </div>
 
-        <div className="p-4 border-b border-[#222d34]">
+        <div className="p-4 border-b border-[#222d34] space-y-3">
+          {isContactPickerSupported ? (
+            <button
+              onClick={handlePickDeviceContact}
+              className="w-full py-2.5 bg-[#00a884]/15 border border-[#00a884]/40 hover:bg-[#00a884]/25 text-[#00a884] font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <Smartphone size={16} /> Choose From Device Contacts
+            </button>
+          ) : (
+            <div className="text-[11px] text-[#8696a0] bg-[#202c33] p-2 rounded-lg border border-[#2a3942] text-center">
+              Native contact picker is unsupported in this browser. Searching QuickChat directory below:
+            </div>
+          )}
+
           <div className="relative">
             <Search size={16} className="absolute left-3.5 top-3 text-[#8696a0]" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => handleSearch(e.target.value)}
-              placeholder="Search contact by name or email..."
+              placeholder="Search user by name or email..."
               className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#e9edef] focus:outline-none focus:border-[#00a884]"
             />
           </div>
@@ -117,7 +146,7 @@ export const ContactShareModal: React.FC<ContactShareModalProps> = ({ isOpen, on
 
         <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
           {isSearching ? (
-            <p className="text-center py-6 text-xs text-[#8696a0]">Searching contacts...</p>
+            <p className="text-center py-6 text-xs text-[#8696a0]">Searching user directory...</p>
           ) : searchResults.length > 0 ? (
             searchResults.map(u => (
               <div
@@ -138,9 +167,9 @@ export const ContactShareModal: React.FC<ContactShareModalProps> = ({ isOpen, on
               </div>
             ))
           ) : searchQuery.length >= 2 ? (
-            <p className="text-center py-6 text-xs text-[#8696a0]">No contacts found.</p>
+            <p className="text-center py-6 text-xs text-[#8696a0]">No users found matching query.</p>
           ) : (
-            <p className="text-center py-6 text-xs text-[#8696a0]">Type at least 2 characters to search directory.</p>
+            <p className="text-center py-6 text-xs text-[#8696a0]">Type at least 2 characters to search QuickChat directory.</p>
           )}
         </div>
       </motion.div>

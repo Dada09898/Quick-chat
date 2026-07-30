@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Clock, Shield, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useChatStore } from './chatStore';
 import toast from 'react-hot-toast';
+import { apiJson } from '../../lib/api';
 
 interface DisappearingMessagesModalProps {
   isOpen: boolean;
@@ -10,8 +11,20 @@ interface DisappearingMessagesModalProps {
 }
 
 export const DisappearingMessagesModal: React.FC<DisappearingMessagesModalProps> = ({ isOpen, onClose }) => {
-  const [selectedTimer, setSelectedTimer] = useState<'off' | '24h' | '7d' | '90d'>('off');
   const activeConversationId = useChatStore(state => state.activeConversationId);
+  const conversations = useChatStore(state => state.conversations);
+  const setConversations = useChatStore(state => state.setConversations);
+
+  const activeConv = conversations.find(c => c.id === activeConversationId);
+  const currentTimer = (activeConv as any)?.disappearing_messages_timer || 'off';
+
+  const [selectedTimer, setSelectedTimer] = useState<'off' | '24h' | '7d' | '90d'>(currentTimer);
+
+  useEffect(() => {
+    if (activeConv) {
+      setSelectedTimer(((activeConv as any).disappearing_messages_timer as any) || 'off');
+    }
+  }, [activeConv]);
 
   if (!isOpen) return null;
 
@@ -22,10 +35,31 @@ export const DisappearingMessagesModal: React.FC<DisappearingMessagesModalProps>
     { id: 'off', label: 'Off', desc: 'Messages stay saved permanently' }
   ];
 
-  const handleSaveTimer = () => {
+  const handleSaveTimer = async () => {
     if (!activeConversationId) return;
-    toast.success(selectedTimer === 'off' ? 'Disappearing messages turned off' : `Disappearing messages set to ${selectedTimer}`);
-    onClose();
+
+    try {
+      const res = await apiJson(`/api/chat/conversations/${activeConversationId}/`, {
+        method: 'PATCH',
+        body: { disappearing_messages_timer: selectedTimer }
+      });
+
+      if (res.ok) {
+        // Update local conversation store state
+        if (activeConv) {
+          (activeConv as any).disappearing_messages_timer = selectedTimer;
+          setConversations([...conversations]);
+        }
+        toast.success(selectedTimer === 'off' ? 'Disappearing messages turned off' : `Disappearing messages set to ${selectedTimer}`);
+      } else {
+        toast.error('Failed to update disappearing messages timer.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error updating timer.');
+    } finally {
+      onClose();
+    }
   };
 
   return (
@@ -58,18 +92,14 @@ export const DisappearingMessagesModal: React.FC<DisappearingMessagesModalProps>
                 className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition ${
                   selectedTimer === opt.id
                     ? 'bg-[#00a884]/10 border-[#00a884] text-[#e9edef]'
-                    : 'bg-[#202c33] border-[#2a3942] text-[#8696a0] hover:text-[#e9edef]'
+                    : 'bg-[#202c33] border-[#2a3942] hover:bg-[#2a3942] text-[#8696a0] hover:text-[#e9edef]'
                 }`}
               >
                 <div>
-                  <h4 className="text-sm font-medium text-[#e9edef]">{opt.label}</h4>
-                  <p className="text-xs text-[#8696a0]">{opt.desc}</p>
+                  <h4 className="text-sm font-medium">{opt.label}</h4>
+                  <p className="text-xs opacity-75">{opt.desc}</p>
                 </div>
-                {selectedTimer === opt.id && (
-                  <div className="w-5 h-5 rounded-full bg-[#00a884] text-[#111b21] flex items-center justify-center">
-                    <Check size={14} />
-                  </div>
-                )}
+                {selectedTimer === opt.id && <Check size={18} className="text-[#00a884]" />}
               </div>
             ))}
           </div>

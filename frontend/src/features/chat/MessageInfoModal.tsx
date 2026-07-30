@@ -1,18 +1,18 @@
 import React from 'react';
-import { X, CheckCheck, Check, Clock, ShieldCheck, Info } from 'lucide-react';
+import { X, CheckCheck, Check, Info, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { ChatMessage } from './chatStore';
 
 interface MessageInfoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  message: ChatMessage | null;
+  message: (ChatMessage & { read_receipts?: Array<{ user: string; read_at: string }> }) | null;
 }
 
 export const MessageInfoModal: React.FC<MessageInfoModalProps> = ({ isOpen, onClose, message }) => {
   if (!isOpen || !message) return null;
 
-  const createdAtDate = new Date(message.created_at);
+  const createdAtDate = new Date(message.created_at || (message as any).server_timestamp || Date.now());
   const formattedCreated = createdAtDate.toLocaleString([], {
     weekday: 'short',
     month: 'short',
@@ -22,19 +22,20 @@ export const MessageInfoModal: React.FC<MessageInfoModalProps> = ({ isOpen, onCl
     second: '2-digit'
   });
 
-  const deliveredDate = new Date(createdAtDate.getTime() + 1200); // 1.2s delay mock
-  const formattedDelivered = deliveredDate.toLocaleString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
+  const readReceipts = message.read_receipts || [];
+  let earliestReadDate: Date | null = null;
+  if (readReceipts.length > 0) {
+    const dates = readReceipts.map(r => new Date(r.read_at).getTime()).filter(t => !isNaN(t));
+    if (dates.length > 0) {
+      earliestReadDate = new Date(Math.min(...dates));
+    }
+  }
 
-  const readDate = new Date(createdAtDate.getTime() + 4500); // 4.5s delay mock
-  const formattedRead = readDate.toLocaleString([], {
+  const formattedRead = earliestReadDate ? earliestReadDate.toLocaleString([], {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit'
-  });
+  }) : null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -62,21 +63,24 @@ export const MessageInfoModal: React.FC<MessageInfoModalProps> = ({ isOpen, onCl
 
           {/* Timestamps & Status Timeline */}
           <div className="bg-[#202c33] rounded-2xl p-4 border border-[#2a3942] space-y-4">
-            {/* Read Status */}
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#53bdeb]/20 flex items-center justify-center text-[#53bdeb] mt-0.5">
-                <CheckCheck size={18} />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#e9edef] font-medium text-sm">Read</span>
-                  <span className="text-xs text-[#8696a0]">{formattedRead}</span>
+            {/* Read Status (only rendered if read_receipts contains real read_at) */}
+            {formattedRead && (
+              <>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#53bdeb]/20 flex items-center justify-center text-[#53bdeb] mt-0.5">
+                    <CheckCheck size={18} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#e9edef] font-medium text-sm">Read</span>
+                      <span className="text-xs text-[#8696a0]">{formattedRead}</span>
+                    </div>
+                    <p className="text-xs text-[#8696a0] mt-0.5">Read by recipient</p>
+                  </div>
                 </div>
-                <p className="text-xs text-[#8696a0] mt-0.5">Read by recipient</p>
-              </div>
-            </div>
-
-            <div className="h-px bg-[#2a3942]" />
+                <div className="h-px bg-[#2a3942]" />
+              </>
+            )}
 
             {/* Delivered Status */}
             <div className="flex items-start gap-3">
@@ -86,7 +90,7 @@ export const MessageInfoModal: React.FC<MessageInfoModalProps> = ({ isOpen, onCl
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[#e9edef] font-medium text-sm">Delivered</span>
-                  <span className="text-xs text-[#8696a0]">{formattedDelivered}</span>
+                  <span className="text-xs text-[#8696a0]">{formattedCreated}</span>
                 </div>
                 <p className="text-xs text-[#8696a0] mt-0.5">Delivered to device</p>
               </div>

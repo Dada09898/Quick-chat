@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from users.serializers import UserSerializer
-from .models import Conversation, ConversationMember, Message, MediaAttachment, MessageReaction
+from .models import Conversation, ConversationMember, Message, MediaAttachment, MessageReaction, ReadReceipt
 
 
 class ConversationMemberSerializer(serializers.ModelSerializer):
@@ -16,7 +16,7 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Conversation
-        fields = ['id', 'last_message_id', 'last_activity', 'version', 'unread_count_cache', 'created_at', 'members']
+        fields = ['id', 'last_message_id', 'last_activity', 'version', 'unread_count_cache', 'disappearing_messages_timer', 'created_at', 'members']
 
 
 class MediaAttachmentSerializer(serializers.ModelSerializer):
@@ -40,16 +40,23 @@ class MessageReactionSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'reaction_ciphertext', 'nonce', 'signature']
 
 
+class ReadReceiptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReadReceipt
+        fields = ['user', 'read_at']
+
+
 class MessageSerializer(serializers.ModelSerializer):
     attachments = MediaAttachmentSerializer(many=True, read_only=True)
     sender = UserSerializer(read_only=True)
     reactions = MessageReactionSerializer(many=True, read_only=True)
+    read_receipts = ReadReceiptSerializer(many=True, read_only=True)
 
     class Meta:
         model = Message
         fields = [
             'id', 'conversation', 'sequence_number', 'sender', 'reply_to',
             'ciphertext', 'nonce', 'signature', 'key_version', 'algorithm',
-            'is_edited', 'created_at', 'server_timestamp', 'attachments', 'reactions'
+            'is_edited', 'created_at', 'server_timestamp', 'attachments', 'reactions', 'read_receipts'
         ]
         read_only_fields = ['id', 'sequence_number', 'sender', 'server_timestamp']

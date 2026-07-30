@@ -290,6 +290,7 @@ export const RightPanel: React.FC = () => {
           isOpen={isSecurityModalOpen}
           onClose={() => setIsSecurityModalOpen(false)}
           userName={displayName}
+          peerUserId={otherUser?.id}
         />
 
         {/* Bottom Actions */}

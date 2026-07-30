@@ -12,6 +12,11 @@ class Conversation(models.Model):
     last_activity = models.DateTimeField(auto_now_add=True)
     version = models.BigIntegerField(default=1, db_index=True) # Optimistic locking/sequence
     unread_count_cache = models.IntegerField(default=0)
+    disappearing_messages_timer = models.CharField(
+        max_length=10,
+        choices=[('off', 'Off'), ('24h', '24 Hours'), ('7d', '7 Days'), ('90d', '90 Days')],
+        default='off'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)

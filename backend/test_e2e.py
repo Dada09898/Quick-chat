@@ -31,7 +31,7 @@ async def test_e2e_websockets():
         "password": "Password123!",
         "timezone": "UTC",
         "preferred_language": "en"
-    })
+    }, timeout=10)
     assert res.status_code == 201, f"Failed to register User A: {res.text}"
     user_a_token = get_token(res)
     res.json()['user']['id']
@@ -44,7 +44,7 @@ async def test_e2e_websockets():
         "password": "Password123!",
         "timezone": "UTC",
         "preferred_language": "en"
-    })
+    }, timeout=10)
     assert res.status_code == 201, f"Failed to register User B: {res.text}"
     user_b_token = get_token(res)
     user_b_id = res.json()['user']['id']
@@ -53,13 +53,13 @@ async def test_e2e_websockets():
     headers_a = {"Authorization": f"Bearer {user_a_token}"}
 
     # 3. User A Creates Conversation
-    res = requests.post(f"{BASE_URL}/api/chat/conversations/", json={}, headers=headers_a)
+    res = requests.post(f"{BASE_URL}/api/chat/conversations/", json={}, headers=headers_a, timeout=10)
     assert res.status_code == 201, f"Failed to create conversation: {res.text}"
     conv_id = res.json()['id']
     print("Conversation created:", conv_id)
     
     # User A adds User B
-    res = requests.post(f"{BASE_URL}/api/chat/conversations/{conv_id}/add_member/", json={"user_id": user_b_id}, headers=headers_a)
+    res = requests.post(f"{BASE_URL}/api/chat/conversations/{conv_id}/add_member/", json={"user_id": user_b_id}, headers=headers_a, timeout=10)
     assert res.status_code == 200, f"Failed to add member: {res.text}"
     print("User B added to conversation")
 

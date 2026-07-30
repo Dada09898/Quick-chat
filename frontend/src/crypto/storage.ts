@@ -1,5 +1,5 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { StoredKey } from './types';
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { StoredKey } from './types';
 import { CryptoError, ErrorCodes } from './errors';
 
 interface DualConnectDB extends DBSchema {
