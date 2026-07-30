@@ -14,7 +14,7 @@ class SignedPreKey(models.Model):
     
     public_key = models.TextField(help_text="Base64 SPKI encoded X25519 public key")
     signature = models.TextField(help_text="Base64 Ed25519 signature of the public key")
-    key_id = models.IntegerField(help_text="Client-assigned key ID for rotation tracking")
+    key_id = models.BigIntegerField(help_text="Client-assigned key ID for rotation tracking")
     
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -39,7 +39,7 @@ class OneTimePreKey(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='one_time_prekeys')
     
     public_key = models.TextField(help_text="Base64 SPKI encoded X25519 public key")
-    key_id = models.IntegerField(help_text="Client-assigned key ID")
+    key_id = models.BigIntegerField(help_text="Client-assigned key ID")
     
     is_consumed = models.BooleanField(default=False)
     consumed_at = models.DateTimeField(null=True, blank=True)
