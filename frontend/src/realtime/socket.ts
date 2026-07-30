@@ -2,6 +2,7 @@ import { useRealtimeStore } from './store';
 import { useChatStore } from '../features/chat/chatStore';
 import { useAuthStore } from '../store/authStore';
 import { decodeCiphertext } from '../utils/cryptoUtils';
+import { chatSounds } from '../utils/chatSounds';
 
 export { decodeCiphertext };
 
@@ -152,6 +153,10 @@ export class RealtimeClient {
           const media_attachments = (payload.media_attachments && payload.media_attachments.length > 0)
             ? payload.media_attachments
             : (payload.attachments || existingMsg?.media_attachments);
+
+          if (payload.sender_id !== useAuthStore.getState().user?.id) {
+            chatSounds.playReceiveSound();
+          }
 
           useChatStore.getState().upsertMessage({
             ...payload,

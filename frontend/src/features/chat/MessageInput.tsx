@@ -10,6 +10,7 @@ import { VoiceRecorder } from './VoiceRecorder';
 import { PollCreateModal } from './PollCreateModal';
 import { ContactShareModal } from './ContactShareModal';
 import { LocationShareModal } from './LocationShareModal';
+import { chatSounds } from '../../utils/chatSounds';
 
 const LazyEmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
@@ -183,6 +184,7 @@ export const MessageInput: React.FC = () => {
       });
     }
 
+    chatSounds.playSendSound();
     setText('');
     setReplyingTo(null);
     if (activeConversationId) setDraft(activeConversationId, '');
