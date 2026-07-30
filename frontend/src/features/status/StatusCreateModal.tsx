@@ -52,27 +52,35 @@ export const StatusCreateModal: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handlePost = (e: React.FormEvent) => {
+  const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === 'text' && !text.trim()) return;
     if (mode === 'media' && !mediaUrl) return;
 
-    addStatus({
-      userId: currentUser?.id || 'me',
-      userName: currentUser?.email?.split('@')[0] || 'My Status',
-      userAvatar: currentUser?.avatar,
-      type: mode === 'text' ? 'text' : mediaType,
-      content: mode === 'text' ? text.trim() : mediaUrl,
-      caption: mode === 'media' ? caption.trim() : undefined,
-      backgroundColor: mode === 'text' ? COLOR_PALETTE[colorIndex] : undefined,
-      fontFamily: mode === 'text' ? FONT_FAMILIES[fontIndex].value : undefined
-    });
+    const currentText = text;
+    const currentMediaUrl = mediaUrl;
+    const currentCaption = caption;
+    const currentMediaType = mediaType;
+    const currentColorIndex = colorIndex;
+    const currentFontIndex = fontIndex;
+    const currentMode = mode;
 
-    // Reset & Close
+    // Reset & Close modal first
     setText('');
     setMediaUrl('');
     setCaption('');
     setCreateModalOpen(false);
+
+    await addStatus({
+      userId: currentUser?.id || 'me',
+      userName: currentUser?.display_name || currentUser?.username || currentUser?.email?.split('@')[0] || 'My Status',
+      userAvatar: currentUser?.avatar,
+      type: currentMode === 'text' ? 'text' : currentMediaType,
+      content: currentMode === 'text' ? currentText.trim() : currentMediaUrl,
+      caption: currentMode === 'media' ? currentCaption.trim() : undefined,
+      backgroundColor: currentMode === 'text' ? COLOR_PALETTE[currentColorIndex] : undefined,
+      fontFamily: currentMode === 'text' ? FONT_FAMILIES[currentFontIndex].value : undefined
+    });
   };
 
   return createPortal(

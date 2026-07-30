@@ -209,7 +209,29 @@ export const useStatusStore = create<StatusState>((set, get) => ({
   },
 
   addStatus: async (newStatusData) => {
-    const { statusPrivacy } = get();
+    const { statusPrivacy, myStatuses } = get();
+    const currentUser = useAuthStore.getState().user;
+
+    const tempId = 'temp_' + Date.now();
+    const tempItem: StatusItem = {
+      id: tempId,
+      userId: currentUser?.id || newStatusData.userId || 'me',
+      userName: currentUser?.display_name || currentUser?.username || newStatusData.userName || 'My Status',
+      userAvatar: currentUser?.avatar || newStatusData.userAvatar,
+      type: newStatusData.type,
+      content: newStatusData.content,
+      caption: newStatusData.caption,
+      backgroundColor: newStatusData.backgroundColor,
+      fontFamily: newStatusData.fontFamily,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 86400000,
+      privacy: statusPrivacy,
+      views: []
+    };
+
+    // Optimistic update: show status immediately!
+    set({ myStatuses: [tempItem, ...myStatuses] });
+    toast.success('Status posted!');
 
     try {
       const res = await apiJson('/api/chat/statuses/', {
@@ -226,6 +248,9 @@ export const useStatusStore = create<StatusState>((set, get) => ({
 
       if (res.ok) {
         await get().fetchStatuses();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Failed to post status:', errData);
       }
     } catch (err) {
       console.error('Error creating status:', err);
