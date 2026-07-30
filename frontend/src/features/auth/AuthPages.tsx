@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, Clock, ArrowRight, MessageSquare, ShieldCheck, QrCode } from 'lucide-react';
+import { Mail, Lock, Clock, ArrowRight, MessageSquare, ShieldCheck, QrCode, User } from 'lucide-react';
 import { apiJson } from '../../lib/api';
 import toast from 'react-hot-toast';
 import { QrLoginModal } from './QrLoginModal';
@@ -148,6 +148,7 @@ export const LoginPage = () => {
 };
 
 export const RegisterPage = () => {
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
@@ -173,6 +174,10 @@ export const RegisterPage = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (displayName.trim().length === 0) {
+      toast.error('Please enter your name.');
+      return;
+    }
     if (usernameStatus !== 'available') {
       toast.error('Please choose an available username.');
       return;
@@ -180,7 +185,7 @@ export const RegisterPage = () => {
     try {
       const res = await apiJson('/api/auth/register/', {
         method: 'POST',
-        body: { email, username, password, timezone, preferred_language: 'en' }
+        body: { email, username, display_name: displayName, password, timezone, preferred_language: 'en' }
       });
       if (res.ok) {
         const data = await res.json();
@@ -205,6 +210,20 @@ export const RegisterPage = () => {
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-[#8696a0] mb-1">Your Name</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-3 text-[#8696a0]" size={16} />
+                <input 
+                  type="text" 
+                  value={displayName} 
+                  onChange={e => setDisplayName(e.target.value)} 
+                  required 
+                  className="w-full bg-[#202c33] border border-[#2a3942] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[#e9edef] focus:ring-2 focus:ring-[#00a884] focus:border-transparent outline-none transition" 
+                  placeholder="Ankit Kumar" 
+                />
+              </div>
+            </div>
             <div>
               <label className="block text-xs font-medium text-[#8696a0] mb-1">Email Address</label>
               <div className="relative">

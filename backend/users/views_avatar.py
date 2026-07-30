@@ -24,8 +24,9 @@ class AvatarUploadView(APIView):
             for chunk in file.chunks():
                 destination.write(chunk)
 
-        url = f"/media/avatars/{filename}"
-        request.user.avatar = url
+        relative_url = f"/media/avatars/{filename}"
+        absolute_url = request.build_absolute_uri(relative_url)
+        request.user.avatar = absolute_url
         request.user.save()
 
-        return Response({'avatar': url})
+        return Response({'avatar': absolute_url})

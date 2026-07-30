@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { User, Settings, Save, MapPin, Globe, Moon } from 'lucide-react';
-import { apiJson } from '../../lib/api';
-import { AvatarUpload } from './AvatarUpload';
+import { User, Settings, Save, MapPin, Camera, Loader2 } from 'lucide-react';
+import { apiClient, apiJson } from '../../lib/api';
+import toast from 'react-hot-toast';
 import { AISettings } from '../ai/components/AISettings';
 
 export const ProfileSettings = () => {
@@ -11,7 +11,33 @@ export const ProfileSettings = () => {
   
   const [bio, setBio] = useState(user?.bio || '');
   const [presence, setPresence] = useState(user?.presence_status || 'online');
-  
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarClick = () => fileInputRef.current?.click();
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const res = await apiClient('/api/auth/me/avatar/', { method: 'POST', body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        if (user) setUser({ ...user, avatar: data.avatar });
+        toast.success('Profile picture updated');
+      } else {
+        toast.error('Failed to upload picture');
+      }
+    } catch {
+      toast.error('Failed to upload picture');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       const res = await apiJson('/api/auth/me/', {
@@ -21,7 +47,7 @@ export const ProfileSettings = () => {
       if (res.ok) {
         const updatedUser = await res.json();
         setUser(updatedUser);
-        alert('Profile updated');
+        toast.success('Profile updated');
       }
     } catch (e) { console.error(e); }
   };
@@ -34,17 +60,29 @@ export const ProfileSettings = () => {
       
       <div className="max-w-2xl bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center border-2 border-cyan-500/50 overflow-hidden">
-              {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover rounded-full" alt="Avatar"/> : <User size={32} className="text-cyan-500"/>}
+          <div onClick={handleAvatarClick} className="relative cursor-pointer group w-24 h-24">
+            {user.avatar ? (
+              <img src={user.avatar} className="w-full h-full object-cover rounded-full border-2 border-cyan-500/50" alt="Avatar" />
+            ) : (
+              <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center border-2 border-cyan-500/50">
+                <User size={32} className="text-cyan-500" />
+              </div>
+            )}
+            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+              <Camera size={20} className="text-white" />
             </div>
-            <div className="absolute inset-0">
-              <AvatarUpload />
-            </div>
+            {uploadingAvatar && (
+              <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
+                <Loader2 className="animate-spin text-white" size={20} />
+              </div>
+            )}
           </div>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+
           <div>
-            <h3 className="text-xl font-bold text-white">{user.email}</h3>
-            <p className="text-sm text-gray-400">Enterprise User ID: {user.id}</p>
+            <h3 className="text-xl font-bold text-white">{user.display_name || user.username || user.email}</h3>
+            <p className="text-xs text-cyan-400 font-mono">@{user.username}</p>
+            <p className="text-xs text-gray-400 mt-1">{user.email}</p>
           </div>
         </div>
 

@@ -8,7 +8,11 @@ interface AvatarProps {
   className?: string;
 }
 
+const BASE_URL = import.meta.env.VITE_API_URL || '';
+
 export const Avatar: React.FC<AvatarProps> = ({ url, name, size = 'md', status, className = '' }) => {
+  const resolvedUrl = url && url.startsWith('/') ? `${BASE_URL}${url}` : url;
+
   const getInitials = (name?: string) => {
     if (!name) return '?';
     const parts = name.trim().split(' ');
@@ -33,8 +37,8 @@ export const Avatar: React.FC<AvatarProps> = ({ url, name, size = 'md', status, 
 
   return (
     <div className={`relative inline-block ${className}`}>
-      {url ? (
-        <img src={url} alt={name || 'Avatar'} className={`${sizeClasses[size]} rounded-full object-cover bg-gray-800`} loading="lazy" decoding="async" />
+      {resolvedUrl ? (
+        <img src={resolvedUrl} alt={name || 'Avatar'} className={`${sizeClasses[size]} rounded-full object-cover bg-gray-800`} loading="lazy" decoding="async" />
       ) : (
         <div className={`${sizeClasses[size]} rounded-full bg-indigo-600 flex items-center justify-center font-medium text-white`}>
           {getInitials(name)}

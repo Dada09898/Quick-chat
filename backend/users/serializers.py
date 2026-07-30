@@ -35,10 +35,17 @@ class ContactSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     username = serializers.CharField(required=True, max_length=20)
+    display_name = serializers.CharField(required=True, max_length=100)
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'password', 'username', 'timezone', 'preferred_language']
+        fields = ['email', 'password', 'username', 'display_name', 'timezone', 'preferred_language']
+
+    def validate_display_name(self, value):
+        value = value.strip()
+        if len(value) < 1:
+            raise serializers.ValidationError('Please enter your name.')
+        return value
 
     def validate_username(self, value):
         value = value.strip().lower()
@@ -55,7 +62,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             password=validated_data['password'],
             username=validated_data['username'],
-            display_name=validated_data['username'],
+            display_name=validated_data['display_name'],
             timezone=validated_data.get('timezone', 'UTC'),
             preferred_language=validated_data.get('preferred_language', 'en'),
             privacy_settings={'discoverable_by_username': True}
