@@ -144,40 +144,23 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
         onClose={() => setIsLinkedDevicesOpen(false)}
       />
 
-      {/* Header */}
-      <div className="p-4 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0">
-        <h2 className="text-[22px] font-semibold text-[#e9edef] flex items-center gap-2">
+      {/* Clean WhatsApp Web Header */}
+      <div className="px-4 py-3 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0 h-[60px]">
+        <h2 className="text-[20px] font-bold text-[#e9edef] tracking-tight">
           {activeTab === 'chats' ? 'Chats' : activeTab === 'status' ? 'Status Updates' : 'Calls'}
         </h2>
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[#aebac1]">
-          {/* PWA Install Button for Mobile & Desktop */}
-          <PwaInstallButton />
-
-          <button
-            onClick={() => setIsQrModalOpen(true)}
-            className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#00a884]"
-            title="Scan QR & Pair Device"
+        
+        <div className="flex items-center gap-1 text-[#aebac1]">
+          {/* New Chat Button */}
+          <button 
+            onClick={onOpenNewChat}
+            className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#e9edef]"
+            title="New Chat"
           >
-            <QrCode size={20} />
+            <Plus size={20} />
           </button>
 
-          <button
-            onClick={() => setIsLinkedDevicesOpen(true)}
-            className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#00a884]"
-            title="Linked Devices Settings"
-          >
-            <Laptop size={20} />
-          </button>
-
-          <button
-            onClick={() => setIsCommunityModalOpen(true)}
-            className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#00a884]"
-            title="Create Community"
-          >
-            <Users size={20} />
-          </button>
-
-          {/* Privacy Button */}
+          {/* Privacy Button on Status Tab */}
           {activeTab === 'status' && (
             <button
               onClick={() => setPrivacyModalOpen(true)}
@@ -188,37 +171,13 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
             </button>
           )}
 
-          {/* Tab Switchers */}
+          {/* Three Dots Menu Button */}
           <button
-            onClick={() => setActiveTab('chats')}
-            className={`p-2 rounded-full transition ${activeTab === 'chats' ? 'bg-[#374248] text-[#00a884]' : 'hover:bg-[#374248]'}`}
-            title="Chats"
+            onClick={() => setIsCommunityModalOpen(true)}
+            className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#e9edef]"
+            title="Community & Options"
           >
-            <MessageSquare size={20} />
-          </button>
-
-          <button
-            onClick={() => setActiveTab('status')}
-            className={`p-2 rounded-full transition ${activeTab === 'status' ? 'bg-[#374248] text-[#00a884]' : 'hover:bg-[#374248]'}`}
-            title="Status Updates"
-          >
-            <CircleDashed size={20} />
-          </button>
-
-          <button
-            onClick={() => setActiveTab('calls')}
-            className={`p-2 rounded-full transition ${activeTab === 'calls' ? 'bg-[#374248] text-[#00a884]' : 'hover:bg-[#374248]'}`}
-            title="Recent Calls"
-          >
-            <PhoneCall size={20} />
-          </button>
-          
-          <button 
-            onClick={onOpenNewChat}
-            className="p-2 hover:bg-[#374248] rounded-full transition"
-            title="New Chat"
-          >
-            <Plus size={20} />
+            <MoreVertical size={20} />
           </button>
         </div>
       </div>
