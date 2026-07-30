@@ -25,18 +25,30 @@ class LoginView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        email_or_username = request.data.get('email')
-        password = request.data.get('password')
-        
-        email = email_or_username
-        if email_or_username and '@' not in email_or_username:
-            user_obj = CustomUser.objects.filter(username=email_or_username).first()
-            if user_obj:
-                email = user_obj.email
+        email_or_username = (request.data.get('email') or '').strip()
+        password = (request.data.get('password') or '').strip()
 
-        user = authenticate(request, email=email, password=password)
+        if not email_or_username or not password:
+            return Response({'error': 'Please provide both email/username and password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Auto-seed default test users if database is fresh/empty
+        if CustomUser.objects.count() == 0:
+            try:
+                CustomUser.objects.create_user(email='user_a@example.com', username='user_a', display_name='User A', password='password123', is_user_a=True)
+                CustomUser.objects.create_user(email='user_b@example.com', username='user_b', display_name='User B', password='password123', is_user_a=False)
+            except Exception as e:
+                logger.error(f"Auto-seed failed: {e}")
+
+        target_user = CustomUser.objects.filter(
+            Q(email__iexact=email_or_username) | Q(username__iexact=email_or_username)
+        ).first()
+
+        if not target_user:
+            return Response({'error': 'No account found with this email/username. Please click "Create Account" to sign up.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = authenticate(request, email=target_user.email, password=password)
         if not user:
-            return Response({'error': 'Invalid credentials or account locked. Please check your email/username and password.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Incorrect password. Please check your password and try again.'}, status=status.HTTP_401_UNAUTHORIZED)
             
         # Optional TOTP enforcement
         if user.totp_secret:
