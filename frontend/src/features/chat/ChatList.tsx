@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
-import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X, CircleDashed, Plus, PhoneCall } from 'lucide-react';
+import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X, CircleDashed, Plus, PhoneCall, Users } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
 import { useStatusStore, type UserStatusGroup } from '../status/statusStore';
@@ -13,6 +13,7 @@ import { StatusPrivacyModal } from '../status/StatusPrivacyModal';
 import { StatusViewersModal } from '../status/StatusViewersModal';
 import { PwaInstallButton } from '../../components/PwaInstallButton';
 import { CallsTab } from '../calls/CallsTab';
+import { CommunityModal } from './CommunityModal';
 
 interface ChatListProps {
   onOpenNewChat?: () => void;
@@ -26,6 +27,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
   const user = useAuthStore(state => state.user);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'chats' | 'status' | 'calls'>('chats');
+  const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
 
   const {
     myStatuses,
@@ -113,6 +115,10 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
       <StatusCreateModal />
       <StatusPrivacyModal />
       <StatusViewersModal />
+      <CommunityModal
+        isOpen={isCommunityModalOpen}
+        onClose={() => setIsCommunityModalOpen(false)}
+      />
 
       {/* Header */}
       <div className="p-4 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0">
@@ -122,6 +128,14 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
         <div className="flex items-center gap-1.5 sm:gap-2 text-[#aebac1]">
           {/* PWA Install Button for Mobile & Desktop */}
           <PwaInstallButton />
+
+          <button
+            onClick={() => setIsCommunityModalOpen(true)}
+            className="p-2 hover:bg-[#374248] rounded-full transition text-[#aebac1] hover:text-[#00a884]"
+            title="Create Community"
+          >
+            <Users size={20} />
+          </button>
 
           {/* Privacy Button */}
           {activeTab === 'status' && (
