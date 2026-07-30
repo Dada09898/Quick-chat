@@ -40,10 +40,16 @@ export const StatusCreateModal: React.FC = () => {
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setMediaUrl(url);
-    setMediaType(file.type.startsWith('video') ? 'video' : 'image');
-    setMode('media');
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setMediaUrl(event.target.result as string);
+        setMediaType(file.type.startsWith('video') ? 'video' : 'image');
+        setMode('media');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handlePost = (e: React.FormEvent) => {

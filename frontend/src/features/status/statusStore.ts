@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { apiJson } from '../../lib/api';
+import { useAuthStore } from '../../store/authStore';
 
 export interface StatusViewerRecord {
   userId: string;
@@ -161,7 +162,7 @@ export const useStatusStore = create<StatusState>((set, get) => ({
           };
 
           // Determine if own status or contact status
-          const currentUserId = (window as any).__CURRENT_USER_ID__;
+          const currentUserId = useAuthStore.getState().user?.id;
           if (currentUserId && item.userId === currentUserId) {
             myItems.push(item);
           } else {
