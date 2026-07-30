@@ -403,8 +403,8 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
                 <button
                   key={conv.id}
                   onClick={() => handleSelect(conv.id)}
-                  className={`w-full flex items-center gap-3 transition group relative ${
-                    isActive ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'
+                  className={`w-full flex items-center gap-3 transition-all duration-200 group relative ${
+                    isActive ? 'bg-[#2a3942] border-l-4 border-[#00a884] pl-2' : 'hover:bg-[#202c33] border-l-4 border-transparent'
                   }`}
                 >
                   <div className="pl-3 py-3 shrink-0 relative">
