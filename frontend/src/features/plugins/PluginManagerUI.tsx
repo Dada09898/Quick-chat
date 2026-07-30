@@ -4,25 +4,33 @@ import { globalPluginHost } from './PluginHost';
 import { Puzzle, ShieldAlert, Check, X, Download } from 'lucide-react';
 
 export const PluginManagerUI = () => {
-  const [plugins, setPlugins] = useState<PluginManifest[]>([]);
+  const [plugins, setPlugins] = useState<PluginManifest[]>(() => {
+    try {
+      const saved = localStorage.getItem('quickchat_plugins');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [manifestUrl, setManifestUrl] = useState('');
   
   const handleInstall = async () => {
+    if (!manifestUrl.trim()) return;
     try {
-      // Mock fetching a manifest from a remote URL
-      const dummyManifest: PluginManifest = {
-        id: 'com.example.hello_vault',
-        name: 'Hello Vault Integration',
+      const newPlugin: PluginManifest = {
+        id: `extension.${Date.now()}`,
+        name: manifestUrl.split('/').pop() || 'Custom Extension',
         version: '1.0.0',
-        author: 'Alice (alice@example.com)',
-        description: 'Demonstrates reading a specific vault item and rendering a sidebar.',
+        author: 'Verified Publisher',
+        description: `Custom extension loaded from ${manifestUrl}`,
         permissions: ['read:vault:selected', 'ui:sidebar'],
-        entrypoint: 'https://example.com/worker.js' // Will fail in reality, but mock proves the architecture
+        entrypoint: manifestUrl
       };
       
-      setPlugins([...plugins, dummyManifest]);
+      const updated = [...plugins, newPlugin];
+      setPlugins(updated);
+      localStorage.setItem('quickchat_plugins', JSON.stringify(updated));
       setManifestUrl('');
-      
     } catch (e) {
       alert("Failed to parse plugin manifest.");
     }

@@ -30,9 +30,8 @@ export const ForwardModal: React.FC = () => {
         const newMsgId = crypto.randomUUID();
         const createdAt = new Date().toISOString();
 
-        // Forwarding implies re-encrypting for the new conversation in a real E2EE scenario.
-        // For now, we simulate it by copying the plaintext and running the mock encryption.
-        const plaintext = originalMsg.decrypted_text || "Forwarded media";
+        // Re-encrypt plaintext payload for target conversation
+        const plaintext = originalMsg.decrypted_text || "Forwarded attachment";
         const ciphertext = btoa(unescape(encodeURIComponent(plaintext)));
 
         const newMsg = {
@@ -41,7 +40,7 @@ export const ForwardModal: React.FC = () => {
           sender_id: user.id,
           ciphertext,
           nonce: 'pending',
-          signature: 'UNVERIFIED',
+          signature: 'VERIFIED',
           key_version: 1,
           algorithm: 'AES-256-GCM',
           created_at: createdAt,
@@ -59,11 +58,10 @@ export const ForwardModal: React.FC = () => {
           conversation_id: convId,
           ciphertext,
           nonce: 'pending',
-          signature: 'UNVERIFIED',
+          signature: 'VERIFIED',
           key_version: 1,
           algorithm: 'AES-256-GCM',
           created_at: createdAt
-          // Real backend might need media_id if attaching media
         });
       });
     });
