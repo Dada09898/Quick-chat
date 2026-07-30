@@ -6,6 +6,7 @@ interface MobileNavBarProps {
   setActiveTab: (tab: 'chats' | 'status' | 'calls' | 'communities') => void;
   unreadCount?: number;
   onOpenSettings?: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const MobileNavBar: React.FC<MobileNavBarProps> = ({
@@ -13,15 +14,16 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
   setActiveTab,
   unreadCount = 0,
   onOpenSettings,
+  onOpenProfile,
 }) => {
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#111b21] border-t border-[#222d34] h-16 px-4 flex items-center justify-around select-none">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#111b21] border-t border-[#222d34] h-16 px-2 flex items-center justify-around select-none">
       {/* Chats */}
       <button
         onClick={() => setActiveTab('chats')}
         className="flex flex-col items-center justify-center gap-1"
       >
-        <div className={`relative px-4 py-1 rounded-full transition-all ${
+        <div className={`relative px-3.5 py-1 rounded-full transition-all ${
           activeTab === 'chats' ? 'bg-[#103629] text-[#00a884]' : 'text-[#8696a0]'
         }`}>
           <MessageSquare size={20} />
@@ -31,7 +33,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
             </span>
           )}
         </div>
-        <span className={`text-[11px] font-medium ${activeTab === 'chats' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Chats</span>
+        <span className={`text-[10px] font-medium ${activeTab === 'chats' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Chats</span>
       </button>
 
       {/* Updates / Status */}
@@ -39,13 +41,13 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
         onClick={() => setActiveTab('status')}
         className="flex flex-col items-center justify-center gap-1"
       >
-        <div className={`relative px-4 py-1 rounded-full transition-all ${
+        <div className={`relative px-3.5 py-1 rounded-full transition-all ${
           activeTab === 'status' ? 'bg-[#103629] text-[#00a884]' : 'text-[#8696a0]'
         }`}>
           <CircleDashed size={20} />
           <span className="absolute top-1 right-3 w-2 h-2 bg-[#00a884] rounded-full ring-2 ring-[#111b21]" />
         </div>
-        <span className={`text-[11px] font-medium ${activeTab === 'status' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Updates</span>
+        <span className={`text-[10px] font-medium ${activeTab === 'status' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Updates</span>
       </button>
 
       {/* Communities */}
@@ -53,12 +55,12 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
         onClick={() => setActiveTab('communities')}
         className="flex flex-col items-center justify-center gap-1"
       >
-        <div className={`px-4 py-1 rounded-full transition-all ${
+        <div className={`px-3.5 py-1 rounded-full transition-all ${
           activeTab === 'communities' ? 'bg-[#103629] text-[#00a884]' : 'text-[#8696a0]'
         }`}>
           <Users size={20} />
         </div>
-        <span className={`text-[11px] font-medium ${activeTab === 'communities' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Communities</span>
+        <span className={`text-[10px] font-medium ${activeTab === 'communities' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Communities</span>
       </button>
 
       {/* Calls */}
@@ -66,12 +68,23 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
         onClick={() => setActiveTab('calls')}
         className="flex flex-col items-center justify-center gap-1"
       >
-        <div className={`px-4 py-1 rounded-full transition-all ${
+        <div className={`px-3.5 py-1 rounded-full transition-all ${
           activeTab === 'calls' ? 'bg-[#103629] text-[#00a884]' : 'text-[#8696a0]'
         }`}>
           <PhoneCall size={20} />
         </div>
-        <span className={`text-[11px] font-medium ${activeTab === 'calls' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Calls</span>
+        <span className={`text-[10px] font-medium ${activeTab === 'calls' ? 'text-[#00a884] font-bold' : 'text-[#8696a0]'}`}>Calls</span>
+      </button>
+
+      {/* Profile & Settings Drawer */}
+      <button
+        onClick={() => onOpenProfile?.()}
+        className="flex flex-col items-center justify-center gap-1"
+      >
+        <div className="px-3.5 py-1 rounded-full text-[#8696a0] hover:text-[#00a884] hover:bg-[#103629] transition-all">
+          <Settings size={20} />
+        </div>
+        <span className="text-[10px] font-medium text-[#8696a0]">Settings</span>
       </button>
     </div>
   );

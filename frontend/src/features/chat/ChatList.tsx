@@ -21,12 +21,16 @@ interface ChatListProps {
   activeTab?: 'chats' | 'status' | 'calls' | 'communities';
   setActiveTab?: (tab: 'chats' | 'status' | 'calls' | 'communities') => void;
   onOpenNewChat?: () => void;
+  onOpenProfile?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const ChatList: React.FC<ChatListProps> = ({
   activeTab: propActiveTab,
   setActiveTab: propSetActiveTab,
-  onOpenNewChat
+  onOpenNewChat,
+  onOpenProfile,
+  onOpenSettings
 }) => {
   const conversations = useChatStore(state => state.conversations);
   const setConversations = useChatStore(state => state.setConversations);
@@ -245,10 +249,14 @@ export const ChatList: React.FC<ChatListProps> = ({
               </button>
 
               <button
-                onClick={() => setPrivacyModalOpen(true)}
+                onClick={() => {
+                  if (onOpenProfile) onOpenProfile();
+                  else if (onOpenSettings) onOpenSettings();
+                  else setPrivacyModalOpen(true);
+                }}
                 className="w-full px-4 py-3 hover:bg-[#111b21] flex items-center gap-3 text-left transition"
               >
-                <span>Settings</span>
+                <span>Settings & Profile</span>
               </button>
             </div>
           )}

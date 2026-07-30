@@ -163,6 +163,8 @@ export const ChatLayout: React.FC = () => {
           activeTab={activeRailTab}
           setActiveTab={setActiveRailTab}
           onOpenNewChat={() => setIsNewChatModalOpen(true)}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onOpenSettings={() => setIsCustomizeOpen(true)}
         />
       </div>
 
@@ -580,6 +582,7 @@ export const ChatLayout: React.FC = () => {
           activeTab={activeRailTab}
           setActiveTab={setActiveRailTab}
           onOpenSettings={() => setIsCustomizeOpen(true)}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
         />
       )}
     </div>
