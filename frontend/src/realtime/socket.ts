@@ -145,7 +145,7 @@ export class RealtimeClient {
         case 'ack':
           // The backend sends back an ack when a message is processed
           if (payload.status === 'sent') {
-            useChatStore.getState().updateMessageStatus(data.id, 'sent', payload.sequence_number);
+            useChatStore.getState().updateMessageStatus(payload.message_id, 'sent', payload.sequence_number);
           }
           break;
         case 'message.new': {
