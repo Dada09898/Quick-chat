@@ -3,12 +3,23 @@ import { Building2, Users, ShieldAlert, MonitorSmartphone, Key, CheckCircle, XCi
 
 export const EnterpriseDashboard = () => {
   const [activeTab, setActiveTab] = useState('devices');
+  const [devices, setDevices] = useState<any[]>([]);
 
-  const mockDevices = [
-    { id: '1', user: 'alice@acme.com', platform: 'DESKTOP', state: 'TRUSTED', lastSeen: '2 mins ago' },
-    { id: '2', user: 'bob@acme.com', platform: 'MOBILE', state: 'COMPROMISED', lastSeen: '1 hour ago' },
-    { id: '3', user: 'charlie@acme.com', platform: 'WEB', state: 'PENDING', lastSeen: 'Just now' }
-  ];
+  React.useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const { apiJson } = await import('../../lib/api');
+        const res = await apiJson('/api/auth/devices/');
+        if (res.ok) {
+          const data = await res.json();
+          setDevices(Array.isArray(data) ? data : data.results || []);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchDevices();
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-950 text-gray-200">

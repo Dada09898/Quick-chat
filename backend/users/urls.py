@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     LoginView, RefreshTokenView, LogoutView, GlobalLogoutView, 
     CurrentUserView, TOTPSetupView, TOTPVerifyView,
-    DeviceListView, DeviceRegisterView, DeviceDetailView, SessionListView,
+    DeviceListView, DeviceRegisterView, DeviceDetailView, DeviceQrPairView, SessionListView,
     RegisterView, ChangePasswordView, PasswordResetView, EmailVerificationView,
     UserSearchView, FriendRequestCreateView, FriendRequestRespondView, ContactListView, PendingRequestsView
 )
@@ -23,6 +23,7 @@ urlpatterns = [
     path('totp/setup/', TOTPSetupView.as_view(), name='totp_setup'),
     path('totp/verify/', TOTPVerifyView.as_view(), name='totp_verify'),
     path('devices/', DeviceListView.as_view(), name='device_list'),
+    path('devices/qr/', DeviceQrPairView.as_view(), name='device_qr_pair'),
     path('devices/register/', DeviceRegisterView.as_view(), name='device_register'),
     path('devices/<uuid:pk>/', DeviceDetailView.as_view(), name='device_detail'),
     path('devices/keys/upload/', KeyBundleUploadView.as_view(), name='key_bundle_upload'),

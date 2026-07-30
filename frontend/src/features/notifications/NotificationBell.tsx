@@ -5,29 +5,21 @@ import toast from 'react-hot-toast';
 // Placeholder for firebase initialization - assuming it's exported from a central firebase config
 // import { messaging, onMessage } from '../../lib/firebase';
 
+import { useChatStore } from '../chat/chatStore';
+
 export const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const conversations = useChatStore(state => state.conversations);
 
-  useEffect(() => {
-    // Scaffold for foreground notifications
-    // onMessage(messaging, (payload) => {
-    //   toast.success(`New Message: ${payload.notification?.title}`);
-    //   setNotifications(prev => [{ id: Date.now(), message: payload.notification?.body, is_read: false }, ...prev]);
-    // });
-    
-    // Using a mock event listener since actual firebase isn't fully initialized here
-    const handleForegroundPush = (e: any) => {
-       const payload = e.detail;
-       toast.success(`New Message: ${payload.title}`);
-       setNotifications(prev => [{ id: Date.now(), message: payload.body, is_read: false }, ...prev]);
-    };
-    window.addEventListener('fcm-foreground-msg', handleForegroundPush);
-    return () => window.removeEventListener('fcm-foreground-msg', handleForegroundPush);
-  }, []);
+  const notifications = conversations
+    .filter(c => (c.unread_count_cache || c.unread_count || 0) > 0)
+    .map(c => ({
+      id: c.id,
+      message: `Unread messages in ${c.members?.find((m: any) => m.user)?.user?.display_name || 'Conversation'}`,
+      is_read: false
+    }));
 
-  // Placeholder for real notification fetching
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.length;
 
   return (
     <div className="relative">

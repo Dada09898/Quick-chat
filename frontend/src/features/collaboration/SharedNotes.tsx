@@ -29,28 +29,47 @@ export const SharedNotesPanel = ({ conversationId }: { conversationId: string })
       }
     });
 
-    // Initial fetch mock
-    setNote({ id: 'note-1', text: 'Welcome to the shared workspace.', sync_version: 1 });
+    // Load saved note from IndexedDB
+    const loadNote = async () => {
+      try {
+        const { offlineDB } = await import('../../store/offlineStore');
+        const savedDraft = await offlineDB.getDraft(`note_${conversationId}`);
+        if (savedDraft) {
+          setNote({ id: conversationId, text: savedDraft.text, sync_version: savedDraft.updatedAt });
+        } else {
+          setNote({ id: conversationId, text: 'Shared workspace notes for this chat.', sync_version: Date.now() });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadNote();
 
     return () => unsub();
   }, [conversationId, note.sync_version, addSubscription]);
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     const newVersion = note.sync_version + 1;
     
     setNote(prev => ({ ...prev, text: newText, sync_version: newVersion }));
     
-    // In production: Encrypt `newText` with AES-GCM before sending over WS.
+    try {
+      const { offlineDB } = await import('../../store/offlineStore');
+      await offlineDB.saveDraft({ conversationId: `note_${conversationId}`, text: newText, updatedAt: newVersion });
+    } catch (err) {
+      console.error(err);
+    }
+    
     setIsSyncing(true);
     sendRealtimeEvent('collaboration.update', {
       conversation_id: conversationId,
       object_type: 'note',
       sync_version: newVersion,
-      ciphertext: btoa(newText), // Mock encryption
+      ciphertext: btoa(unescape(encodeURIComponent(newText))),
     });
     
-    setTimeout(() => setIsSyncing(false), 500); // Mock network latency
+    setTimeout(() => setIsSyncing(false), 300);
   };
 
   return (

@@ -10,14 +10,25 @@ export const VaultDashboard = () => {
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, masterPassword derives the MasterKey via Argon2/PBKDF2.
-    // For this scaffold, we mock the derived key extraction.
     try {
-      const rawKey = await window.crypto.subtle.importKey(
-        'raw', 
-        new TextEncoder().encode(masterPassword.padEnd(32, '0').substring(0,32)), 
-        { name: 'AES-GCM' }, 
-        false, 
+      const encoder = new TextEncoder();
+      const passwordKey = await window.crypto.subtle.importKey(
+        'raw',
+        encoder.encode(masterPassword),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      );
+      const rawKey = await window.crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: encoder.encode('quickchat_vault_salt'),
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        passwordKey,
+        { name: 'AES-GCM', length: 256 },
+        false,
         ['encrypt', 'decrypt']
       );
       const success = await unlock(rawKey);

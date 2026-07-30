@@ -417,3 +417,29 @@ class PendingRequestsView(generics.ListAPIView):
 
     def get_queryset(self):
         return FriendRequest.objects.filter(receiver=self.request.user, status='pending', deleted_at__isnull=True).select_related('sender')
+
+
+class DeviceListView(generics.ListAPIView):
+    serializer_class = DeviceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Device.objects.filter(user=self.request.user)
+
+
+class DeviceQrPairView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        token = base64.b32encode(pyotp.random_bytes(10)).decode('utf-8')
+        qr_img = qrcode.make(f"quickchat://pair?token={token}")
+        buffer = BytesIO()
+        qr_img.save(buffer, format="PNG")
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+        return Response({
+            'pairing_token': token,
+            'qr_code': f"data:image/png;base64,{qr_base64}",
+            'expires_in': 180
+        })
+

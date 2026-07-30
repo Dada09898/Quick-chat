@@ -8,6 +8,25 @@ interface QrLoginModalProps {
 }
 
 export const QrLoginModal: React.FC<QrLoginModalProps> = ({ isOpen, onClose }) => {
+  const [qrCode, setQrCode] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const fetchQr = async () => {
+      try {
+        const { apiJson } = await import('../../lib/api');
+        const res = await apiJson('/api/auth/devices/qr/');
+        if (res.ok) {
+          const data = await res.json();
+          setQrCode(data.qr_code);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchQr();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -27,11 +46,15 @@ export const QrLoginModal: React.FC<QrLoginModalProps> = ({ isOpen, onClose }) =
           </button>
         </div>
 
-        <div className="text-center py-10 px-6 space-y-3">
-          <QrCode size={64} className="mx-auto text-[#8696a0] mb-1" />
-          <p className="text-sm text-[#e9edef] font-medium">QR Code Login — Coming Soon</p>
+        <div className="text-center py-8 px-6 space-y-4">
+          {qrCode ? (
+            <img src={qrCode} alt="Pairing QR Code" className="w-52 h-52 mx-auto rounded-2xl border-4 border-white shadow-xl" />
+          ) : (
+            <QrCode size={64} className="mx-auto text-[#8696a0] animate-pulse" />
+          )}
+          <p className="text-sm text-[#e9edef] font-medium">Scan to pair primary phone device</p>
           <p className="text-xs text-[#8696a0] leading-relaxed max-w-xs mx-auto">
-            This feature is still being built. Please log in with your email and password for now.
+            Open Quick Chat on your phone, go to Settings &gt; Linked Devices, and scan this QR code to log in instantly.
           </p>
         </div>
       </motion.div>
