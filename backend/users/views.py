@@ -25,12 +25,18 @@ class LoginView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        email = request.data.get('email')
+        email_or_username = request.data.get('email')
         password = request.data.get('password')
         
+        email = email_or_username
+        if email_or_username and '@' not in email_or_username:
+            user_obj = CustomUser.objects.filter(username=email_or_username).first()
+            if user_obj:
+                email = user_obj.email
+
         user = authenticate(request, email=email, password=password)
         if not user:
-            return Response({'error': 'Invalid credentials or account locked.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Invalid credentials or account locked. Please check your email/username and password.'}, status=status.HTTP_401_UNAUTHORIZED)
             
         # Optional TOTP enforcement
         if user.totp_secret:
