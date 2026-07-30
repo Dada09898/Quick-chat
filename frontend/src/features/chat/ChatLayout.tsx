@@ -29,6 +29,7 @@ import { DisappearingMessagesModal } from './DisappearingMessagesModal';
 import { ProfilePictureModal } from '../profile/ProfilePictureModal';
 import { SidebarRail } from '../../components/layout/SidebarRail';
 import { MobileNavBar } from '../../components/layout/MobileNavBar';
+import { PwaInstallButton } from '../../components/PwaInstallButton';
 
 export const ChatLayout: React.FC = () => {
   const [activeRailTab, setActiveRailTab] = useState<'chats' | 'status' | 'calls' | 'communities'>('chats');
