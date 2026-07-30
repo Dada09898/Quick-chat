@@ -26,6 +26,7 @@ import { AIChatPanel } from '../ai/components/AIChatPanel';
 import { ForwardMessageModal } from './ForwardMessageModal';
 import { StarredMessagesModal } from './StarredMessagesModal';
 import { DisappearingMessagesModal } from './DisappearingMessagesModal';
+import { ProfilePictureModal } from '../profile/ProfilePictureModal';
 
 import { PwaInstallButton } from '../../components/PwaInstallButton';
 
@@ -39,6 +40,7 @@ export const ChatLayout: React.FC = () => {
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isStarredModalOpen, setIsStarredModalOpen] = useState(false);
   const [isDisappearingModalOpen, setIsDisappearingModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Hydrate offline store on mount
   React.useEffect(() => {
@@ -203,9 +205,13 @@ export const ChatLayout: React.FC = () => {
             {!activeConversationId && (
               <>
                 <NotificationBell />
-                <Link to="/settings" className="p-2 hover:bg-[#374248] rounded-full transition-colors">
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="p-2 hover:bg-[#374248] rounded-full transition-colors text-[#aebac1] hover:text-[#00a884]"
+                  title="My Profile & Avatar"
+                >
                   <User size={20} />
-                </Link>
+                </button>
               </>
             )}
           </div>
@@ -318,6 +324,10 @@ export const ChatLayout: React.FC = () => {
         <DisappearingMessagesModal
           isOpen={isDisappearingModalOpen}
           onClose={() => setIsDisappearingModalOpen(false)}
+        />
+        <ProfilePictureModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
         />
       </React.Suspense>
     </div>
