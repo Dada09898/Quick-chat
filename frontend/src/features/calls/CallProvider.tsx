@@ -5,7 +5,7 @@ import { PeerConnectionManager } from './PeerConnectionManager';
 import { useRealtimeStore } from '../../realtime/store';
 import { useRealtime } from '../../realtime/RealtimeProvider';
 import { wsClient } from '../../realtime/socket';
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const CallProvider = ({ children }: { children: React.ReactNode }) => {
@@ -181,6 +181,24 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
                     </button>
                     <button onClick={toggleVideo} className={`p-3 rounded-full transition ${!isVideoOn ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
                       {!isVideoOn ? <VideoOff size={20} /> : <Video size={20} />}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          if (navigator.mediaDevices?.getDisplayMedia) {
+                            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                            if (localVideoRef.current) {
+                              localVideoRef.current.srcObject = screenStream;
+                            }
+                          }
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }}
+                      className="p-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-full transition"
+                      title="Share Screen"
+                    >
+                      <Monitor size={20} />
                     </button>
                   </div>
                   <button onClick={handleEndCall} className="p-3 bg-red-600 hover:bg-red-700 text-white rounded-full transition">
