@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { X, Paintbrush, Type, Sun, Moon, Monitor, Palette, Image as ImageIcon, Download } from 'lucide-react';
+import { X, Paintbrush, Type, Sun, Moon, Monitor, Palette, Image as ImageIcon, Download, HardDrive } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../../store/themeStore';
 import { useChatStore } from './chatStore';
 import toast from 'react-hot-toast';
 import { apiClient } from '../../lib/api';
+import { StorageUsageModal } from './StorageUsageModal';
 
 // Wallpaper options
 const WALLPAPERS = [
@@ -41,6 +42,7 @@ export const ChatCustomization: React.FC<ChatCustomizationProps> = ({ isOpen, on
   const [activeWallpaper, setActiveWallpaper] = useState('pattern1');
   const [activeAccent, setActiveAccent] = useState('green');
   const [activeFontSize, setActiveFontSize] = useState('medium');
+  const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
   const { theme, setTheme } = useThemeStore();
 
   const handleWallpaperChange = (wp: typeof WALLPAPERS[0]) => {
@@ -269,8 +271,20 @@ export const ChatCustomization: React.FC<ChatCustomizationProps> = ({ isOpen, on
           >
             <Download size={16} /> Export Chat Transcript (.txt)
           </button>
-        </section>
-      </div>
-    </motion.div>
+
+          <button
+            onClick={() => setIsStorageModalOpen(true)}
+            className="w-full py-2 bg-[#202c33] hover:bg-[#2a3942] text-[#e9edef] border border-[#2a3942] font-medium text-xs rounded-lg transition flex items-center justify-center gap-2 cursor-pointer mt-2"
+          >
+            <HardDrive size={16} className="text-[#00a884]" /> Storage & Data Usage
+          </button>
+          </section>
+        </div>
+
+        <StorageUsageModal
+          isOpen={isStorageModalOpen}
+          onClose={() => setIsStorageModalOpen(false)}
+        />
+      </motion.div>
   );
 };
