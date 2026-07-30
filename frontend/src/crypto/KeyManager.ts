@@ -1,4 +1,4 @@
-import { generateEd25519KeyPair, generateX25519KeyPair, exportPublicKey } from './keys';
+import { generateEd25519KeyPair, generateX25519KeyPair, exportPublicKey, signData } from './keys';
 import { storeKey, getKey, clearAllKeys } from './storage';
 import { CryptoError, ErrorCodes } from './errors';
 
@@ -33,6 +33,33 @@ export class KeyManager {
       console.error(err);
       throw new CryptoError('Device key initialization failed', ErrorCodes.KEY_GENERATION_FAILED, err);
     }
+  }
+
+  static async generatePreKeyBundle(count: number = 50): Promise<{
+    signedPreKey: { public_key: string; signature: string; key_id: number };
+    oneTimePreKeys: { public_key: string; key_id: number }[];
+  }> {
+    const identityPrivate = await this.getIdentityPrivateKey();
+
+    const spk = await generateX25519KeyPair();
+    const spkPublicB64 = await exportPublicKey(spk.publicKey);
+    const spkKeyId = Math.floor(Date.now() / 1000) % 1000000;
+    const signature = await signData(identityPrivate, spkPublicB64);
+    await storeKey(`signed_pre_key_private_${spkKeyId}`, 'x25519', spk.privateKey);
+
+    const oneTimePreKeys = [];
+    for (let i = 0; i < count; i++) {
+      const otpk = await generateX25519KeyPair();
+      const keyId = Date.now() + i;
+      const pubB64 = await exportPublicKey(otpk.publicKey);
+      await storeKey(`otpk_private_${keyId}`, 'x25519', otpk.privateKey);
+      oneTimePreKeys.push({ public_key: pubB64, key_id: keyId });
+    }
+
+    return {
+      signedPreKey: { public_key: spkPublicB64, signature, key_id: spkKeyId },
+      oneTimePreKeys
+    };
   }
 
   static async getIdentityPrivateKey(): Promise<CryptoKey> {

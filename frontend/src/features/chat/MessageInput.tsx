@@ -117,20 +117,16 @@ export const MessageInput: React.FC = () => {
     e.preventDefault();
     if (!text.trim() || !activeConversationId || !user) return;
 
+    const conversations = useChatStore.getState().conversations;
+    const activeConv = conversations.find(c => c.id === activeConversationId);
+    const peerUser = activeConv?.members?.find((m: any) => (m.userId || m.id || m.user_id) !== user.id);
+    const peerId = peerUser ? (peerUser.userId || peerUser.id || peerUser.user_id) : user.id;
+
     // UUIDv7 shim (using crypto.randomUUID for demo, in prod use uuidv7 library)
     const msgId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
 
-    // -----------------------------------------------------------------
-    // E2EE Compatibility: Until frontend device registration + key
-    // exchange is implemented, messages are sent as base64-encoded
-    // plaintext with the sentinel signature 'UNVERIFIED'.
-    // The backend feature flag REQUIRE_E2EE_SIGNATURES (disabled by
-    // default) controls whether this is accepted.
-    // Once real E2EE is active, replace btoa(text) with AES-256-GCM
-    // ciphertext and 'UNVERIFIED' with a real Ed25519 signature.
-    // -----------------------------------------------------------------
-    const ciphertext = btoa(unescape(encodeURIComponent(text))); // Supports Unicode
+    const ciphertext = await encryptMessageText(peerId, text);
     const signature = 'UNVERIFIED';
     const nonce = 'pending';
 

@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { MessageBubble } from './MessageBubble';
 import { useRealtimeStore } from '../../realtime/store';
 import { apiClient } from '../../lib/api';
-import { decodeCiphertext } from '../../utils/cryptoUtils';
+import { decodeCiphertext, decryptMessageText } from '../../utils/cryptoUtils';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -64,7 +64,7 @@ export const MessageList: React.FC = () => {
           const msgs = data.results || [];
           // Need to upsert them into the store
           const upsertMessage = useChatStore.getState().upsertMessage;
-          msgs.forEach((msg: any) => {
+          msgs.forEach(async (msg: any) => {
             const media_attachments = (msg.attachments || []).map((att: any) => ({
               id: att.id,
               url: att.url || (att.s3_key?.startsWith('http') ? att.s3_key : `${BASE_URL}/media/${att.s3_key}`),
@@ -74,11 +74,13 @@ export const MessageList: React.FC = () => {
               media_key: undefined
             }));
 
+            const decrypted_text = await decryptMessageText(msg);
+
             upsertMessage({
               ...msg,
               conversation_id: msg.conversation || msg.conversation_id,
               sender_id: msg.sender?.id || msg.sender_id,
-              decrypted_text: decodeCiphertext(msg.ciphertext),
+              decrypted_text,
               status: msg.status || 'delivered',
               media_attachments
             });

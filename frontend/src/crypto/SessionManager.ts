@@ -19,6 +19,9 @@ export interface KeyBundle {
 export interface EncryptedMessage {
   sessionId: string;
   ephemeralKey?: string; // Base64 SPKI - only sent on initial message
+  senderSignedPreKeyId?: number;
+  senderOneTimePreKeyId?: number;
+  senderDeviceId?: string;
   messageNumber: number;
   chainIndex: number;
   payload: EncryptedPayload;
@@ -26,7 +29,7 @@ export interface EncryptedMessage {
 }
 
 /** Internal session state stored in IndexedDB. */
-interface SessionState {
+export interface SessionState {
   id: string;
   remoteUserId: string;
   remoteDeviceId: string;
@@ -318,13 +321,91 @@ export class SessionManager {
   }
   
   /**
+   * Called by the RECEIVER on the first message from a new sender.
+   * Independently derives the same root key the sender computed.
+   */
+  static async respondToSession(params: {
+    ownSignedPreKeyPrivate: CryptoKey;
+    ownOneTimePreKeyPrivate?: CryptoKey;
+    senderIdentityPublicKeyB64: string;
+    senderEphemeralPublicKeyB64: string;
+    remoteUserId: string;
+    remoteDeviceId: string;
+    sessionId: string;
+    localIdentityPublicKeyB64: string;
+  }): Promise<SessionState> {
+    const senderIdentityPub = await importPublicKey(params.senderIdentityPublicKeyB64, 'X25519');
+    const senderEphemeralPub = await importPublicKey(params.senderEphemeralPublicKeyB64, 'X25519');
+
+    // DH1: our signed pre-key private × sender identity exchange public
+    const dh1Secret = await deriveSharedSecret(params.ownSignedPreKeyPrivate, senderIdentityPub);
+    const dh1Bits = await window.crypto.subtle.deriveBits(
+      { name: 'HKDF', salt: new Uint8Array(32), info: new TextEncoder().encode('X3DH-DH1'), hash: 'SHA-256' },
+      dh1Secret, 256
+    );
+
+    // DH3: our signed pre-key private × sender ephemeral public
+    const dh3Secret = await deriveSharedSecret(params.ownSignedPreKeyPrivate, senderEphemeralPub);
+    const dh3Bits = await window.crypto.subtle.deriveBits(
+      { name: 'HKDF', salt: new Uint8Array(32), info: new TextEncoder().encode('X3DH-DH3'), hash: 'SHA-256' },
+      dh3Secret, 256
+    );
+
+    // DH4: our one-time pre-key private × sender ephemeral public (if used)
+    let dh4Bits: ArrayBuffer | null = null;
+    if (params.ownOneTimePreKeyPrivate) {
+      const dh4Secret = await deriveSharedSecret(params.ownOneTimePreKeyPrivate, senderEphemeralPub);
+      dh4Bits = await window.crypto.subtle.deriveBits(
+        { name: 'HKDF', salt: new Uint8Array(32), info: new TextEncoder().encode('X3DH-DH4'), hash: 'SHA-256' },
+        dh4Secret, 256
+      );
+    }
+
+    const totalLen = 32 + 32 + (dh4Bits ? 32 : 0);
+    const combined = new Uint8Array(totalLen);
+    combined.set(new Uint8Array(dh1Bits), 0);
+    combined.set(new Uint8Array(dh3Bits), 32);
+    if (dh4Bits) combined.set(new Uint8Array(dh4Bits), 64);
+
+    const derived = await kdfDerive(combined, new Uint8Array(32), 'QuickChat-X3DH-v1');
+    const rootKey = derived.slice(0, 32);
+    const chainKey = derived.slice(32, 64);
+    wipeMemory(combined);
+    wipeMemory(derived);
+
+    const session: SessionState = {
+      id: params.sessionId,
+      remoteUserId: params.remoteUserId,
+      remoteDeviceId: params.remoteDeviceId,
+      remoteIdentityKey: params.senderIdentityPublicKeyB64,
+      localIdentityKey: params.localIdentityPublicKeyB64,
+      rootKey: bufferToBase64(rootKey),
+      sendChainKey: '',
+      receiveChainKey: bufferToBase64(chainKey),
+      sendMessageNumber: 0,
+      receiveMessageNumber: 0,
+      localRatchetKey: '',
+      remoteRatchetKey: params.senderEphemeralPublicKeyB64,
+      createdAt: Date.now(),
+      lastUsedAt: Date.now()
+    };
+
+    const db = await getSessionDB();
+    await db.put('sessions', session);
+    return session;
+  }
+
+  /**
    * Gets or creates a session for a remote user.
    */
-  static async getSessionForUser(remoteUserId: string, remoteDeviceId: string): Promise<SessionState | null> {
+  static async getSessionForUser(remoteUserId: string, remoteDeviceId?: string): Promise<SessionState | null> {
     const db = await getSessionDB();
-    const tx = db.transaction('sessions', 'readonly');
-    const index = tx.store.index('by-remote');
-    return await index.get([remoteUserId, remoteDeviceId]) as SessionState | null;
+    const all = await db.getAll('sessions') as SessionState[];
+    if (remoteDeviceId) {
+      const match = all.find(s => s.remoteUserId === remoteUserId && s.remoteDeviceId === remoteDeviceId);
+      if (match) return match;
+    }
+    return all.find(s => s.remoteUserId === remoteUserId) || null;
   }
   
   /**

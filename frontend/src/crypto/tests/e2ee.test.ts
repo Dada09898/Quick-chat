@@ -40,6 +40,21 @@ describe('Signal Protocol & E2E Encryption Test Suite', () => {
     expect(session.id).toBeDefined();
     expect(ephemeralPublicKey).toBeDefined();
     expect(session.remoteDeviceId).toBe('bob-device-1');
+
+    // 4. Responder (Bob) derives responder session matching Alice's initiator session
+    const responderSession = await SessionManager.respondToSession({
+      ownSignedPreKeyPrivate: bobSignedPreKey.privateKey,
+      ownOneTimePreKeyPrivate: bobOneTimePreKey.privateKey,
+      senderIdentityPublicKeyB64: await exportPublicKey(aliceIdentity.publicKey),
+      senderEphemeralPublicKeyB64: ephemeralPublicKey,
+      remoteUserId: 'alice-user-id',
+      remoteDeviceId: 'alice-device-1',
+      sessionId: session.id,
+      localIdentityPublicKeyB64: bobSignedPreKeyPubB64
+    });
+
+    expect(responderSession.rootKey).toBe(session.rootKey);
+    expect(responderSession.receiveChainKey).toBe(session.sendChainKey);
   });
 
   it('should encrypt and decrypt messages with Double Ratchet forward secrecy', async () => {

@@ -1,7 +1,7 @@
 import { useRealtimeStore } from './store';
 import { useChatStore } from '../features/chat/chatStore';
 import { useAuthStore } from '../store/authStore';
-import { decodeCiphertext } from '../utils/cryptoUtils';
+import { decodeCiphertext, decryptMessageText } from '../utils/cryptoUtils';
 import { chatSounds } from '../utils/chatSounds';
 
 export { decodeCiphertext };
@@ -158,11 +158,13 @@ export class RealtimeClient {
             chatSounds.playReceiveSound();
           }
 
-          useChatStore.getState().upsertMessage({
-            ...payload,
-            media_attachments,
-            status: 'delivered',
-            decrypted_text: decodeCiphertext(payload.ciphertext),
+          decryptMessageText(payload).then(decrypted_text => {
+            useChatStore.getState().upsertMessage({
+              ...payload,
+              media_attachments,
+              status: 'delivered',
+              decrypted_text,
+            });
           });
           
           // Send delivered receipt back (include conversation_id for group routing)
@@ -190,10 +192,11 @@ export class RealtimeClient {
           break;
         case 'conversation.delta':
         case 'conversation.sync_response':
-          payload.messages.forEach((msg: any) => {
+          payload.messages.forEach(async (msg: any) => {
+            const decrypted_text = await decryptMessageText(msg);
             useChatStore.getState().upsertMessage({
               ...msg,
-              decrypted_text: decodeCiphertext(msg.ciphertext),
+              decrypted_text,
               status: 'delivered'
             });
           });

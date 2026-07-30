@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { wsClient } from './socket';
+import { ensureDeviceAndKeysRegistered } from '../crypto/deviceRegistration';
 
 interface RealtimeContextState {
   sendEvent: (type: string, payload?: any) => void;
@@ -10,6 +11,11 @@ const RealtimeContext = createContext<RealtimeContextState | null>(null);
 
 export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
+    // Ensure device keys and prekey bundles are registered & uploaded
+    ensureDeviceAndKeysRegistered().catch(err => {
+      console.warn('Device & prekey registration check warning:', err);
+    });
+
     // Only connect if user is authenticated (can be wrapped by AuthProvider in App.tsx)
     wsClient.connect();
     
