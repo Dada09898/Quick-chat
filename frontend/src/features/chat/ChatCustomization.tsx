@@ -45,21 +45,49 @@ export const ChatCustomization: React.FC<ChatCustomizationProps> = ({ isOpen, on
   const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
   const { theme, setTheme } = useThemeStore();
 
-  const handleWallpaperChange = (wp: typeof WALLPAPERS[0]) => {
+  const handleWallpaperChange = async (wp: typeof WALLPAPERS[0]) => {
     setActiveWallpaper(wp.id);
-    // Apply wallpaper to CSS custom property
     document.documentElement.style.setProperty('--chat-wallpaper', wp.value);
     document.documentElement.style.setProperty('--chat-bg-color', wp.color);
+    try {
+      const { apiJson } = await import('../../lib/api');
+      await apiJson('/api/auth/me/', {
+        method: 'PATCH',
+        body: { privacy_settings: { wallpaper: wp.id } }
+      });
+      toast.success(`Wallpaper updated to ${wp.name}`);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleAccentChange = (accent: typeof ACCENT_COLORS[0]) => {
+  const handleAccentChange = async (accent: typeof ACCENT_COLORS[0]) => {
     setActiveAccent(accent.id);
     document.documentElement.style.setProperty('--accent-color', accent.value);
+    try {
+      const { apiJson } = await import('../../lib/api');
+      await apiJson('/api/auth/me/', {
+        method: 'PATCH',
+        body: { privacy_settings: { accent_color: accent.value } }
+      });
+      toast.success(`Accent color updated to ${accent.name}`);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleFontSizeChange = (fs: typeof FONT_SIZES[0]) => {
+  const handleFontSizeChange = async (fs: typeof FONT_SIZES[0]) => {
     setActiveFontSize(fs.id);
     document.documentElement.style.setProperty('--chat-font-size', fs.value);
+    try {
+      const { apiJson } = await import('../../lib/api');
+      await apiJson('/api/auth/me/', {
+        method: 'PATCH',
+        body: { privacy_settings: { font_size: fs.value } }
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (!isOpen) return null;
