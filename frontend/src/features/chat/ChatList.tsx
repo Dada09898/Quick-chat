@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
-import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X, CircleDashed, Plus, PhoneCall, Users, QrCode, Laptop } from 'lucide-react';
+import { MessageSquare, Search, ChevronDown, Pin, VolumeX, Check, CheckCheck, X, CircleDashed, Plus, PhoneCall, Users, QrCode, Laptop, MoreVertical } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
 import { useStatusStore, type UserStatusGroup } from '../status/statusStore';
