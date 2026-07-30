@@ -28,6 +28,7 @@ import { StarredMessagesModal } from './StarredMessagesModal';
 import { DisappearingMessagesModal } from './DisappearingMessagesModal';
 import { ProfilePictureModal } from '../profile/ProfilePictureModal';
 import { SidebarRail } from '../../components/layout/SidebarRail';
+import { MobileNavBar } from '../../components/layout/MobileNavBar';
 
 export const ChatLayout: React.FC = () => {
   const [activeRailTab, setActiveRailTab] = useState<'chats' | 'status' | 'calls' | 'communities'>('chats');
@@ -387,6 +388,15 @@ export const ChatLayout: React.FC = () => {
           onClose={() => setIsProfileModalOpen(false)}
         />
       </React.Suspense>
+
+      {/* Mobile Devices Bottom Navigation Bar */}
+      {!activeConversationId && (
+        <MobileNavBar
+          activeTab={activeRailTab}
+          setActiveTab={setActiveRailTab}
+          onOpenSettings={() => setIsCustomizeOpen(true)}
+        />
+      )}
     </div>
   );
 };

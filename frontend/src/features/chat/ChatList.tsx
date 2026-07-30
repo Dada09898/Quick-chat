@@ -535,6 +535,15 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
           )
         )}
       </div>
+
+      {/* Floating Green New Chat Button for Mobile View */}
+      <button
+        onClick={onOpenNewChat}
+        className="md:hidden fixed bottom-20 right-5 w-14 h-14 bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] rounded-full shadow-2xl flex items-center justify-center font-bold z-40 active:scale-95 transition-transform"
+        title="Start New Chat"
+      >
+        <Plus size={24} />
+      </button>
     </div>
   );
 };
