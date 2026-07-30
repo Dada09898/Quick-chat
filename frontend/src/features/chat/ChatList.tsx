@@ -403,13 +403,39 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
                       </div>
                       
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {isMuted && <VolumeX size={15} className="text-[#8696a0]" />}
-                        {isPinned && <Pin size={15} className="text-[#8696a0] rotate-45" />}
+                        {isMuted && <VolumeX size={15} className="text-[#8696a0]" title="Muted" />}
+                        {isPinned && <Pin size={15} className="text-[#8696a0] fill-[#8696a0]" title="Pinned to top" />}
                         {conv.unread_count_cache > 0 && (
-                          <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#00a884] flex items-center justify-center text-[11px] font-bold text-[#111b21]">
+                          <span className="bg-[#00a884] text-[#111b21] font-bold text-[12px] min-w-[20px] h-[20px] rounded-full flex items-center justify-center px-1.5 shadow-sm">
                             {conv.unread_count_cache}
                           </span>
                         )}
+                        <div className="hidden group-hover:flex items-center gap-1 ml-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              conv.is_pinned = !conv.is_pinned;
+                              useChatStore.setState({ conversations: [...conversations] });
+                              toast.success(conv.is_pinned ? 'Chat pinned to top' : 'Chat unpinned');
+                            }}
+                            className="p-1 hover:bg-[#374248] rounded-full text-[#8696a0] hover:text-[#e9edef] transition"
+                            title={isPinned ? 'Unpin chat' : 'Pin chat to top'}
+                          >
+                            <Pin size={14} className={isPinned ? 'fill-[#00a884] text-[#00a884]' : ''} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              conv.is_muted = !conv.is_muted;
+                              useChatStore.setState({ conversations: [...conversations] });
+                              toast.success(conv.is_muted ? 'Notifications muted' : 'Notifications unmuted');
+                            }}
+                            className="p-1 hover:bg-[#374248] rounded-full text-[#8696a0] hover:text-[#e9edef] transition"
+                            title={isMuted ? 'Unmute notifications' : 'Mute notifications'}
+                          >
+                            <VolumeX size={14} className={isMuted ? 'text-[#00a884]' : ''} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
