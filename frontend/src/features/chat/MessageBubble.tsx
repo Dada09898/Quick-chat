@@ -15,6 +15,7 @@ import { AudioBubble } from './AudioBubble';
 import { DocumentCard } from './DocumentCard';
 import { MessageInfoModal } from './MessageInfoModal';
 import { VoiceNotePlayer } from './VoiceNotePlayer';
+import { spawnReactionParticles } from '../../utils/reactionFX';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL || '';
 
