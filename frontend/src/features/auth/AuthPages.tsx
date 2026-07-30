@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, Clock, ArrowRight, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Clock, ArrowRight, MessageSquare, ShieldCheck, QrCode } from 'lucide-react';
 import { apiJson } from '../../lib/api';
 import toast from 'react-hot-toast';
+import { QrLoginModal } from './QrLoginModal';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const setUser = useAuthStore(state => state.setUser);
   
   const handleLogin = async (e: React.FormEvent) => {
@@ -49,12 +51,20 @@ export const LoginPage = () => {
               Simple, reliable and private. Message privately, make calls and share files with your friends, family and colleagues.
             </p>
 
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-full sm:w-64 py-3 bg-[#00a884] hover:bg-[#008f6f] text-[#111b21] font-semibold text-base rounded-full transition-all duration-200 shadow-lg hover:shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
-            >
-              Log in <ArrowRight size={18} />
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+              <button
+                onClick={() => setShowForm(true)}
+                className="w-full sm:w-56 py-3 bg-[#00a884] hover:bg-[#008f6f] text-[#111b21] font-semibold text-sm rounded-full transition-all duration-200 shadow-lg active:scale-95 flex items-center justify-center gap-2"
+              >
+                Log in <ArrowRight size={18} />
+              </button>
+              <button
+                onClick={() => setShowQrModal(true)}
+                className="w-full sm:w-56 py-3 bg-[#202c33] hover:bg-[#2a3942] text-[#e9edef] border border-[#2a3942] font-medium text-sm rounded-full transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <QrCode size={18} className="text-[#00a884]" /> Link with QR Code
+              </button>
+            </div>
 
             <div className="mt-8 flex items-center gap-2 text-xs text-[#8696a0]">
               <ShieldCheck size={16} className="text-[#00a884]" />
@@ -128,6 +138,11 @@ export const LoginPage = () => {
           </div>
         )}
       </div>
+
+      <QrLoginModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+      />
     </div>
   );
 };
