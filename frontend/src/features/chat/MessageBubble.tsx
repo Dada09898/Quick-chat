@@ -409,21 +409,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
 
           {/* Fallback Media Indicator (If text starts with 📷, 🎥, 📄, 🎵) */}
           {!isDeleted && hasFallbackMediaText && (
-            <div className="-mx-[9px] -mt-[6px] mb-1">
+            <div className="-mx-[6px] -mt-[4px] mb-1">
               {(mediaEmojiPrefix === '📷' || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg'].includes(mediaFilenameText.split('.').pop()?.toLowerCase() || '')) ? (
-                <div className="rounded-t-[7.5px] overflow-hidden bg-[#111b21] relative flex items-center justify-center min-h-[160px] border-b border-[#222d34]">
+                <div className="rounded-[8px] overflow-hidden bg-[#182229] relative flex items-center justify-center min-h-[140px] max-w-[280px] border border-[#222d34]">
                   <img 
-                    src={mediaFilenameText.startsWith('http') || mediaFilenameText.startsWith('blob:') ? mediaFilenameText : `${VITE_API_URL}/media/${mediaFilenameText}`}
-                    alt={mediaFilenameText || 'Photo Attachment'} 
+                    src={mediaFilenameText.startsWith('http') || mediaFilenameText.startsWith('blob:') || mediaFilenameText.startsWith('data:') ? mediaFilenameText : `${VITE_API_URL}/media/${mediaFilenameText}`}
+                    alt={mediaFilenameText || 'Photo'} 
                     onError={(e) => {
-                      // Fallback if image URL is not available
                       const parent = (e.target as HTMLElement).parentElement;
                       if (parent) {
-                        parent.innerHTML = `<div class="p-4 flex flex-col items-center justify-center gap-2 text-[#8696a0]"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#00a884]"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span class="text-xs font-medium text-[#e9edef]">${mediaFilenameText}</span></div>`;
+                        parent.innerHTML = `<div class="p-3 flex items-center gap-3 text-[#d1d7db] bg-[#182229] w-full"><div class="p-2.5 bg-[#00a884]/20 text-[#00a884] rounded-lg shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div><div class="flex flex-col min-w-0"><span class="text-xs font-medium text-[#e9edef] truncate">${mediaFilenameText}</span><span class="text-[10px] text-[#8696a0]">Photo • Tap to download</span></div></div>`;
                       }
                     }}
-                    onClick={() => setViewImageFull(`${VITE_API_URL}/media/${mediaFilenameText}`)}
-                    className="w-full h-auto max-h-[320px] object-cover cursor-pointer hover:opacity-95 transition-opacity" 
+                    onClick={() => setViewImageFull(mediaFilenameText.startsWith('http') ? mediaFilenameText : `${VITE_API_URL}/media/${mediaFilenameText}`)}
+                    className="w-full h-auto max-h-[260px] object-cover cursor-pointer hover:opacity-95 transition-opacity" 
                     loading="lazy" 
                   />
                 </div>

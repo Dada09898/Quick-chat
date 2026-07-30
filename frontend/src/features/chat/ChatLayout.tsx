@@ -249,20 +249,22 @@ export const ChatLayout: React.FC = () => {
             </div>
             
             {/* Actions */}
-            <div className="flex items-center gap-3 sm:gap-4 text-[#aebac1]">
-              <PwaInstallButton />
+            <div className="flex items-center gap-2 sm:gap-3 text-[#aebac1]">
+              <div className="hidden md:block">
+                <PwaInstallButton />
+              </div>
               {activeConversationId && (
                 <>
                   <button 
                     onClick={() => handleStartCall(true)}
-                    className="p-2 hover:bg-[#374248] rounded-full transition-colors hidden sm:block"
+                    className="p-2 hover:bg-[#374248] rounded-full transition-colors"
                     title="Video Call"
                   >
                     <Video size={20} />
                   </button>
                   <button 
                     onClick={() => handleStartCall(false)}
-                    className="p-2 hover:bg-[#374248] rounded-full transition-colors hidden sm:block"
+                    className="p-2 hover:bg-[#374248] rounded-full transition-colors"
                     title="Voice Call"
                   >
                     <Phone size={20} />
