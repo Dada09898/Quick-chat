@@ -4,14 +4,19 @@ import { apiClient } from '../lib/api'
 interface User {
   id: string
   email: string
+  username?: string
+  display_name?: string
   is_user_a: boolean
   avatar?: string
   bio?: string
+  phone_number?: string
+  website?: string
+  location?: string
   presence_status?: 'online' | 'offline' | 'away' | 'dnd'
   last_seen?: string
   timezone?: string
   preferred_language?: string
-  last_login: string
+  last_login?: string
 }
 
 interface AuthState {

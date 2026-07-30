@@ -52,9 +52,9 @@ export const ProfilePictureModal: React.FC<ProfilePictureModalProps> = ({
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
-  const [website, setWebsite] = useState('www.quickchat.app');
-  const [location, setLocation] = useState('India');
-  const [phone, setPhone] = useState('+91 98765 43210');
+  const [website, setWebsite] = useState('');
+  const [location, setLocation] = useState('');
+  const [phone, setPhone] = useState('');
   
   const [uploading, setUploading] = useState(false);
   const [showFullPhoto, setShowFullPhoto] = useState(false);
@@ -68,6 +68,9 @@ export const ProfilePictureModal: React.FC<ProfilePictureModalProps> = ({
       setDisplayName(user.display_name || user.username || '');
       setUsername(user.username || '');
       setBio(user.bio || 'Building AI Products 🚀');
+      setWebsite(user.website || 'https://quickchat.app');
+      setLocation(user.location || 'India');
+      setPhone(user.phone_number || '+91 98765 43210');
     }
   }, [user]);
 
@@ -447,36 +450,54 @@ export const ProfilePictureModal: React.FC<ProfilePictureModalProps> = ({
                 </div>
 
                 <div className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     <Phone size={18} className="text-[#00a884]" />
-                    <div className="flex flex-col">
+                    <div className="flex flex-col flex-1">
                       <span className="text-xs text-[#8696a0]">Phone Number</span>
-                      <span className="text-sm font-medium text-[#e9edef]">{phone}</span>
+                      <input 
+                        type="text"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        onBlur={() => handleSaveProfileField({ phone_number: phone })}
+                        className="bg-transparent text-sm font-medium text-[#e9edef] focus:outline-none focus:border-b border-[#00a884]"
+                      />
                     </div>
                   </div>
-                  <button onClick={() => toast.success('Phone verification code sent!')} className="text-xs text-[#00a884] hover:underline font-medium">Change</button>
+                  <button onClick={() => handleSaveProfileField({ phone_number: phone })} className="text-xs text-[#00a884] hover:underline font-medium">Save</button>
                 </div>
 
                 <div className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     <Globe size={18} className="text-[#00a884]" />
-                    <div className="flex flex-col">
+                    <div className="flex flex-col flex-1">
                       <span className="text-xs text-[#8696a0]">Website</span>
-                      <span className="text-sm font-medium text-[#e9edef]">{website}</span>
+                      <input 
+                        type="text"
+                        value={website}
+                        onChange={e => setWebsite(e.target.value)}
+                        onBlur={() => handleSaveProfileField({ website })}
+                        className="bg-transparent text-sm font-medium text-[#e9edef] focus:outline-none focus:border-b border-[#00a884]"
+                      />
                     </div>
                   </div>
-                  <button onClick={() => setIsEditingWebsite(true)} className="text-xs text-[#00a884] hover:underline font-medium">Edit</button>
+                  <button onClick={() => handleSaveProfileField({ website })} className="text-xs text-[#00a884] hover:underline font-medium">Save</button>
                 </div>
 
                 <div className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     <MapPin size={18} className="text-[#00a884]" />
-                    <div className="flex flex-col">
+                    <div className="flex flex-col flex-1">
                       <span className="text-xs text-[#8696a0]">Location</span>
-                      <span className="text-sm font-medium text-[#e9edef]">{location}</span>
+                      <input 
+                        type="text"
+                        value={location}
+                        onChange={e => setLocation(e.target.value)}
+                        onBlur={() => handleSaveProfileField({ location })}
+                        className="bg-transparent text-sm font-medium text-[#e9edef] focus:outline-none focus:border-b border-[#00a884]"
+                      />
                     </div>
                   </div>
-                  <button onClick={() => setIsEditingLocation(true)} className="text-xs text-[#00a884] hover:underline font-medium">Edit</button>
+                  <button onClick={() => handleSaveProfileField({ location })} className="text-xs text-[#00a884] hover:underline font-medium">Save</button>
                 </div>
 
                 <div className="p-4 flex items-center justify-between">

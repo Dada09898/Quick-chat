@@ -32,6 +32,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     display_name = models.CharField(max_length=255, blank=True, null=True)
     avatar = models.URLField(blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
+    phone_number = models.CharField(max_length=30, blank=True, null=True)
+    website = models.URLField(blank=True, null=True)
+    location = models.CharField(max_length=100, blank=True, null=True)
     presence_status = models.CharField(max_length=20, default='offline', choices=[
         ('online', 'Online'),
         ('offline', 'Offline'),
