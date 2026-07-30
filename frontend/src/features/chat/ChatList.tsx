@@ -12,6 +12,7 @@ import { ShieldCheck } from 'lucide-react';
 import { StatusPrivacyModal } from '../status/StatusPrivacyModal';
 import { StatusViewersModal } from '../status/StatusViewersModal';
 import { PwaInstallButton } from '../../components/PwaInstallButton';
+import { CallsTab } from '../calls/CallsTab';
 
 interface ChatListProps {
   onOpenNewChat?: () => void;
@@ -24,7 +25,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
   const setActiveConversation = useChatStore(state => state.setActiveConversation);
   const user = useAuthStore(state => state.user);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'chats' | 'status'>('chats');
+  const [activeTab, setActiveTab] = useState<'chats' | 'status' | 'calls'>('chats');
 
   const {
     myStatuses,
@@ -116,7 +117,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
       {/* Header */}
       <div className="p-4 border-b border-[#222d34] flex items-center justify-between bg-[#202c33] z-10 shrink-0">
         <h2 className="text-[22px] font-semibold text-[#e9edef] flex items-center gap-2">
-          {activeTab === 'chats' ? 'Chats' : 'Status Updates'}
+          {activeTab === 'chats' ? 'Chats' : activeTab === 'status' ? 'Status Updates' : 'Calls'}
         </h2>
         <div className="flex items-center gap-1.5 sm:gap-2 text-[#aebac1]">
           {/* PWA Install Button for Mobile & Desktop */}
@@ -135,11 +136,27 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
 
           {/* Tab Switchers */}
           <button
-            onClick={() => setActiveTab(activeTab === 'chats' ? 'status' : 'chats')}
+            onClick={() => setActiveTab('chats')}
+            className={`p-2 rounded-full transition ${activeTab === 'chats' ? 'bg-[#374248] text-[#00a884]' : 'hover:bg-[#374248]'}`}
+            title="Chats"
+          >
+            <MessageSquare size={20} />
+          </button>
+
+          <button
+            onClick={() => setActiveTab('status')}
             className={`p-2 rounded-full transition ${activeTab === 'status' ? 'bg-[#374248] text-[#00a884]' : 'hover:bg-[#374248]'}`}
-            title={activeTab === 'chats' ? 'View Status Updates' : 'View Chats'}
+            title="Status Updates"
           >
             <CircleDashed size={20} />
+          </button>
+
+          <button
+            onClick={() => setActiveTab('calls')}
+            className={`p-2 rounded-full transition ${activeTab === 'calls' ? 'bg-[#374248] text-[#00a884]' : 'hover:bg-[#374248]'}`}
+            title="Recent Calls"
+          >
+            <PhoneCall size={20} />
           </button>
           
           <button 
@@ -147,7 +164,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
             className="p-2 hover:bg-[#374248] rounded-full transition"
             title="New Chat"
           >
-            <MessageSquare size={20} />
+            <Plus size={20} />
           </button>
         </div>
       </div>
@@ -319,6 +336,9 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
               </div>
             )}
           </div>
+        ) : activeTab === 'calls' ? (
+          /* CALLS TAB VIEW */
+          <CallsTab />
         ) : (
           /* CHATS TAB VIEW */
           filteredConversations.length === 0 ? (
