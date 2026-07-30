@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Image as ImageIcon, Link2, FileText, Pin, Shield, Sparkles, ChevronDown, ChevronRight, Bell, Trash2, Ban, ExternalLink, Download } from 'lucide-react';
+import { X, Search, Image as ImageIcon, Link2, FileText, Pin, Shield, Sparkles, ChevronDown, ChevronRight, Bell, Trash2, Ban, ExternalLink, Download, ShieldCheck } from 'lucide-react';
 import { Avatar } from '../../components/ui/Avatar';
 import { springPresets } from '../../motion';
 import toast from 'react-hot-toast';
+import { SecurityCodeModal } from './SecurityCodeModal';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -60,6 +61,7 @@ export const RightPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'media' | 'docs' | 'links'>('media');
   const [viewImageFull, setViewImageFull] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
 
   if (!activeConversationId) return null;
 
@@ -275,7 +277,20 @@ export const RightPanel: React.FC = () => {
           <p className="text-[#8696a0] text-[12px] leading-relaxed">
             Messages and calls are end-to-end encrypted. No one outside of this chat, not even Kryozen, can read or listen to them.
           </p>
+          <button
+            onClick={() => setIsSecurityModalOpen(true)}
+            className="mt-3 text-xs font-semibold text-[#00a884] bg-[#00a884]/15 hover:bg-[#00a884]/25 py-2 px-3 rounded-lg border border-[#00a884]/30 transition flex items-center gap-1.5"
+          >
+            <ShieldCheck size={16} /> Verify Security Code
+          </button>
         </AccordionSection>
+
+        {/* Security Modal */}
+        <SecurityCodeModal
+          isOpen={isSecurityModalOpen}
+          onClose={() => setIsSecurityModalOpen(false)}
+          userName={displayName}
+        />
 
         {/* Bottom Actions */}
         <div className="mt-4 pb-8">
