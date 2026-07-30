@@ -164,6 +164,17 @@ export const GroupInfoPanel: React.FC<GroupInfoPanelProps> = ({ isOpen, onClose 
         {/* Actions */}
         <section className="pt-2 border-t border-[#222d34] space-y-2">
           <button
+            onClick={() => {
+              const inviteLink = `${window.location.origin}/join/${conversation.id}`;
+              navigator.clipboard.writeText(inviteLink);
+              toast.success('Group invite link copied to clipboard!');
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-xl bg-[#00a884]/15 text-[#00a884] hover:bg-[#00a884]/25 transition-colors text-sm font-medium border border-[#00a884]/30"
+          >
+            <UserPlus size={18} /> Invite to Group via Link
+          </button>
+
+          <button
             onClick={handleLeaveGroup}
             className="w-full flex items-center gap-3 p-3 rounded-xl bg-[#f15c6d]/10 text-[#f15c6d] hover:bg-[#f15c6d]/20 transition-colors text-sm font-medium"
           >
