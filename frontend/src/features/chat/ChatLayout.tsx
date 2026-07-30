@@ -27,9 +27,10 @@ import { ForwardMessageModal } from './ForwardMessageModal';
 import { StarredMessagesModal } from './StarredMessagesModal';
 import { DisappearingMessagesModal } from './DisappearingMessagesModal';
 import { ProfilePictureModal } from '../profile/ProfilePictureModal';
-import { PwaInstallButton } from '../../components/PwaInstallButton';
+import { SidebarRail } from '../../components/layout/SidebarRail';
 
 export const ChatLayout: React.FC = () => {
+  const [activeRailTab, setActiveRailTab] = useState<'chats' | 'status' | 'calls' | 'communities'>('chats');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
@@ -40,6 +41,8 @@ export const ChatLayout: React.FC = () => {
   const [isStarredModalOpen, setIsStarredModalOpen] = useState(false);
   const [isDisappearingModalOpen, setIsDisappearingModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isLinkedDevicesOpen, setIsLinkedDevicesOpen] = useState(false);
 
   // Hydrate offline store on mount
   React.useEffect(() => {
@@ -76,6 +79,19 @@ export const ChatLayout: React.FC = () => {
   return (
     <div className="flex h-screen bg-[#111b21] text-white font-sans overflow-hidden relative select-none">
       
+      {/* Far-Left Vertical Icon Rail (WhatsApp Web Desktop Layout) */}
+      <div className="hidden md:flex h-full">
+        <SidebarRail
+          activeTab={activeRailTab}
+          setActiveTab={setActiveRailTab}
+          onOpenSettings={() => setIsCustomizeOpen(true)}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onOpenQrModal={() => setIsQrModalOpen(true)}
+          onOpenLinkedDevices={() => setIsLinkedDevicesOpen(true)}
+          onOpenAI={() => setIsAIOpen(true)}
+        />
+      </div>
+
       {/* Sidebar Chat List */}
       <div className={`${activeConversationId ? 'hidden md:flex' : 'flex'} w-full md:w-auto h-full z-10 shrink-0`}>
         <ChatList 
@@ -250,26 +266,55 @@ export const ChatLayout: React.FC = () => {
           <div className="flex-1 flex flex-col items-center justify-center text-[#8696a0] bg-[#111b21] border-b-[6px] border-[#00a884] relative select-none">
             <div className="flex flex-col items-center text-center max-w-md w-full px-6">
               <div className="relative mb-6">
-                <div className="w-[110px] h-[110px] rounded-full bg-[#202c33] flex items-center justify-center shadow-xl border border-[#2a3942]">
-                  <MessageSquarePlus size={52} className="text-[#00a884]" />
+                <div className="w-[100px] h-[100px] rounded-full bg-[#202c33] flex items-center justify-center shadow-xl border border-[#2a3942]">
+                  <MessageSquarePlus size={48} className="text-[#00a884]" />
                 </div>
-                <span className="absolute -bottom-1 -right-1 w-7 h-7 bg-[#00a884] rounded-full border-2 border-[#111b21] flex items-center justify-center text-[#111b21] font-bold">
-                  ✓
-                </span>
               </div>
               
               <h2 className="text-2xl sm:text-3xl font-light text-[#e9edef] mb-3 font-outfit">Quick Chat Web</h2>
-              <p className="text-xs sm:text-sm text-[#8696a0] leading-relaxed mb-6">
+              <p className="text-xs sm:text-sm text-[#8696a0] leading-relaxed mb-8">
                 Send and receive end-to-end encrypted messages seamlessly.<br className="hidden sm:inline" />
                 Use Quick Chat on up to 4 linked devices simultaneously.
               </p>
               
-              <button 
-                onClick={() => setIsNewChatModalOpen(true)}
-                className="bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] font-bold py-3 px-8 rounded-full transition-transform active:scale-95 shadow-lg shadow-[#00a884]/20 flex items-center gap-2 text-sm"
-              >
-                <span>Start a New Conversation</span>
-              </button>
+              {/* 3 WhatsApp Web Desktop Center Quick Action Buttons (Matching Screenshot) */}
+              <div className="flex items-center justify-center gap-6 sm:gap-8 mb-6">
+                {/* New Conversation Button */}
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => setIsNewChatModalOpen(true)}
+                    className="w-14 h-14 rounded-full bg-[#202c33] hover:bg-[#2a3942] text-[#e9edef] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 border border-[#222d34] shadow-lg"
+                    title="New Conversation"
+                  >
+                    <MessageSquarePlus size={24} />
+                  </button>
+                  <span className="text-[11px] text-[#8696a0] font-medium">New chat</span>
+                </div>
+
+                {/* Add Contact Button */}
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => setIsNewChatModalOpen(true)}
+                    className="w-14 h-14 rounded-full bg-[#202c33] hover:bg-[#2a3942] text-[#e9edef] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 border border-[#222d34] shadow-lg"
+                    title="Add Contact"
+                  >
+                    <User size={24} />
+                  </button>
+                  <span className="text-[11px] text-[#8696a0] font-medium">Add contact</span>
+                </div>
+
+                {/* Ask AI / Meta AI Button */}
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => setIsAIOpen(true)}
+                    className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#a855f7] to-[#ec4899] text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-[#a855f7]/25"
+                    title="Ask AI Assistant"
+                  >
+                    <Bot size={24} />
+                  </button>
+                  <span className="text-[11px] text-[#a855f7] font-medium">Ask AI</span>
+                </div>
+              </div>
             </div>
 
             {/* Bottom Security Footer */}

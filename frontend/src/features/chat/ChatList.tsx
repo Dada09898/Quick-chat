@@ -29,6 +29,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
   const user = useAuthStore(state => state.user);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'chats' | 'status' | 'calls'>('chats');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'unread' | 'favourites' | 'groups'>('all');
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isLinkedDevicesOpen, setIsLinkedDevicesOpen] = useState(false);
@@ -78,14 +79,23 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
   };
 
   const filteredConversations = React.useMemo(() => {
-    if (!searchQuery.trim()) return conversations;
+    let list = conversations;
+    if (categoryFilter === 'unread') {
+      list = list.filter(c => c.unread_count_cache > 0);
+    } else if (categoryFilter === 'favourites') {
+      list = list.filter(c => c.is_pinned);
+    } else if (categoryFilter === 'groups') {
+      list = list.filter(c => !c.is_direct);
+    }
+
+    if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase();
-    return conversations.filter(conv => {
+    return list.filter(conv => {
       const other = getOtherMember(conv);
       const name = other?.display_name || other?.username || other?.email || '';
       return name.toLowerCase().includes(q);
     });
-  }, [conversations, searchQuery]);
+  }, [conversations, searchQuery, categoryFilter]);
 
   const formatTime = React.useCallback((isoString: string) => {
     if (!isoString) return '';
@@ -257,18 +267,16 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
         </div>
       )}
 
-      {/* Search Input */}
-      <div className="p-2 border-b border-[#222d34] bg-[#111b21] shrink-0">
-        <div className="relative flex items-center bg-[#202c33] rounded-lg px-3 py-1.5 h-9">
-          <button className="text-[#8696a0]">
-            <Search size={18} />
-          </button>
+      {/* Search Input & Category Filter Pills */}
+      <div className="p-2 border-b border-[#222d34] bg-[#111b21] shrink-0 space-y-2">
+        <div className="relative flex items-center bg-[#202c33] rounded-xl px-3 py-1.5 h-9 border border-transparent focus-within:border-[#00a884]">
+          <Search size={18} className="text-[#8696a0]" />
           <input 
             type="text" 
             placeholder="Search or start new chat" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent border-none text-[15px] text-[#d1d7db] ml-4 placeholder-[#8696a0] focus:outline-none focus:ring-0"
+            className="w-full bg-transparent border-none text-[14px] text-[#d1d7db] ml-3 placeholder-[#8696a0] focus:outline-none focus:ring-0"
           />
           {searchQuery && (
             <button 
@@ -276,10 +284,34 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
               className="text-[#8696a0] hover:text-[#d1d7db] p-1"
               aria-label="Clear search"
             >
-              <X size={16} />
+              <X size={15} />
             </button>
           )}
         </div>
+
+        {/* Category Filter Pills (WhatsApp Web Style) */}
+        {activeTab === 'chats' && (
+          <div className="flex items-center gap-2 px-1 overflow-x-auto no-scrollbar py-0.5">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'unread', label: 'Unread' },
+              { id: 'favourites', label: 'Favourites' },
+              { id: 'groups', label: 'Groups' },
+            ].map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setCategoryFilter(cat.id as any)}
+                className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
+                  categoryFilter === cat.id
+                    ? 'bg-[#00a884]/20 text-[#00a884] border border-[#00a884]/40'
+                    : 'bg-[#202c33] text-[#8696a0] hover:bg-[#2a3942] hover:text-[#e9edef]'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* List Content */}
