@@ -6,11 +6,12 @@ import { useRealtimeStore } from '../../realtime/store';
 import { useAuthStore } from '../../store/authStore';
 import { ChatList } from './ChatList';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { Menu, User, MessageSquarePlus, Phone, Video, Search, Bot, MoreVertical } from 'lucide-react';
+import { Menu, User, MessageSquarePlus, Phone, Video, Search, Bot, MoreVertical, Star, Trash2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCallStore } from '../calls/CallStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 import { NewChatModal } from './NewChatModal';
 import { RightPanel } from './RightPanel';
@@ -78,6 +79,45 @@ export const ChatLayout: React.FC = () => {
       {/* Main Chat Area */}
       <div className={`${!activeConversationId ? 'hidden md:flex' : 'flex'} flex-1 flex-col h-full min-w-0 bg-[#0b141a]`}>
         {/* Header */}
+        {useChatStore.getState().selectedMessageIds.length > 0 ? (
+          <header className="px-3 md:px-4 py-2 bg-[#202c33] border-b border-[#222d34] flex items-center justify-between z-10 shrink-0 h-[60px] animate-in fade-in duration-200">
+            <div className="flex items-center gap-4 text-[#e9edef]">
+              <button 
+                onClick={() => useChatStore.getState().clearSelection()} 
+                className="p-1.5 hover:bg-[#374248] rounded-full text-[#8696a0] hover:text-[#e9edef] transition"
+              >
+                <X size={20} />
+              </button>
+              <span className="font-medium text-sm text-[#e9edef]">{useChatStore.getState().selectedMessageIds.length} selected</span>
+            </div>
+            <div className="flex items-center gap-3 text-[#8696a0]">
+              <button 
+                onClick={() => {
+                  const ids = useChatStore.getState().selectedMessageIds;
+                  ids.forEach(id => useChatStore.getState().toggleStar(id));
+                  useChatStore.getState().clearSelection();
+                  toast.success(`${ids.length} messages starred!`);
+                }}
+                className="p-2 hover:bg-[#374248] hover:text-[#00a884] rounded-full transition" 
+                title="Star Messages"
+              >
+                <Star size={18} />
+              </button>
+              <button 
+                onClick={() => {
+                  const ids = useChatStore.getState().selectedMessageIds;
+                  ids.forEach(id => useChatStore.getState().removeMessage(id));
+                  useChatStore.getState().clearSelection();
+                  toast.success(`${ids.length} messages deleted!`);
+                }}
+                className="p-2 hover:bg-[#374248] hover:text-red-400 rounded-full transition" 
+                title="Delete Messages"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          </header>
+        ) : (
         <header className="px-3 md:px-4 py-2 pt-[max(8px,env(safe-area-inset-top))] bg-[#202c33]/80 backdrop-blur-md shadow-sm flex items-center justify-between z-10 shrink-0 h-[calc(60px+env(safe-area-inset-top))] relative">
           <div className="flex items-center gap-3">
             {activeConversationId && (
@@ -158,6 +198,7 @@ export const ChatLayout: React.FC = () => {
             )}
           </div>
         </header>
+        )}
 
         {/* AI Assistant Side Panel */}
         {isAIOpen && activeConversationId && (
