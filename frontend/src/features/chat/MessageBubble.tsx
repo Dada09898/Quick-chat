@@ -232,10 +232,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
         {/* Bubble with WhatsApp-style tail */}
         <div 
           onMouseLeave={() => { setIsMenuOpen(false); setShowEmojiPicker(false); }}
-          className={`relative min-w-[120px] max-w-[340px] md:max-w-[420px] shadow-sm text-[14.2px] leading-[19px] break-words
+          style={{
+            fontSize: 'var(--chat-font-size, 14.2px)',
+            backgroundColor: isOwn && !isDeleted ? 'var(--accent-color, #005c4b)' : undefined
+          }}
+          className={`relative min-w-[120px] max-w-[340px] md:max-w-[420px] shadow-sm leading-[19px] break-words
             ${isDeleted ? 'bg-[#202c33] text-[#8696a0] italic rounded-[7.5px] border border-[#222d34] px-[9px] py-[6px] pb-[20px]' :
               isOwn 
-              ? 'wa-bubble-out bg-[#005c4b] text-[#e9edef] rounded-[7.5px] rounded-tr-none px-[9px] py-[6px] pb-[20px]' 
+              ? 'wa-bubble-out text-[#e9edef] rounded-[7.5px] rounded-tr-none px-[9px] py-[6px] pb-[20px]' 
               : 'wa-bubble-in bg-[#202c33] text-[#e9edef] rounded-[7.5px] rounded-tl-none px-[9px] py-[6px] pb-[20px]'
             }
           `}

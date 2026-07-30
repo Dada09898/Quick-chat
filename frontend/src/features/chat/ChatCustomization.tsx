@@ -3,6 +3,8 @@ import { X, Paintbrush, Type, Sun, Moon, Monitor, Palette, Image as ImageIcon, D
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../../store/themeStore';
 import { useChatStore } from './chatStore';
+import toast from 'react-hot-toast';
+import { apiClient } from '../../lib/api';
 
 // Wallpaper options
 const WALLPAPERS = [
@@ -219,17 +221,36 @@ export const ChatCustomization: React.FC<ChatCustomizationProps> = ({ isOpen, on
             Download a formatted text backup of this conversation history.
           </p>
           <button
-            onClick={() => {
+            onClick={async () => {
               const activeConversationId = useChatStore.getState().activeConversationId;
+              if (!activeConversationId) {
+                toast.error('No active conversation selected');
+                return;
+              }
               const messagesRecord = useChatStore.getState().messages;
-              const msgs = Object.values(messagesRecord)
-                .filter(m => m.conversation_id === activeConversationId)
+              let msgs = Object.values(messagesRecord)
+                .filter(m => m.conversation_id === activeConversationId || (m as any).conversation === activeConversationId)
                 .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
+              if (msgs.length === 0) {
+                try {
+                  const res = await apiClient(`/api/chat/messages/?conversation_id=${activeConversationId}`);
+                  if (res.ok) {
+                    const data = await res.json();
+                    msgs = data.results || [];
+                  }
+                } catch (e) { console.error(e); }
+              }
+
+              if (msgs.length === 0) {
+                toast.error('No messages found to export.');
+                return;
+              }
+
               const lines = msgs.map(m => {
-                const time = new Date(m.created_at).toLocaleString();
-                const sender = m.sender_id || 'User';
-                const text = m.decrypted_text || '[Media Attachment]';
+                const time = new Date(m.created_at || (m as any).created_at).toLocaleString();
+                const sender = m.sender_id || (m as any).sender?.username || 'User';
+                const text = m.decrypted_text || m.ciphertext || '[Media Attachment]';
                 return `[${time}] ${sender}: ${text}`;
               });
 
@@ -242,8 +263,9 @@ export const ChatCustomization: React.FC<ChatCustomizationProps> = ({ isOpen, on
               a.download = `quickchat_backup_${Date.now()}.txt`;
               a.click();
               URL.revokeObjectURL(url);
+              toast.success(`Exported ${msgs.length} messages to backup file!`);
             }}
-            className="w-full py-2 bg.00a884 bg-[#00a884]/20 hover:bg-[#00a884]/30 text-[#00a884] border border-[#00a884]/40 font-medium text-xs rounded-lg transition flex items-center justify-center gap-2"
+            className="w-full py-2 bg-[#00a884]/20 hover:bg-[#00a884]/30 text-[#00a884] border border-[#00a884]/40 font-medium text-xs rounded-lg transition flex items-center justify-center gap-2 cursor-pointer"
           >
             <Download size={16} /> Export Chat Transcript (.txt)
           </button>
