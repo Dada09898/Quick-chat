@@ -280,10 +280,17 @@ export const StatusViewerModal: React.FC = () => {
                 {['❤️', '😂', '😮', '😢', '🙏', '🔥', '👏', '🎉'].map((emoji) => (
                   <button
                     key={emoji}
-                    onClick={() => {
-                      const fakeEvent = { preventDefault: () => {} } as any;
-                      setReplyText(`Reacted ${emoji}`);
-                      setTimeout(() => handleSendReply(fakeEvent), 0);
+                    onClick={async () => {
+                      try {
+                        const { apiJson } = await import('../../lib/api');
+                        await apiJson(`/api/chat/statuses/${currentStatus.id}/react/`, {
+                          method: 'POST',
+                          body: { reaction: emoji }
+                        });
+                        toast.success(`Reacted ${emoji} to status!`);
+                      } catch (err) {
+                        console.error(err);
+                      }
                     }}
                     className="hover:scale-130 active:scale-95 transition-transform text-2xl"
                     title={`React ${emoji}`}

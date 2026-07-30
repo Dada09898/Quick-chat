@@ -285,3 +285,18 @@ class UserStatusViewSet(viewsets.ModelViewSet):
         StatusView.objects.get_or_create(status=status_obj, viewer=request.user)
         return Response({'status': 'viewed'}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'])
+    def react(self, request, pk=None):
+        status_obj = self.get_object()
+        reaction_emoji = request.data.get('reaction', '❤️')
+        reply_text = request.data.get('reply_text', '')
+
+        return Response({
+            'status': 'reacted',
+            'reaction': reaction_emoji,
+            'reply_text': reply_text,
+            'status_id': str(status_obj.id),
+            'target_user_id': str(status_obj.user_id)
+        }, status=status.HTTP_200_OK)
+
+

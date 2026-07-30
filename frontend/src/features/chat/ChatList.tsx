@@ -47,6 +47,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onOpenNewChat }) => {
 
   useEffect(() => {
     cleanExpiredStatuses();
+    useStatusStore.getState().fetchStatuses().catch(console.error);
     const fetchConversations = async () => {
       try {
         const res = await apiClient('/api/chat/conversations/');
