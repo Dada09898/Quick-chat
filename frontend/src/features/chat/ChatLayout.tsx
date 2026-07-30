@@ -6,7 +6,7 @@ import { useRealtimeStore } from '../../realtime/store';
 import { useAuthStore } from '../../store/authStore';
 import { ChatList } from './ChatList';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { Menu, User, MessageSquarePlus, Phone, Video, Search, Bot, MoreVertical, Star, Trash2, X } from 'lucide-react';
+import { Menu, User, MessageSquarePlus, Phone, Video, Search, Bot, MoreVertical, Star, Trash2, X, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCallStore } from '../calls/CallStore';
 import { Avatar } from '../../components/ui/Avatar';
