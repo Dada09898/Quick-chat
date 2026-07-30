@@ -224,6 +224,12 @@ class CurrentUserView(views.APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request):
+        user = request.user
+        user.is_active = False
+        user.save()
+        return Response({'status': 'Account deleted'}, status=status.HTTP_204_NO_CONTENT)
+
 class ChangePasswordView(views.APIView):
     def post(self, request):
         old_password = request.data.get('old_password')
