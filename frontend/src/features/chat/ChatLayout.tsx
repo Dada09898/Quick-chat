@@ -66,11 +66,15 @@ export const ChatLayout: React.FC = () => {
   let avatarUrl = undefined;
   let status = remotePresence.status;
   
-  if (activeConversation && activeConversation.members) {
-    const otherMember = activeConversation.members.find((m: any) => m.user && m.user.id !== currentUser?.id)?.user;
-    if (otherMember) {
-      displayName = otherMember.display_name || otherMember.username || otherMember.email?.split('@')[0] || 'Unknown';
-      avatarUrl = otherMember.avatar;
+  if (activeConversation && activeConversation.members && Array.isArray(activeConversation.members)) {
+    const other = activeConversation.members.find((m: any) => {
+      const mId = m?.user?.id || m?.userId || m?.id || m?.user_id;
+      return mId && mId !== currentUser?.id;
+    });
+    const otherUser = other?.user && typeof other.user === 'object' ? other.user : other;
+    if (otherUser) {
+      displayName = otherUser.display_name || otherUser.displayName || otherUser.username || otherUser.email?.split('@')[0] || 'Unknown';
+      avatarUrl = otherUser.avatar;
     }
   }
 

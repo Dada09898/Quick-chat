@@ -1,4 +1,5 @@
 import React from 'react';
+import { getMediaUrl } from '../../lib/api';
 
 interface AvatarProps {
   url?: string;
@@ -8,10 +9,8 @@ interface AvatarProps {
   className?: string;
 }
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
-
 export const Avatar: React.FC<AvatarProps> = ({ url, name, size = 'md', status, className = '' }) => {
-  const resolvedUrl = url && url.startsWith('/') ? `${BASE_URL}${url}` : url;
+  const resolvedUrl = getMediaUrl(url);
 
   const getInitials = (name?: string) => {
     if (!name) return '?';

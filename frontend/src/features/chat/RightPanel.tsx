@@ -66,8 +66,12 @@ export const RightPanel: React.FC = () => {
   if (!activeConversationId) return null;
 
   const conv = conversations.find(c => c.id === activeConversationId);
-  const otherUser = conv?.members?.find((m: any) => m.user && m.user.id !== user?.id)?.user;
-  const displayName = otherUser?.display_name || otherUser?.username || otherUser?.email?.split('@')[0] || 'Unknown User';
+  const otherMember = conv?.members?.find((m: any) => {
+    const mId = m?.user?.id || m?.userId || m?.id || m?.user_id;
+    return mId && mId !== user?.id;
+  });
+  const otherUser = otherMember?.user && typeof otherMember.user === 'object' ? otherMember.user : otherMember;
+  const displayName = otherUser?.display_name || otherUser?.displayName || otherUser?.username || otherUser?.email?.split('@')[0] || 'Unknown User';
 
   // Get all active conversation messages
   const convMessages = Object.values(messages).filter(m => m.conversation_id === activeConversationId && !m.deleted_at);

@@ -88,10 +88,23 @@ export const ChatList: React.FC<ChatListProps> = ({
   };
 
   const getOtherMember = (conv: any) => {
-    if (conv.members && Array.isArray(conv.members)) {
-      return conv.members.find((m: any) => m.user && m.user.id !== user?.id)?.user;
+    if (!conv || !conv.members || !Array.isArray(conv.members)) return null;
+    const other = conv.members.find((m: any) => {
+      const memberId = m?.user?.id || m?.userId || m?.id || m?.user_id;
+      return memberId && memberId !== user?.id;
+    });
+    if (!other) return null;
+    if (other.user && typeof other.user === 'object') {
+      return other.user;
     }
-    return null;
+    return {
+      id: other.userId || other.id || other.user_id,
+      username: other.username,
+      display_name: other.displayName || other.display_name,
+      avatar: other.avatar,
+      email: other.email,
+      presence_status: other.presence_status || other.presenceStatus || 'offline'
+    };
   };
 
   const filteredConversations = React.useMemo(() => {
