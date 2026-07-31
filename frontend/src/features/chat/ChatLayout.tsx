@@ -82,6 +82,25 @@ export const ChatLayout: React.FC = () => {
   }, []);
   
   const activeConversationId = useChatStore(state => state.activeConversationId);
+  
+  // Refresh conversations list on activeConversationId change to sync latest presence_status & last_seen
+  React.useEffect(() => {
+    if (!activeConversationId) return;
+    const syncPresenceAndDetails = async () => {
+      try {
+        const { apiClient } = await import('../../lib/api');
+        const res = await apiClient('/api/chat/conversations/');
+        if (res.ok) {
+          const data = await res.json();
+          const convs = data.results || (Array.isArray(data) ? data : []);
+          useChatStore.getState().setConversations(convs);
+        }
+      } catch (err) {
+        console.error('Failed to refresh conversation presence status:', err);
+      }
+    };
+    syncPresenceAndDetails();
+  }, [activeConversationId]);
   const setActiveConversation = useChatStore(state => state.setActiveConversation);
   const conversations = useChatStore(state => state.conversations);
   const currentUser = useAuthStore(state => state.user);

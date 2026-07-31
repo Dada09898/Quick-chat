@@ -1,6 +1,7 @@
 import json
 import time
 import logging
+from django.utils import timezone
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from chat.websockets.events import ChatEventRouter
@@ -32,6 +33,10 @@ class RealtimeConsumer(AsyncWebsocketConsumer):
         await self.accept()
         logger.info(f"WebSocket connected: User {self.user.email}")
         
+        # Update user presence status in database
+        self.user.presence_status = 'online'
+        await database_sync_to_async(self.user.save)(update_fields=['presence_status'])
+
         # Send direct self-presence-ack to connecting client
         await self.send(text_data=json.dumps({
             'type': 'presence.online',
@@ -52,6 +57,11 @@ class RealtimeConsumer(AsyncWebsocketConsumer):
             for conv_id in conversations:
                 await self.channel_layer.group_discard(f"conversation_{conv_id}", self.channel_name)
             
+            # Update user presence status and last_seen in database
+            self.user.presence_status = 'offline'
+            self.user.last_seen = timezone.now()
+            await database_sync_to_async(self.user.save)(update_fields=['presence_status', 'last_seen'])
+
             # Update presence to offline
             await self.set_online_status(False)
             logger.info(f"WebSocket disconnected: User {self.user.email} (Code: {close_code})")
