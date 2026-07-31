@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CallSession, CallParticipant
+from .models import CallSession
 
 
 class CallHistorySerializer(serializers.ModelSerializer):
