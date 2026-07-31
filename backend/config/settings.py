@@ -142,9 +142,9 @@ SIMPLE_JWT = {
 # Channels / Redis
 REDIS_URL = os.environ.get('REDIS_URL', os.environ.get('REDIS_TLS_URL', None))
 
-if 'pytest' in sys.modules or not REDIS_URL:
-    if 'pytest' not in sys.modules:
-        print("WARNING: REDIS_URL not set! Using InMemoryChannelLayer. For multi-worker production deployments, attach a Redis instance.")
+if DEBUG or 'pytest' in sys.modules or not REDIS_URL:
+    if not DEBUG and 'pytest' not in sys.modules and not REDIS_URL:
+        print("WARNING: Production mode (DEBUG=False) but REDIS_URL is not set! Using InMemoryChannelLayer fallback. Attach a Redis instance in Render env vars for cross-worker WebSocket broadcasts.")
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
