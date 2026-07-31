@@ -1,3 +1,4 @@
+import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -12,6 +13,7 @@ from .pagination import ConversationPagination, MessageCursorPagination
 from .services import ChatService
 from core.storage import LocalStorageProvider
 
+logger = logging.getLogger(__name__)
 storage_provider = LocalStorageProvider()
 
 class UploadStartView(APIView):
