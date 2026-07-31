@@ -18,7 +18,7 @@ class RealtimeConsumer(AsyncWebsocketConsumer):
             return
 
         self.user_group = f"user_{self.user.id}"
-        self.last_message_time = 0
+        self.window_start_time = time.time()
         self.message_count = 0
         
         # Join user specific group
@@ -65,12 +65,12 @@ class RealtimeConsumer(AsyncWebsocketConsumer):
                 await self.close(code=1009)
                 return
 
-            # Frame rate limiting (Token bucket approximation)
+            # Frame rate limiting (1-second fixed window)
             now = time.time()
-            if now - self.last_message_time > 1.0:
+            if now - getattr(self, 'window_start_time', 0) > 1.0:
+                self.window_start_time = now
                 self.message_count = 0
             self.message_count += 1
-            self.last_message_time = now
             
             if self.message_count > 50:
                 logger.warning("WebSocket rejected: Rate limit exceeded")

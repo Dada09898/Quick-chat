@@ -57,7 +57,7 @@ export const ChatLayout: React.FC = () => {
   const conversations = useChatStore(state => state.conversations);
   const currentUser = useAuthStore(state => state.user);
   
-  const { remotePresence, remoteTyping } = useRealtimeStore();
+  const { isConnected, isConnecting, remotePresence, remoteTyping } = useRealtimeStore();
   const setCallSession = useCallStore(state => state.setSession);
   const setCallState = useCallStore(state => state.setState);
 
@@ -419,6 +419,14 @@ export const ChatLayout: React.FC = () => {
               )}
             </div>
           </header>
+        )}
+
+        {/* Connection Reconnecting Indicator */}
+        {!isConnected && (
+          <div className="bg-[#182229] border-b border-[#222d34] px-4 py-1.5 flex items-center justify-center gap-2 text-amber-400 text-xs font-medium animate-pulse z-20 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            <span>{isConnecting ? 'Connecting...' : 'Reconnecting... (Offline mode active)'}</span>
+          </div>
         )}
 
         {/* AI Assistant Side Panel */}

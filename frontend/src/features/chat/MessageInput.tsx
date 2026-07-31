@@ -36,6 +36,7 @@ export const MessageInput: React.FC = () => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingSentRef = useRef<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Restore draft or edit text
@@ -76,7 +77,12 @@ export const MessageInput: React.FC = () => {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
 
-    sendEvent('typing.start', { conversation_id: activeConversationId });
+    const now = Date.now();
+    if (now - lastTypingSentRef.current > 2000) {
+      sendEvent('typing.start', { conversation_id: activeConversationId });
+      lastTypingSentRef.current = now;
+    }
+
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => sendEvent('typing.stop', { conversation_id: activeConversationId }), 2000);
   };
