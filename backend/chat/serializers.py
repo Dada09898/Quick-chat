@@ -13,10 +13,54 @@ class ConversationMemberSerializer(serializers.ModelSerializer):
 
 class ConversationSerializer(serializers.ModelSerializer):
     members = ConversationMemberSerializer(many=True, read_only=True)
+    last_message_preview = serializers.SerializerMethodField()
+    is_pinned = serializers.SerializerMethodField()
+    is_muted = serializers.SerializerMethodField()
+    is_archived = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
-        fields = ['id', 'last_message_id', 'last_activity', 'version', 'unread_count_cache', 'disappearing_messages_timer', 'created_at', 'members']
+        fields = [
+            'id', 'is_direct', 'last_message_id', 'last_message_preview', 
+            'last_activity', 'version', 'unread_count_cache', 
+            'disappearing_messages_timer', 'created_at', 'members',
+            'is_pinned', 'is_muted', 'is_archived'
+        ]
+
+    def get_last_message_preview(self, obj):
+        last_msg = Message.objects.filter(conversation=obj, deleted_at__isnull=True).order_by('-created_at').first()
+        if not last_msg:
+            return ""
+        preview_text = last_msg.ciphertext or ""
+        try:
+            import base64
+            preview_text = base64.b64decode(preview_text).decode('utf-8')
+        except Exception:
+            pass
+        if len(preview_text) > 100:
+            preview_text = preview_text[:97] + '...'
+        return preview_text
+
+    def get_is_pinned(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        member = obj.members.filter(user=request.user).first()
+        return member.is_pinned if member else False
+
+    def get_is_muted(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        member = obj.members.filter(user=request.user).first()
+        return member.is_muted if member else False
+
+    def get_is_archived(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        member = obj.members.filter(user=request.user).first()
+        return member.is_archived if member else False
 
 
 class MediaAttachmentSerializer(serializers.ModelSerializer):
