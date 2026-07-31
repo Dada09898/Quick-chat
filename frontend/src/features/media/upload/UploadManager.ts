@@ -6,6 +6,7 @@ import { stripExif } from '../exif';
 import { apiClient, apiJson } from '../../../lib/api';
 
 interface UploadOptions {
+  skipEncryption?: boolean;
   onProgress?: (progress: number) => void;
   onComplete?: (attachmentId: string, url: string, mediaKeyBase64: string) => void;
   onError?: (error: string) => void;
@@ -55,24 +56,25 @@ export class UploadManager {
       const retryManager = new RetryManager();
 
       // 4. Chunk & Encrypt & Upload
-      let fileHashInput = new Uint8Array(0); // In real app, calculate SHA-256 incrementally
+      let fileHashInput = new Uint8Array(0);
 
       for await (const { index, blob } of chunkManager.getChunks()) {
         if (this.isCancelled) throw new Error("Upload cancelled");
 
         const chunkBuffer = await blob.arrayBuffer();
-        const encryptedChunk = await encryptMediaChunk(this.mediaKey, iv, chunkBuffer);
+        const payloadChunk = this.options.skipEncryption 
+          ? chunkBuffer 
+          : await encryptMediaChunk(this.mediaKey, iv, chunkBuffer);
 
-        // Concatenate for hash (simplified for Sprint 6 demo, actual app uses SubtleCrypto.digest in chunks if supported)
-        const newHashInput = new Uint8Array(fileHashInput.length + encryptedChunk.byteLength);
+        const newHashInput = new Uint8Array(fileHashInput.length + payloadChunk.byteLength);
         newHashInput.set(fileHashInput, 0);
-        newHashInput.set(new Uint8Array(encryptedChunk), fileHashInput.length);
+        newHashInput.set(new Uint8Array(payloadChunk), fileHashInput.length);
         fileHashInput = newHashInput;
 
         await retryManager.execute(async () => {
           const formData = new FormData();
           formData.append('chunk_index', index.toString());
-          formData.append('chunk', new Blob([encryptedChunk]));
+          formData.append('chunk', new Blob([payloadChunk]));
 
           const res = await apiClient(`/api/chat/upload/${session_id}/chunk/`, {
             method: 'POST',

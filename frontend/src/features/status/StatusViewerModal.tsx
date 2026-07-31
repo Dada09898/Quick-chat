@@ -266,7 +266,13 @@ export const StatusViewerModal: React.FC = () => {
                     className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
                   />
                 ) : currentStatus.type === 'video' ? (
-                  <video src={resolvedContent} autoPlay controls={false} className="max-h-full max-w-full object-contain" />
+                  <video 
+                    src={resolvedContent} 
+                    autoPlay 
+                    controls 
+                    playsInline 
+                    className="max-h-full max-w-full object-contain rounded-lg shadow-2xl" 
+                  />
                 ) : (
                   <div className="flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 gap-4">
                     <Music size={64} className="text-[#00a884] animate-bounce" />

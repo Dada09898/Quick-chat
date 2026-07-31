@@ -60,6 +60,7 @@ export const StatusCreateModal: React.FC = () => {
     setUploadProgress(0);
 
     const uploader = new UploadManager(file, {
+      skipEncryption: true,
       onProgress: (progress) => setUploadProgress(progress),
       onComplete: (_attachmentId, url) => {
         setIsUploading(false);
