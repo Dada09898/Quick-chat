@@ -6,7 +6,7 @@ import { useRealtimeStore } from '../../realtime/store';
 import { useAuthStore } from '../../store/authStore';
 import { ChatList } from './ChatList';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { Menu, User, MessageSquarePlus, Phone, Video, Search, Bot, MoreVertical, Star, Trash2, X, Clock, Lock, Info, CheckSquare, Heart, XCircle, Link2, Calendar, UserPlus, MinusCircle } from 'lucide-react';
+import { Menu, User, MessageSquarePlus, Phone, Video, Search, Bot, MoreVertical, Star, Trash2, X, Clock, Lock, Info, CheckSquare, Heart, XCircle, Link2, Calendar, UserPlus, MinusCircle, Pin, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCallStore } from '../calls/CallStore';
 import { Avatar } from '../../components/ui/Avatar';
@@ -493,6 +493,27 @@ export const ChatLayout: React.FC = () => {
         {/* Messages & Input */}
         {activeConversationId ? (
           <>
+            {(() => {
+              const messages = useChatStore.getState().messages;
+              const pinnedIds = useChatStore.getState().pinnedMessageIds;
+              const pinnedMsg = Object.values(messages).find(m => m.conversation_id === activeConversationId && (m.is_pinned || pinnedIds.includes(m.id)));
+              if (!pinnedMsg) return null;
+              return (
+                <div 
+                  className="bg-[#182229] border-b border-[#222d34] px-4 py-2 flex items-center justify-between z-20 shrink-0 cursor-pointer hover:bg-[#202c33] transition"
+                  onClick={() => useChatStore.getState().setScrollToMessageId?.(pinnedMsg.id)}
+                >
+                  <div className="flex items-center gap-3 overflow-hidden text-xs">
+                    <Pin size={14} className="text-[#00a884] shrink-0" />
+                    <div className="truncate">
+                      <span className="font-semibold text-[#00a884] mr-2">Pinned Message</span>
+                      <span className="text-[#d1d7db] truncate">{pinnedMsg.decrypted_text || 'Media attachment'}</span>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="text-[#8696a0] shrink-0" />
+                </div>
+              );
+            })()}
             <MessageList />
             <MessageInput />
           </>
