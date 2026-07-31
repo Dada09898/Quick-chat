@@ -69,12 +69,20 @@ class CloudinaryStorageProvider(StorageProvider):
     def __init__(self):
         import cloudinary
         self.local_provider = LocalStorageProvider()
-        cloudinary.config(
-            cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-            api_key=os.getenv('CLOUDINARY_API_KEY'),
-            api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-            secure=True
-        )
+
+        cloudinary_url = os.getenv('CLOUDINARY_URL')
+        if cloudinary_url:
+            cloudinary.config(cloudinary_url=cloudinary_url, secure=True)
+        else:
+            cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME') or os.getenv('Cloud name') or os.getenv('CLOUD_NAME')
+            api_key = os.getenv('CLOUDINARY_API_KEY') or os.getenv('cloudnary_api_key') or os.getenv('API_KEY')
+            api_secret = os.getenv('CLOUDINARY_API_SECRET') or os.getenv('cloudnary_api_secret') or os.getenv('API_SECRET')
+            cloudinary.config(
+                cloud_name=cloud_name,
+                api_key=api_key,
+                api_secret=api_secret,
+                secure=True
+            )
 
     def save_chunk(self, session_id: str, chunk_index: int, data: bytes) -> str:
         return self.local_provider.save_chunk(session_id, chunk_index, data)
@@ -112,10 +120,12 @@ class CloudinaryStorageProvider(StorageProvider):
         return f"{settings.MEDIA_URL}{file_key}"
 
 def get_storage_provider() -> StorageProvider:
-    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME')
-    api_key = os.getenv('CLOUDINARY_API_KEY')
-    api_secret = os.getenv('CLOUDINARY_API_SECRET')
-    if cloud_name and api_key and api_secret:
+    cloudinary_url = os.getenv('CLOUDINARY_URL')
+    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME') or os.getenv('Cloud name') or os.getenv('CLOUD_NAME')
+    api_key = os.getenv('CLOUDINARY_API_KEY') or os.getenv('cloudnary_api_key') or os.getenv('API_KEY')
+    api_secret = os.getenv('CLOUDINARY_API_SECRET') or os.getenv('cloudnary_api_secret') or os.getenv('API_SECRET')
+
+    if cloudinary_url or (cloud_name and api_key and api_secret):
         try:
             return CloudinaryStorageProvider()
         except Exception as e:
