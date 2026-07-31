@@ -32,7 +32,16 @@ class RealtimeConsumer(AsyncWebsocketConsumer):
         await self.accept()
         logger.info(f"WebSocket connected: User {self.user.email}")
         
-        # Broadcast presence
+        # Send direct self-presence-ack to connecting client
+        await self.send(text_data=json.dumps({
+            'type': 'presence.online',
+            'payload': {
+                'user_id': str(self.user.id),
+                'timestamp': int(time.time() * 1000)
+            }
+        }))
+
+        # Broadcast presence to conversation groups
         await self.set_online_status(True)
 
     async def disconnect(self, close_code):
