@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Image as ImageIcon, Send, Type, Palette, Loader2, Music } from 'lucide-react';
 import { useStatusStore, type StatusFontFamily } from './statusStore';
 import { useAuthStore } from '../../store/authStore';
