@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { offlineDB } from '../../store/offlineStore';
+import { useAuthStore } from '../../store/authStore';
 
 export interface ChatMessage {
   id: string;
@@ -141,47 +142,52 @@ export const useChatStore = create<ChatState>((set, get) => ({
   
   upsertMessage: (msg) => {
     set((state) => {
-      const existing = state.messages[msg.id];
-      const media_attachments = (msg.media_attachments && msg.media_attachments.length > 0)
-        ? msg.media_attachments
-        : (existing?.media_attachments || (msg as any).attachments || []);
+      try {
+        const existing = state.messages[msg.id];
+        const media_attachments = (msg.media_attachments && msg.media_attachments.length > 0)
+          ? msg.media_attachments
+          : (existing?.media_attachments || (msg as any).attachments || []);
 
-      const convId = msg.conversation_id || (typeof (msg as any).conversation === 'string' ? (msg as any).conversation : (msg as any).conversation?.id);
-      const senderId = msg.sender_id || (typeof (msg as any).sender === 'string' ? (msg as any).sender : (msg as any).sender?.id);
+        const convId = msg.conversation_id || (typeof (msg as any).conversation === 'string' ? (msg as any).conversation : (msg as any).conversation?.id);
+        const senderId = msg.sender_id || (typeof (msg as any).sender === 'string' ? (msg as any).sender : (msg as any).sender?.id);
 
-      const updatedMsg = {
-        ...existing,
-        ...msg,
-        conversation_id: convId,
-        sender_id: senderId,
-        media_attachments
-      };
+        const updatedMsg = {
+          ...existing,
+          ...msg,
+          conversation_id: convId,
+          sender_id: senderId,
+          media_attachments
+        };
 
-      const currentUserId = useAuthStore.getState().user?.id;
-      const isActiveConv = state.activeConversationId === convId;
-      const isFromOther = currentUserId && senderId && senderId !== currentUserId;
+        const currentUserId = useAuthStore.getState().user?.id;
+        const isActiveConv = state.activeConversationId === convId;
+        const isFromOther = currentUserId && senderId && senderId !== currentUserId;
 
-      const updatedConversations = state.conversations.map(conv => {
-        if (conv.id === convId) {
-          return {
-            ...conv,
-            last_message_preview: msg.decrypted_text || 'Media attachment',
-            last_activity: msg.created_at || new Date().toISOString(),
-            unread_count_cache: isFromOther && !isActiveConv 
-              ? (conv.unread_count_cache || 0) + 1 
-              : conv.unread_count_cache
-          };
-        }
-        return conv;
-      }).sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+        const updatedConversations = state.conversations.map(conv => {
+          if (conv.id === convId) {
+            return {
+              ...conv,
+              last_message_preview: msg.decrypted_text || 'Media attachment',
+              last_activity: msg.created_at || new Date().toISOString(),
+              unread_count_cache: isFromOther && !isActiveConv 
+                ? (conv.unread_count_cache || 0) + 1 
+                : conv.unread_count_cache
+            };
+          }
+          return conv;
+        }).sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
 
-      return {
-        messages: {
-          ...state.messages,
-          [msg.id]: updatedMsg
-        },
-        conversations: updatedConversations
-      };
+        return {
+          messages: {
+            ...state.messages,
+            [msg.id]: updatedMsg
+          },
+          conversations: updatedConversations
+        };
+      } catch (err) {
+        console.error("Critical error in upsertMessage state updater:", err);
+        return state;
+      }
     });
 
     const convId = msg.conversation_id || (msg as any).conversation;

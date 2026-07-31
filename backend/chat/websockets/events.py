@@ -95,10 +95,6 @@ class ChatEventRouter:
             try:
                 conversation_group = f"conversation_{msg.conversation_id}"
                 await consumer.channel_layer.group_send(conversation_group, event_data)
-
-                for member_id in member_user_ids:
-                    user_group = f"user_{member_id}"
-                    await consumer.channel_layer.group_send(user_group, event_data)
             except Exception as broadcast_err:
                 logger.error(f"WebSocket group_send broadcast error (Redis connection issue?): {broadcast_err}")
             
