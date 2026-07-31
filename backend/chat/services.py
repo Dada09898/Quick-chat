@@ -129,8 +129,22 @@ class ChatService:
             'created_at': created_at_str,
             'reply_to_id': data.get('reply_to_id')
         }
-        
-        return ChatRepository.save_message(msg_data)
+
+        msg = ChatRepository.save_message(msg_data)
+
+        # 6. Link any uploaded media attachment(s) to this message.
+        media_ids = data.get('media_ids')
+        if not media_ids:
+            single_id = data.get('media_id')
+            media_ids = [single_id] if single_id else []
+
+        if media_ids:
+            from .models import MediaAttachment
+            MediaAttachment.objects.filter(
+                id__in=media_ids, sender=sender, message__isnull=True,
+            ).update(message=msg, status='completed')
+
+        return msg
 
     @staticmethod
     def process_message_edit(user, data):

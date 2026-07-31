@@ -30,8 +30,8 @@ class MediaAttachmentSerializer(serializers.ModelSerializer):
         ]
 
     def get_url(self, obj):
-        from core.storage import LocalStorageProvider
-        return LocalStorageProvider().get_presigned_url(obj.s3_key)
+        from core.storage import storage_provider
+        return storage_provider.get_presigned_url(obj.s3_key)
 
 
 class MessageReactionSerializer(serializers.ModelSerializer):

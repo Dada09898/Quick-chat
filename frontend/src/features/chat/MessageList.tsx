@@ -98,12 +98,10 @@ export const MessageList: React.FC = () => {
     }
   }, [activeConversationId]);
 
-  useEffect(() => {
-    // Scroll to bottom when a new message arrives (if already at bottom)
-    if (messages.length > 0) {
-      virtuosoRef.current?.scrollToIndex({ index: 'LAST', align: 'end', behavior: 'smooth' });
-    }
-  }, [messages.length, remoteTyping]);
+  // NOTE: auto-scroll-to-bottom on new messages is handled by the Virtuoso
+  // `followOutput` prop below (see JSX), not a manual effect. A manual
+  // `virtuosoRef.current?.scrollToIndex(...)` call races with
+  // Virtuoso's internal re-measurement right after `data` changes.
 
   const loadMoreMessages = useCallback(async () => {
     if (!activeConversationId || isLoadingMore || !hasMoreMessages) return;
@@ -127,7 +125,7 @@ export const MessageList: React.FC = () => {
           msgs.forEach((msg: any) => {
             const media_attachments = (msg.attachments || []).map((att: any) => ({
               id: att.id,
-              url: `${BASE_URL}/media/${att.s3_key}`,
+              url: att.url || (att.s3_key ? (att.s3_key.startsWith('http') ? att.s3_key : `${BASE_URL}/media/${att.s3_key}`) : ''),
               type: 'image',
               media_key: undefined
             }));
@@ -173,6 +171,7 @@ export const MessageList: React.FC = () => {
         className="flex-1 w-full h-full"
         data={messages}
         initialTopMostItemIndex={messages.length - 1}
+        followOutput={(isAtBottom) => isAtBottom ? 'smooth' : false}
         atBottomStateChange={(atBottom) => setShowScrollBottom(!atBottom)}
         startReached={loadMoreMessages}
         itemContent={(index, msg) => {
