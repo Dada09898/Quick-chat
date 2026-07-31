@@ -39,13 +39,19 @@ export async function apiClient(
   options: RequestInit = {}
 ): Promise<Response> {
   const url = `${getApiBaseUrl()}${path}`;
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token') || localStorage.getItem('quickchat_token');
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> || {}),
+  };
+  
+  if (token && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   
   return fetch(url, {
     ...options,
     credentials: 'include',
-    headers: {
-      ...options.headers,
-    },
+    headers,
   });
 }
 

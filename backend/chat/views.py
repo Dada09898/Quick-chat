@@ -253,12 +253,18 @@ class MessageViewSet(viewsets.ModelViewSet):
         if not conversation_id:
             return Message.objects.none()
             
+        try:
+            import uuid
+            conv_uuid = uuid.UUID(str(conversation_id))
+        except Exception:
+            conv_uuid = conversation_id
+
         # Ensure user is a member of the requested conversation
-        if not ConversationMember.objects.filter(conversation_id=conversation_id, user=self.request.user).exists():
+        if not ConversationMember.objects.filter(conversation_id=conv_uuid, user=self.request.user).exists():
             return Message.objects.none()
             
         # Optimize N+1 queries by prefetching sender profiles, attachments, and reactions
-        return Message.objects.filter(conversation_id=conversation_id).select_related('sender').prefetch_related('attachments', 'reactions')
+        return Message.objects.filter(conversation_id=conv_uuid).select_related('sender').prefetch_related('attachments', 'reactions')
 
     def create(self, request, *args, **kwargs):
         conversation_id = request.data.get('conversation_id')
