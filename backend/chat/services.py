@@ -59,9 +59,15 @@ class ChatService:
         signature = data.get('signature')
         created_at_str = data.get('created_at')
         
-        # 1. Replay Protection - Duplicate Check
-        if not msg_id or ChatValidator.is_duplicate_message(msg_id):
-            raise ValueError("Duplicate or invalid message ID")
+        # 1. Replay Protection - Duplicate Check & Idempotency
+        if not msg_id:
+            raise ValueError("Missing or invalid message ID")
+
+        from .models import Message
+        existing_msg = Message.objects.filter(id=msg_id).first()
+        if existing_msg:
+            logger.info(f"Duplicate message ID {msg_id} received; returning existing message.")
+            return existing_msg
 
         # 2. Timestamp Window Check (5 mins)
         if not created_at_str or not ChatValidator.validate_timestamp_window(created_at_str):
