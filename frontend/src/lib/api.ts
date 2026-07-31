@@ -25,7 +25,7 @@ export const getMediaUrl = (path?: string | null): string => {
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
     return path;
   }
-  const baseUrl = getApiBaseUrl();
+  const baseUrl = getApiBaseUrl().replace(/\/+$/, '');
   const formattedPath = path.startsWith('/') ? path : `/${path}`;
   return `${baseUrl}${formattedPath}`;
 };

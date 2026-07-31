@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Pause, Play, Trash2, Send, Eye, VolumeX, Music } from 'lucide-react';
@@ -12,8 +12,6 @@ import toast from 'react-hot-toast';
 import { apiJson, getMediaUrl } from '../../lib/api';
 import { encryptMessageText } from '../../utils/cryptoUtils';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
-
 export const StatusViewerModal: React.FC = () => {
   const { activeViewerGroup, activeViewerIndex, closeViewer, nextStatus, prevStatus, deleteStatus, setViewersModalStatusId, toggleMuteUser, mutedUserIds } = useStatusStore();
   const currentUser = useAuthStore(state => state.user);
@@ -23,15 +21,34 @@ export const StatusViewerModal: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [progress, setProgress] = useState(0);
+  const [imageError, setImageError] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const currentStatus: StatusItem | undefined = activeViewerGroup?.statuses[activeViewerIndex];
   const isOwn = currentStatus?.userId === currentUser?.id || activeViewerGroup?.userId === currentUser?.id;
 
-  // Auto-advance timer (5 seconds per status)
-  useEffect(() => {
-    if (!currentStatus || isPaused) return;
+  const getDetectedType = (item: StatusItem): 'text' | 'image' | 'video' | 'audio' => {
+    if (item.type === 'video' || item.type === 'audio') return item.type;
+    const content = (item.content || '').toLowerCase();
+    if (content.match(/\.(mp4|webm|mov|mkv|avi)$/) || content.includes('/video/')) return 'video';
+    if (content.match(/\.(mp3|wav|ogg|m4a|aac)$/) || content.includes('/audio/')) return 'audio';
+    if (content.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/) || content.includes('/image/') || content.startsWith('http') || content.startsWith('/media/')) return 'image';
+    return item.type || 'text';
+  };
 
+  const detectedType = currentStatus ? getDetectedType(currentStatus) : 'text';
+
+  useEffect(() => {
+    setImageError(false);
     setProgress(0);
+  }, [currentStatus, activeViewerIndex]);
+
+  // Auto-advance timer (5 seconds per text/image status, video/audio synced via playback events)
+  useEffect(() => {
+    if (!currentStatus || isPaused || detectedType === 'video' || detectedType === 'audio') return;
+
     const intervalTime = 50; // update progress every 50ms
     const totalDuration = 5000; // 5s total
     const increment = (intervalTime / totalDuration) * 100;
@@ -48,7 +65,7 @@ export const StatusViewerModal: React.FC = () => {
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [currentStatus, activeViewerIndex, isPaused, nextStatus]);
+  }, [currentStatus, activeViewerIndex, isPaused, detectedType, nextStatus]);
 
   if (!activeViewerGroup || !currentStatus) return null;
 
@@ -250,31 +267,63 @@ export const StatusViewerModal: React.FC = () => {
                   }
                 }}
               >
-                {currentStatus.type === 'text' ? (
+                {detectedType === 'text' ? (
                   <div
                     className="text-center px-6 text-2xl sm:text-3xl font-medium text-white break-words leading-snug"
                     style={{ fontFamily: currentStatus.fontFamily || 'sans-serif' }}
                   >
                     {currentStatus.content}
                   </div>
-                ) : currentStatus.type === 'image' ? (
+                ) : detectedType === 'image' && !imageError ? (
                   <img
                     src={resolvedContent}
                     alt="Status"
                     className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
+                    onError={() => setImageError(true)}
                   />
-                ) : currentStatus.type === 'video' ? (
-                  <video 
-                    src={resolvedContent} 
-                    autoPlay 
-                    controls 
-                    playsInline 
-                    className="max-h-full max-w-full object-contain rounded-lg shadow-2xl" 
-                  />
-                ) : (
+                ) : detectedType === 'video' ? (
+                  <div className="relative flex items-center justify-center max-h-full max-w-full">
+                    <video
+                      ref={videoRef}
+                      src={resolvedContent}
+                      autoPlay
+                      controls
+                      playsInline
+                      className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
+                      onTimeUpdate={() => {
+                        if (videoRef.current && videoRef.current.duration) {
+                          setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100);
+                        }
+                      }}
+                      onEnded={() => nextStatus()}
+                      onError={(e) => {
+                        console.error("Video load error:", e);
+                        setImageError(true);
+                      }}
+                    />
+                  </div>
+                ) : detectedType === 'audio' ? (
                   <div className="flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 gap-4">
                     <Music size={64} className="text-[#00a884] animate-bounce" />
-                    <audio src={resolvedContent} autoPlay controls className="w-full max-w-xs" />
+                    <audio
+                      ref={audioRef}
+                      src={resolvedContent}
+                      autoPlay
+                      controls
+                      className="w-full max-w-xs"
+                      onTimeUpdate={() => {
+                        if (audioRef.current && audioRef.current.duration) {
+                          setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+                        }
+                      }}
+                      onEnded={() => nextStatus()}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 text-center gap-3 text-[#8696a0]">
+                    <X size={48} className="text-red-400" />
+                    <span className="text-sm font-medium text-white">Media unavailable or format unsupported</span>
+                    {currentStatus.caption && <span className="text-xs italic text-gray-400">{currentStatus.caption}</span>}
                   </div>
                 )}
 
