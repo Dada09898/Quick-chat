@@ -10,6 +10,8 @@ def api_client():
 def test_user_registration(api_client):
     response = api_client.post('/api/auth/register/', {
         'email': 'test@enterprise.local',
+        'username': 'testuser',
+        'display_name': 'Test User',
         'password': 'securepassword123',
         'timezone': 'America/New_York'
     })

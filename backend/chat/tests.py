@@ -63,12 +63,13 @@ def test_process_incoming_message(test_user_and_device, conversation):
     }
     
     msg = ChatService.process_incoming_message(user, data)
-    assert msg.id == uuid6.UUID(msg_id)
+    assert str(msg.id) == msg_id
     assert msg.sequence_number == 2 # Initial version=1, +1 = 2
     assert msg.ciphertext == ciphertext
 
 @pytest.mark.django_db
-def test_message_rejects_invalid_signature(test_user_and_device, conversation):
+def test_message_rejects_invalid_signature(test_user_and_device, conversation, monkeypatch):
+    monkeypatch.setattr('chat.services._is_e2ee_required', lambda: True)
     user, device, private_key = test_user_and_device
     msg_id = str(uuid6.uuid7())
     

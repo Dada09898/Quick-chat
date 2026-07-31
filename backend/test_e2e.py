@@ -12,9 +12,12 @@ from datetime import datetime, timezone
 BASE_URL = os.environ.get("TEST_API_URL", "http://127.0.0.1:8000")
 WS_URL = BASE_URL.replace("http", "ws") + "/ws/realtime/"
 
+import pytest
+
 def print_step(msg):
     print(f"\n---> {msg}")
 
+@pytest.mark.asyncio
 async def test_e2e_websockets():
     print_step(f"Testing against {BASE_URL}")
     
