@@ -91,11 +91,7 @@ export const MessageList: React.FC = () => {
       }
     };
     
-    // Check if we need to fetch (e.g. if we have 0 messages for this conv)
-    const existingCount = Object.values(useChatStore.getState().messages).filter(m => m.conversation_id === activeConversationId).length;
-    if (existingCount === 0) {
-      fetchHistory();
-    }
+    fetchHistory();
   }, [activeConversationId]);
 
   // NOTE: auto-scroll-to-bottom on new messages is handled by the Virtuoso

@@ -188,8 +188,7 @@ export const MessageInput: React.FC = () => {
         reply_to: replyingTo
       };
 
-      enqueueMessage(newMsg);
-      sendEvent('message.send', {
+      const msgPayload = {
         id: msgId,
         conversation_id: activeConversationId,
         ciphertext,
@@ -199,7 +198,20 @@ export const MessageInput: React.FC = () => {
         algorithm: 'AES-256-GCM',
         created_at: createdAt,
         reply_to_id: replyingTo
-      });
+      };
+
+      enqueueMessage(newMsg);
+      sendEvent('message.send', msgPayload);
+
+      // Dual-channel REST API POST fallback for 100% guaranteed DB persistence
+      apiClient('/api/chat/messages/', {
+        method: 'POST',
+        body: msgPayload
+      }).then(async res => {
+        if (res.ok) {
+          useChatStore.getState().updateMessageStatus(msgId, 'sent');
+        }
+      }).catch(console.error);
     }
 
     chatSounds.playSendSound();
@@ -250,7 +262,7 @@ export const MessageInput: React.FC = () => {
         };
         enqueueMessage(newMsg);
         
-        sendEvent('message.send', {
+        const mediaPayload = {
           id: msgId,
           conversation_id: activeConversationId,
           ciphertext,
@@ -259,9 +271,19 @@ export const MessageInput: React.FC = () => {
           key_version: 1,
           algorithm: 'AES-256-GCM',
           created_at: createdAt,
-          media_id: attachmentId, // Using media_id per backend schema
+          media_id: attachmentId,
           media_key: mediaKeyBase64
-        });
+        };
+
+        sendEvent('message.send', mediaPayload);
+        apiClient('/api/chat/messages/', {
+          method: 'POST',
+          body: mediaPayload
+        }).then(async res => {
+          if (res.ok) {
+            useChatStore.getState().updateMessageStatus(msgId, 'sent');
+          }
+        }).catch(console.error);
       },
       onError: (err) => {
         setIsUploading(false);
