@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { apiJson } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
+import toast from 'react-hot-toast';
 
 export interface StatusViewerRecord {
   userId: string;
@@ -251,9 +252,11 @@ export const useStatusStore = create<StatusState>((set, get) => ({
       } else {
         const errData = await res.json().catch(() => ({}));
         console.error('Failed to post status:', errData);
+        toast.error('Failed to post status');
       }
     } catch (err) {
       console.error('Error creating status:', err);
+      toast.error('Failed to post status');
     }
   },
 
