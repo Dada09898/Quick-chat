@@ -72,11 +72,11 @@ async function kdfDerive(
   info: string
 ): Promise<Uint8Array> {
   const ikm = await window.crypto.subtle.importKey(
-    'raw', inputKeyMaterial, { name: 'HKDF' }, false, ['deriveBits']
+    'raw', inputKeyMaterial as BufferSource, { name: 'HKDF' }, false, ['deriveBits']
   );
   const encoder = new TextEncoder();
   const bits = await window.crypto.subtle.deriveBits(
-    { name: 'HKDF', salt, info: encoder.encode(info), hash: 'SHA-256' },
+    { name: 'HKDF', salt: salt as BufferSource, info: encoder.encode(info), hash: 'SHA-256' },
     ikm,
     512 // 64 bytes = 32 for new root key + 32 for chain key
   );
@@ -93,7 +93,7 @@ async function advanceChain(chainKeyBase64: string): Promise<{ newChainKey: stri
   
   // Chain key advance: HMAC-SHA256(chainKey, 0x01) for message key
   const ckMaterial = await window.crypto.subtle.importKey(
-    'raw', chainKey, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    'raw', chainKey as BufferSource, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
   
   const messageKeyBuf = await window.crypto.subtle.sign(

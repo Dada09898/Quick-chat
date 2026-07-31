@@ -8,7 +8,7 @@ import type { EncryptedPayload } from './types';
 export async function importAesGcmKey(rawKey: Uint8Array): Promise<CryptoKey> {
   return await window.crypto.subtle.importKey(
     'raw',
-    rawKey,
+    rawKey as BufferSource,
     { name: 'AES-GCM' },
     false,
     ['encrypt', 'decrypt']
@@ -27,11 +27,11 @@ export async function encryptAESGCM(key: CryptoKey, plaintext: string): Promise<
     const ciphertextBuffer = await window.crypto.subtle.encrypt(
       {
         name: 'AES-GCM',
-        iv: iv,
+        iv: iv as BufferSource,
         tagLength: 128, // 16 bytes auth tag
       },
       key,
-      data
+      data as BufferSource
     );
 
     // Wipe plaintext from memory
@@ -57,11 +57,11 @@ export async function decryptAESGCM(key: CryptoKey, payload: EncryptedPayload): 
     const decryptedBuffer = await window.crypto.subtle.decrypt(
       {
         name: 'AES-GCM',
-        iv: iv,
+        iv: iv as BufferSource,
         tagLength: 128,
       },
       key,
-      ciphertext
+      ciphertext as BufferSource
     );
 
     const decoder = new TextDecoder();

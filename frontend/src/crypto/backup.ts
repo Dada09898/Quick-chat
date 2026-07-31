@@ -66,7 +66,7 @@ export async function restoreEncryptedBackup(backupJson: string, recoveryKeyBase
 
     const importedIdentity = await window.crypto.subtle.importKey(
       'pkcs8',
-      identityRaw,
+      identityRaw as BufferSource,
       { name: 'Ed25519' },
       true,
       ['sign']
@@ -74,7 +74,7 @@ export async function restoreEncryptedBackup(backupJson: string, recoveryKeyBase
 
     const importedExchange = await window.crypto.subtle.importKey(
       'pkcs8',
-      exchangeRaw,
+      exchangeRaw as BufferSource,
       { name: 'X25519' },
       true,
       ['deriveKey', 'deriveBits']
