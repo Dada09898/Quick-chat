@@ -77,6 +77,9 @@ class LoginView(views.APIView):
         
         response = Response({
             'user': UserSerializer(user).data,
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'token': access_token,
             'session_id': session.id
         }, status=status.HTTP_200_OK)
         
@@ -118,7 +121,7 @@ class RefreshTokenView(views.APIView):
             access_token = str(refresh.access_token)
             new_refresh_token = str(refresh)
             
-            response = Response({'detail': 'Token refreshed'}, status=status.HTTP_200_OK)
+            response = Response({'detail': 'Token refreshed', 'access_token': access_token, 'token': access_token}, status=status.HTTP_200_OK)
             
             response.set_cookie(
                 settings.SIMPLE_JWT['AUTH_COOKIE'],

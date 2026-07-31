@@ -22,6 +22,12 @@ export const LoginPage = () => {
       });
       if (res.ok) {
         const data = await res.json();
+        const t = data.access_token || data.token;
+        if (t) {
+          localStorage.setItem('access_token', t);
+          localStorage.setItem('token', t);
+          localStorage.setItem('quickchat_token', t);
+        }
         setUser(data.user);
       } else {
         const err = await res.json().catch(() => ({}));
