@@ -11,10 +11,9 @@ from .models import UploadSession, MediaAttachment, Conversation, ConversationMe
 from .serializers import ConversationSerializer, MessageSerializer
 from .pagination import ConversationPagination, MessageCursorPagination
 from .services import ChatService
-from core.storage import LocalStorageProvider
+from core.storage import storage_provider
 
 logger = logging.getLogger(__name__)
-storage_provider = LocalStorageProvider()
 
 class UploadStartView(APIView):
     permission_classes = [IsAuthenticated]

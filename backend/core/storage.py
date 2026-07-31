@@ -61,6 +61,66 @@ class LocalStorageProvider(StorageProvider):
         return final_key
 
     def get_presigned_url(self, file_key: str, expires_in: int = 3600) -> str:
-        # In a real S3 provider, this generates a presigned URL.
-        # For local dev, we just return a local URL
+        if file_key.startswith('http://') or file_key.startswith('https://'):
+            return file_key
         return f"{settings.MEDIA_URL}{file_key}"
+
+class CloudinaryStorageProvider(StorageProvider):
+    def __init__(self):
+        import cloudinary
+        self.local_provider = LocalStorageProvider()
+        cloudinary.config(
+            cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+            api_key=os.getenv('CLOUDINARY_API_KEY'),
+            api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+            secure=True
+        )
+
+    def save_chunk(self, session_id: str, chunk_index: int, data: bytes) -> str:
+        return self.local_provider.save_chunk(session_id, chunk_index, data)
+
+    def assemble_chunks(self, session_id: str, chunk_count: int, expected_hash: str, extension: str = 'bin') -> str:
+        local_key = self.local_provider.assemble_chunks(session_id, chunk_count, expected_hash, extension)
+        local_path = os.path.join(settings.MEDIA_ROOT, local_key)
+
+        import cloudinary.uploader
+        resource_type = 'auto'
+        ext_lower = extension.lower()
+        if ext_lower in ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'mp3', 'wav', 'm4a', 'aac']:
+            resource_type = 'video'
+        elif ext_lower in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']:
+            resource_type = 'image'
+
+        upload_result = cloudinary.uploader.upload(
+            local_path,
+            public_id=f"quickchat/{session_id}",
+            resource_type=resource_type,
+            overwrite=True
+        )
+
+        if os.path.exists(local_path):
+            try:
+                os.remove(local_path)
+            except Exception:
+                pass
+
+        return upload_result.get('secure_url', upload_result.get('url', local_key))
+
+    def get_presigned_url(self, file_key: str, expires_in: int = 3600) -> str:
+        if file_key.startswith('http://') or file_key.startswith('https://'):
+            return file_key
+        return f"{settings.MEDIA_URL}{file_key}"
+
+def get_storage_provider() -> StorageProvider:
+    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME')
+    api_key = os.getenv('CLOUDINARY_API_KEY')
+    api_secret = os.getenv('CLOUDINARY_API_SECRET')
+    if cloud_name and api_key and api_secret:
+        try:
+            return CloudinaryStorageProvider()
+        except Exception as e:
+            print(f"Cloudinary initialization error, fallback to LocalStorageProvider: {e}")
+            return LocalStorageProvider()
+    return LocalStorageProvider()
+
+storage_provider = get_storage_provider()
