@@ -137,18 +137,53 @@ export const useChatStore = create<ChatState>((set, get) => ({
         ? msg.media_attachments
         : (existing?.media_attachments || (msg as any).attachments || []);
 
-      const updated = {
+      const updatedMsg = {
         ...existing,
         ...msg,
         media_attachments
       };
+
+      const convId = msg.conversation_id || (msg as any).conversation;
+      const currentUserId = useAuthStore.getState().user?.id;
+      const isActiveConv = state.activeConversationId === convId;
+      const isFromOther = currentUserId && msg.sender_id && msg.sender_id !== currentUserId;
+
+      const updatedConversations = state.conversations.map(conv => {
+        if (conv.id === convId) {
+          return {
+            ...conv,
+            last_message_preview: msg.decrypted_text || 'Media attachment',
+            last_activity: msg.created_at || new Date().toISOString(),
+            unread_count_cache: isFromOther && !isActiveConv 
+              ? (conv.unread_count_cache || 0) + 1 
+              : conv.unread_count_cache
+          };
+        }
+        return conv;
+      }).sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+
       return {
         messages: {
           ...state.messages,
-          [msg.id]: updated
-        }
+          [msg.id]: updatedMsg
+        },
+        conversations: updatedConversations
       };
     });
+
+    const convId = msg.conversation_id || (msg as any).conversation;
+    const hasConv = get().conversations.some(c => c.id === convId);
+    if (!hasConv && convId) {
+      import('../../lib/api').then(({ apiClient }) => {
+        apiClient('/api/chat/conversations/').then(async res => {
+          if (res.ok) {
+            const data = await res.json();
+            set({ conversations: data.results || [] });
+          }
+        }).catch(console.error);
+      });
+    }
+
     // Persist message to IndexedDB
     offlineDB.cacheMessage({
       id: msg.id,

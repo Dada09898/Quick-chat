@@ -67,8 +67,11 @@ class ChatEventRouter:
                         'type': att.s3_key.split('.')[-1] if '.' in att.s3_key else 'file'
                     })
 
-            conversation_group = f"conversation_{msg.conversation_id}"
-            await consumer.channel_layer.group_send(conversation_group, {
+            member_user_ids = await database_sync_to_async(
+                lambda: list(msg.conversation.members.values_list('user_id', flat=True))
+            )()
+
+            event_data = {
                 'type': 'forward_event',
                 'sender_id': str(consumer.user.id),
                 'payload': {
@@ -87,7 +90,14 @@ class ChatEventRouter:
                         'attachments': attachments_data
                     }
                 }
-            })
+            }
+
+            conversation_group = f"conversation_{msg.conversation_id}"
+            await consumer.channel_layer.group_send(conversation_group, event_data)
+
+            for member_id in member_user_ids:
+                user_group = f"user_{member_id}"
+                await consumer.channel_layer.group_send(user_group, event_data)
             
         except ValueError as e:
             logger.error(f"Message processing failed (ValueError): {str(e)}")
