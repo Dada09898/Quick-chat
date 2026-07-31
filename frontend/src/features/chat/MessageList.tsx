@@ -27,8 +27,13 @@ export const MessageList: React.FC = () => {
 
   // Memoize sorted messages for 60fps performance (essential for 100k+ messages)
   const messages = useMemo(() => {
+    if (!activeConversationId) return [];
+    const targetId = String(activeConversationId).toLowerCase();
     return Object.values(messagesRecord)
-      .filter(m => m.conversation_id === activeConversationId)
+      .filter(m => {
+        const mConvId = m.conversation_id || (m as any).conversation;
+        return mConvId && String(mConvId).toLowerCase() === targetId;
+      })
       .sort((a, b) => {
         if (a.sequence_number && b.sequence_number) {
            return a.sequence_number - b.sequence_number;
@@ -61,10 +66,10 @@ export const MessageList: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           // Assuming the API returns a paginated list in data.results
-          const msgs = data.results || [];
+          const msgs = data.results || (Array.isArray(data) ? data : []);
           // Need to upsert them into the store
           const upsertMessage = useChatStore.getState().upsertMessage;
-          msgs.forEach(async (msg: any) => {
+          for (const msg of msgs) {
             const media_attachments = (msg.attachments || []).map((att: any) => ({
               id: att.id,
               url: att.url || (att.s3_key?.startsWith('http') ? att.s3_key : `${BASE_URL}/media/${att.s3_key}`),
@@ -75,16 +80,18 @@ export const MessageList: React.FC = () => {
             }));
 
             const decrypted_text = await decryptMessageText(msg);
+            const convId = String(msg.conversation_id || msg.conversation || activeConversationId);
+            const senderId = String(msg.sender_id || (typeof msg.sender === 'object' ? msg.sender?.id : msg.sender) || '');
 
             upsertMessage({
               ...msg,
-              conversation_id: msg.conversation || msg.conversation_id,
-              sender_id: msg.sender?.id || msg.sender_id,
+              conversation_id: convId,
+              sender_id: senderId,
               decrypted_text,
               status: msg.status || 'delivered',
               media_attachments
             });
-          });
+          }
         }
       } catch (err) {
         console.error("Failed to fetch message history", err);
