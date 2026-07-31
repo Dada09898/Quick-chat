@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Pause, Play, Trash2, Send, Eye, VolumeX } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Pause, Play, Trash2, Send, Eye, VolumeX, Music } from 'lucide-react';
 import { useStatusStore, type StatusItem } from './statusStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
@@ -11,6 +11,8 @@ import toast from 'react-hot-toast';
 
 import { apiJson } from '../../lib/api';
 import { encryptMessageText } from '../../utils/cryptoUtils';
+
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export const StatusViewerModal: React.FC = () => {
   const { activeViewerGroup, activeViewerIndex, closeViewer, nextStatus, prevStatus, deleteStatus, setViewersModalStatusId, toggleMuteUser, mutedUserIds } = useStatusStore();
@@ -228,46 +230,59 @@ export const StatusViewerModal: React.FC = () => {
           </div>
 
           {/* Content Area - Supports Tap & Press-and-Hold to Pause */}
-          <div
-            className="relative flex-1 w-full flex items-center justify-center p-4 cursor-pointer"
-            onMouseDown={() => setIsPaused(true)}
-            onMouseUp={() => setIsPaused(false)}
-            onTouchStart={() => setIsPaused(true)}
-            onTouchEnd={() => setIsPaused(false)}
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - rect.left;
-              if (x < rect.width / 3) {
-                prevStatus();
-              } else if (x > (rect.width * 2) / 3) {
-                nextStatus();
-              }
-            }}
-          >
-            {currentStatus.type === 'text' ? (
-              <div
-                className="text-center px-6 text-2xl sm:text-3xl font-medium text-white break-words leading-snug"
-                style={{ fontFamily: currentStatus.fontFamily || 'sans-serif' }}
-              >
-                {currentStatus.content}
-              </div>
-            ) : currentStatus.type === 'image' ? (
-              <img
-                src={currentStatus.content}
-                alt="Status"
-                className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
-              />
-            ) : (
-              <video src={currentStatus.content} autoPlay controls={false} className="max-h-full max-w-full object-contain" />
-            )}
+          {(() => {
+            const resolvedContent = currentStatus.content && currentStatus.content.startsWith('/')
+              ? `${BASE_URL}${currentStatus.content}`
+              : currentStatus.content;
 
-            {/* Caption */}
-            {currentStatus.caption && (
-              <div className="absolute bottom-6 left-4 right-4 bg-black/60 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl text-center text-sm font-medium">
-                {currentStatus.caption}
+            return (
+              <div
+                className="relative flex-1 w-full flex items-center justify-center p-4 cursor-pointer"
+                onMouseDown={() => setIsPaused(true)}
+                onMouseUp={() => setIsPaused(false)}
+                onTouchStart={() => setIsPaused(true)}
+                onTouchEnd={() => setIsPaused(false)}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  if (x < rect.width / 3) {
+                    prevStatus();
+                  } else if (x > (rect.width * 2) / 3) {
+                    nextStatus();
+                  }
+                }}
+              >
+                {currentStatus.type === 'text' ? (
+                  <div
+                    className="text-center px-6 text-2xl sm:text-3xl font-medium text-white break-words leading-snug"
+                    style={{ fontFamily: currentStatus.fontFamily || 'sans-serif' }}
+                  >
+                    {currentStatus.content}
+                  </div>
+                ) : currentStatus.type === 'image' ? (
+                  <img
+                    src={resolvedContent}
+                    alt="Status"
+                    className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
+                  />
+                ) : currentStatus.type === 'video' ? (
+                  <video src={resolvedContent} autoPlay controls={false} className="max-h-full max-w-full object-contain" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 gap-4">
+                    <Music size={64} className="text-[#00a884] animate-bounce" />
+                    <audio src={resolvedContent} autoPlay controls className="w-full max-w-xs" />
+                  </div>
+                )}
+
+                {/* Caption */}
+                {currentStatus.caption && (
+                  <div className="absolute bottom-6 left-4 right-4 bg-black/60 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl text-center text-sm font-medium">
+                    {currentStatus.caption}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           {/* Viewers Bar for Own Status */}
           {isOwn && (

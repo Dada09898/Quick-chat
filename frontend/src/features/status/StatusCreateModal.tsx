@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Image as ImageIcon, Send, Type, Palette, Loader2 } from 'lucide-react';
+import { X, Image as ImageIcon, Send, Type, Palette, Loader2, Music } from 'lucide-react';
 import { useStatusStore, type StatusFontFamily } from './statusStore';
 import { useAuthStore } from '../../store/authStore';
 import { UploadManager } from '../media/upload/UploadManager';
 import toast from 'react-hot-toast';
+
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const COLOR_PALETTE = [
   '#005c4b', // WhatsApp Dark Green
@@ -35,7 +34,7 @@ export const StatusCreateModal: React.FC = () => {
   const [fontIndex, setFontIndex] = useState(0);
   const [mediaUrl, setMediaUrl] = useState('');
   const [caption, setCaption] = useState('');
-  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  const [mediaType, setMediaType] = useState<'image' | 'video' | 'audio'>('image');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -45,7 +44,14 @@ export const StatusCreateModal: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setMediaType(file.type.startsWith('video') ? 'video' : 'image');
+    if (file.type.startsWith('video')) {
+      setMediaType('video');
+    } else if (file.type.startsWith('audio')) {
+      setMediaType('audio');
+    } else {
+      setMediaType('image');
+    }
+
     setMode('media');
     setIsUploading(true);
     setUploadProgress(0);
@@ -135,8 +141,8 @@ export const StatusCreateModal: React.FC = () => {
                 mode === 'media' ? 'border-[#00a884] text-[#00a884]' : 'border-transparent text-[#8696a0] hover:text-white'
               }`}
             >
-              <ImageIcon size={18} /> Photo / Video
-              <input type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaSelect} />
+              <ImageIcon size={18} /> Media (Photo/Video/Audio)
+              <input type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleMediaSelect} />
             </label>
           </div>
 
@@ -183,20 +189,25 @@ export const StatusCreateModal: React.FC = () => {
                 {mediaUrl ? (
                   <div className="relative rounded-xl overflow-hidden h-64 bg-black flex items-center justify-center">
                     {mediaType === 'image' ? (
-                      <img src={mediaUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
+                      <img src={mediaUrl.startsWith('/') ? `${BASE_URL}${mediaUrl}` : mediaUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
+                    ) : mediaType === 'video' ? (
+                      <video src={mediaUrl.startsWith('/') ? `${BASE_URL}${mediaUrl}` : mediaUrl} controls className="max-h-full max-w-full object-contain" />
                     ) : (
-                      <video src={mediaUrl} controls className="max-h-full max-w-full object-contain" />
+                      <div className="flex flex-col items-center justify-center p-4 gap-3">
+                        <Music size={48} className="text-[#00a884]" />
+                        <audio src={mediaUrl.startsWith('/') ? `${BASE_URL}${mediaUrl}` : mediaUrl} controls className="w-full max-w-xs" />
+                      </div>
                     )}
-                    <label className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black text-white rounded-full cursor-pointer">
+                    <label className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black text-white rounded-full cursor-pointer z-10">
                       <ImageIcon size={16} />
-                      <input type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaSelect} />
+                      <input type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleMediaSelect} />
                     </label>
                   </div>
                 ) : (
                   <label className="h-48 border-2 border-dashed border-[#222d34] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#00a884] transition text-[#8696a0] hover:text-white">
                     <ImageIcon size={36} className="mb-2 text-[#00a884]" />
-                    <span className="text-sm font-medium">Click to select photo or video</span>
-                    <input type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaSelect} />
+                    <span className="text-sm font-medium">Click to select photo, video or audio</span>
+                    <input type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleMediaSelect} />
                   </label>
                 )}
 
