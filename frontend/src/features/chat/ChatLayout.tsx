@@ -31,6 +31,35 @@ import { SidebarRail } from '../../components/layout/SidebarRail';
 import { MobileNavBar } from '../../components/layout/MobileNavBar';
 import { PwaInstallButton } from '../../components/PwaInstallButton';
 
+const formatLastSeen = (lastSeen?: string | number | null): string => {
+  if (!lastSeen) return 'offline';
+  try {
+    const date = new Date(lastSeen);
+    if (isNaN(date.getTime())) return 'offline';
+
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    if (isToday) {
+      return `last seen today at ${timeStr}`;
+    }
+    if (isYesterday) {
+      return `last seen yesterday at ${timeStr}`;
+    }
+
+    const dayMonthStr = date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    return `last seen ${dayMonthStr} at ${timeStr}`;
+  } catch {
+    return 'offline';
+  }
+};
+
 export const ChatLayout: React.FC = () => {
   const [activeRailTab, setActiveRailTab] = useState<'chats' | 'status' | 'calls' | 'communities'>('chats');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
@@ -64,19 +93,22 @@ export const ChatLayout: React.FC = () => {
   const activeConversation = conversations.find(c => c.id === activeConversationId);
   let displayName = 'Private Chat';
   let avatarUrl = undefined;
-  let status = remotePresence.status;
+  let otherUser: any = null;
   
   if (activeConversation && activeConversation.members && Array.isArray(activeConversation.members)) {
     const other = activeConversation.members.find((m: any) => {
       const mId = m?.user?.id || m?.userId || m?.id || m?.user_id;
       return mId && mId !== currentUser?.id;
     });
-    const otherUser = other?.user && typeof other.user === 'object' ? other.user : other;
+    otherUser = other?.user && typeof other.user === 'object' ? other.user : other;
     if (otherUser) {
       displayName = otherUser.display_name || otherUser.displayName || otherUser.username || otherUser.email?.split('@')[0] || 'Unknown';
       avatarUrl = otherUser.avatar;
     }
   }
+
+  const isPeerOnline = remotePresence.status === 'online' || otherUser?.presence_status === 'online';
+  const lastSeenRaw = remotePresence.lastSeen || otherUser?.last_seen;
 
   const handleStartCall = (isVideo: boolean) => {
     if (!activeConversationId) return;
@@ -245,8 +277,10 @@ export const ChatLayout: React.FC = () => {
                     <p className="text-[13px] text-[#8696a0] leading-tight mt-[1px] min-h-[16px]">
                       {remoteTyping ? (
                         <TypingIndicator />
+                      ) : isPeerOnline ? (
+                        <span className="text-[#00a884] font-medium transition-opacity duration-300">online</span>
                       ) : (
-                        <span className="transition-opacity duration-300">{status === 'online' ? 'online' : ''}</span>
+                        <span className="transition-opacity duration-300">{formatLastSeen(lastSeenRaw)}</span>
                       )}
                     </p>
                   )}
