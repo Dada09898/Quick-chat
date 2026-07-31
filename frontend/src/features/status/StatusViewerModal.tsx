@@ -9,7 +9,7 @@ import { useChatStore } from '../chat/chatStore';
 import { useRealtime } from '../../realtime/RealtimeProvider';
 import toast from 'react-hot-toast';
 
-import { apiJson } from '../../lib/api';
+import { apiJson, getMediaUrl } from '../../lib/api';
 import { encryptMessageText } from '../../utils/cryptoUtils';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';
@@ -231,9 +231,7 @@ export const StatusViewerModal: React.FC = () => {
 
           {/* Content Area - Supports Tap & Press-and-Hold to Pause */}
           {(() => {
-            const resolvedContent = currentStatus.content && currentStatus.content.startsWith('/')
-              ? `${BASE_URL}${currentStatus.content}`
-              : currentStatus.content;
+            const resolvedContent = getMediaUrl(currentStatus.content);
 
             return (
               <div

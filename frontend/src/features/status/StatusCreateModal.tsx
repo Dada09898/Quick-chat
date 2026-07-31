@@ -5,6 +5,7 @@ import { X, Image as ImageIcon, Send, Type, Palette, Loader2, Music } from 'luci
 import { useStatusStore, type StatusFontFamily } from './statusStore';
 import { useAuthStore } from '../../store/authStore';
 import { UploadManager } from '../media/upload/UploadManager';
+import { getMediaUrl } from '../../lib/api';
 import toast from 'react-hot-toast';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';
@@ -193,13 +194,13 @@ export const StatusCreateModal: React.FC = () => {
                 {mediaUrl ? (
                   <div className="relative rounded-xl overflow-hidden h-64 bg-black flex items-center justify-center">
                     {mediaType === 'image' ? (
-                      <img src={mediaUrl.startsWith('/') ? `${BASE_URL}${mediaUrl}` : mediaUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
+                      <img src={getMediaUrl(mediaUrl)} alt="Preview" className="max-h-full max-w-full object-contain" />
                     ) : mediaType === 'video' ? (
-                      <video src={mediaUrl.startsWith('/') ? `${BASE_URL}${mediaUrl}` : mediaUrl} controls className="max-h-full max-w-full object-contain" />
+                      <video src={getMediaUrl(mediaUrl)} controls className="max-h-full max-w-full object-contain" />
                     ) : (
                       <div className="flex flex-col items-center justify-center p-4 gap-3">
                         <Music size={48} className="text-[#00a884]" />
-                        <audio src={mediaUrl.startsWith('/') ? `${BASE_URL}${mediaUrl}` : mediaUrl} controls className="w-full max-w-xs" />
+                        <audio src={getMediaUrl(mediaUrl)} controls className="w-full max-w-xs" />
                       </div>
                     )}
                     <label className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black text-white rounded-full cursor-pointer z-10">
