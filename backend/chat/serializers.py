@@ -93,13 +93,15 @@ class ReadReceiptSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     attachments = MediaAttachmentSerializer(many=True, read_only=True)
     sender = UserSerializer(read_only=True)
+    sender_id = serializers.UUIDField(source='sender.id', read_only=True)
+    conversation_id = serializers.UUIDField(source='conversation.id', read_only=True)
     reactions = MessageReactionSerializer(many=True, read_only=True)
     read_receipts = ReadReceiptSerializer(many=True, read_only=True)
 
     class Meta:
         model = Message
         fields = [
-            'id', 'conversation', 'sequence_number', 'sender', 'reply_to',
+            'id', 'conversation', 'conversation_id', 'sequence_number', 'sender', 'sender_id', 'reply_to',
             'ciphertext', 'nonce', 'signature', 'key_version', 'algorithm',
             'is_edited', 'created_at', 'server_timestamp', 'attachments', 'reactions', 'read_receipts'
         ]

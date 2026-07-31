@@ -146,16 +146,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
         ? msg.media_attachments
         : (existing?.media_attachments || (msg as any).attachments || []);
 
+      const convId = msg.conversation_id || (typeof (msg as any).conversation === 'string' ? (msg as any).conversation : (msg as any).conversation?.id);
+      const senderId = msg.sender_id || (typeof (msg as any).sender === 'string' ? (msg as any).sender : (msg as any).sender?.id);
+
       const updatedMsg = {
         ...existing,
         ...msg,
+        conversation_id: convId,
+        sender_id: senderId,
         media_attachments
       };
 
-      const convId = msg.conversation_id || (msg as any).conversation;
       const currentUserId = useAuthStore.getState().user?.id;
       const isActiveConv = state.activeConversationId === convId;
-      const isFromOther = currentUserId && msg.sender_id && msg.sender_id !== currentUserId;
+      const isFromOther = currentUserId && senderId && senderId !== currentUserId;
 
       const updatedConversations = state.conversations.map(conv => {
         if (conv.id === convId) {
