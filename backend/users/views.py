@@ -1,19 +1,23 @@
 import pyotp
 import qrcode
 import base64
+import logging
 from io import BytesIO
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import authenticate
-from rest_framework import status, views, permissions
+from rest_framework import status, views, permissions, generics
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import generics
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+from rest_framework.throttling import ScopedRateThrottle
 from django.db import transaction
 from django.db.models import Q
 from core.models import SecurityAuditLog
-from .models import Device, Session, CustomUser, FriendRequest, Contact
+from .models import Device, Session, CustomUser, FriendRequest, Contact, SupportTicket, AISetting
 from .serializers import UserSerializer, DeviceSerializer, SessionSerializer, RegisterSerializer, UserSearchSerializer, FriendRequestSerializer, ContactSerializer
+
+logger = logging.getLogger(__name__)
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -30,14 +34,6 @@ class LoginView(views.APIView):
 
         if not email_or_username or not password:
             return Response({'error': 'Please provide both email/username and password.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Auto-seed default test users if database is fresh/empty
-        if CustomUser.objects.count() == 0:
-            try:
-                CustomUser.objects.create_user(email='user_a@example.com', username='user_a', display_name='User A', password='password123', is_user_a=True)
-                CustomUser.objects.create_user(email='user_b@example.com', username='user_b', display_name='User B', password='password123', is_user_a=False)
-            except Exception as e:
-                logger.error(f"Auto-seed failed: {e}")
 
         target_user = CustomUser.objects.filter(
             Q(email__iexact=email_or_username) | Q(username__iexact=email_or_username)
@@ -143,11 +139,6 @@ class RefreshTokenView(views.APIView):
             return response
         except Exception:
             return Response({'error': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
-
-import logging  # noqa: E402
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken  # noqa: E402
-
-logger = logging.getLogger(__name__)
 
 class LogoutView(views.APIView):
     def post(self, request):
@@ -309,11 +300,6 @@ class TOTPVerifyView(views.APIView):
             return Response({'detail': 'TOTP verified and saved.'})
         return Response({'error': 'Invalid code'}, status=status.HTTP_400_BAD_REQUEST)
 
-class DeviceListView(views.APIView):
-    def get(self, request):
-        devices = Device.objects.filter(user=request.user)
-        return Response(DeviceSerializer(devices, many=True).data)
-
 class DeviceRegisterView(views.APIView):
     def post(self, request):
         serializer = DeviceSerializer(data=request.data)
@@ -346,8 +332,6 @@ class SessionListView(views.APIView):
     def get(self, request):
         sessions = Session.objects.filter(user=request.user, is_active=True)
         return Response(SessionSerializer(sessions, many=True).data)
-
-from rest_framework.throttling import ScopedRateThrottle
 
 class UserSearchView(generics.ListAPIView):
     serializer_class = UserSearchSerializer
@@ -479,12 +463,10 @@ class SupportTicketView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        from .models import SupportTicket
         tickets = SupportTicket.objects.filter(user=request.user).values()
         return Response(list(tickets))
 
     def post(self, request):
-        from .models import SupportTicket
         ticket = SupportTicket.objects.create(
             user=request.user,
             ticket_type=request.data.get('ticket_type', 'bug'),
@@ -498,7 +480,6 @@ class AISettingView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        from .models import AISetting
         setting, _ = AISetting.objects.get_or_create(user=request.user)
         return Response({
             'system_prompt': setting.system_prompt,
@@ -508,7 +489,6 @@ class AISettingView(views.APIView):
         })
 
     def patch(self, request):
-        from .models import AISetting
         setting, _ = AISetting.objects.get_or_create(user=request.user)
         if 'system_prompt' in request.data:
             setting.system_prompt = request.data['system_prompt']
