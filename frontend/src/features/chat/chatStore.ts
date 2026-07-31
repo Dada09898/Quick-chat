@@ -61,7 +61,7 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: {},
-  activeConversationId: null,
+  activeConversationId: typeof window !== 'undefined' ? sessionStorage.getItem('quickchat_active_conv') : null,
   conversations: [],
   outbox: [],
   selectedMessageIds: [],
@@ -75,7 +75,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
   editingMessageId: null,
   scrollToMessageId: null,
   
-  setActiveConversation: (id) => set({ activeConversationId: id, selectedMessageIds: [], isRightPanelOpen: false, replyingTo: null, editingMessageId: null }),
+  setActiveConversation: (id) => {
+    if (typeof window !== 'undefined') {
+      if (id) {
+        sessionStorage.setItem('quickchat_active_conv', id);
+      } else {
+        sessionStorage.removeItem('quickchat_active_conv');
+      }
+    }
+    set({ activeConversationId: id, selectedMessageIds: [], isRightPanelOpen: false, replyingTo: null, editingMessageId: null });
+  },
   setScrollToMessageId: (id) => set({ scrollToMessageId: id }),
   setReplyingTo: (id) => set({ replyingTo: id }),
   setForwardingMessageIds: (ids) => set({ forwardingMessageIds: ids }),
@@ -328,8 +337,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const draftsMap: Record<string, string> = {};
       cachedDrafts.forEach(d => { draftsMap[d.conversationId] = d.text; });
 
+      const formattedConvs = cachedConvs.map((c: any) => ({
+        ...c,
+        is_direct: c.is_direct ?? c.isDirect ?? false,
+        last_message_preview: c.last_message_preview || c.lastMessagePreview || '',
+        last_activity: c.last_activity || c.lastActivity || new Date().toISOString(),
+        unread_count_cache: c.unread_count_cache ?? c.unreadCount ?? 0,
+        is_pinned: c.is_pinned ?? c.isPinned ?? false,
+        is_muted: c.is_muted ?? c.isMuted ?? false,
+        is_archived: c.is_archived ?? c.isArchived ?? false,
+        members: c.members || []
+      }));
+
       set({
-        conversations: cachedConvs,
+        conversations: formattedConvs,
         drafts: draftsMap,
         outbox: outboxMsgs.map(m => ({
           id: m.id,
