@@ -162,77 +162,90 @@ export const MessageList: React.FC = () => {
         backgroundBlendMode: 'overlay'
       }}
     >
-      <Virtuoso
-        ref={virtuosoRef}
-        className="flex-1 w-full h-full"
-        data={messages}
-        initialTopMostItemIndex={messages.length - 1}
-        followOutput={(isAtBottom) => isAtBottom ? 'smooth' : false}
-        atBottomStateChange={(atBottom) => setShowScrollBottom(!atBottom)}
-        startReached={loadMoreMessages}
-        itemContent={(index, msg) => {
-          const prevMsg = index > 0 ? messages[index - 1] : null;
-          let showDateSeparator = false;
-          let dateText = '';
-          
-          if (!prevMsg) {
-            showDateSeparator = true;
-          } else {
-            const prevDate = new Date(prevMsg.created_at).toDateString();
-            const currDate = new Date(msg.created_at).toDateString();
-            if (prevDate !== currDate) {
+      {messages.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none">
+          <div className="bg-[#182229] border border-[#222d34] rounded-xl p-4 max-w-sm flex flex-col items-center gap-2 shadow-lg">
+            <span className="text-amber-400 text-xs font-semibold uppercase tracking-wider">🔒 End-to-End Encrypted</span>
+            <p className="text-xs text-[#8696a0] leading-relaxed">
+              Messages and calls are end-to-end encrypted. No one outside of this chat can read or listen to them.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <Virtuoso
+          key={activeConversationId}
+          ref={virtuosoRef}
+          style={{ height: '100%', width: '100%' }}
+          className="flex-1"
+          data={messages}
+          initialTopMostItemIndex={Math.max(0, messages.length - 1)}
+          followOutput={(isAtBottom) => isAtBottom ? 'smooth' : false}
+          atBottomStateChange={(atBottom) => setShowScrollBottom(!atBottom)}
+          startReached={loadMoreMessages}
+          itemContent={(index, msg) => {
+            const prevMsg = index > 0 ? messages[index - 1] : null;
+            let showDateSeparator = false;
+            let dateText = '';
+            
+            if (!prevMsg) {
               showDateSeparator = true;
-            }
-          }
-          
-          if (showDateSeparator) {
-            const date = new Date(msg.created_at);
-            const today = new Date();
-            const yest = new Date();
-            yest.setDate(yest.getDate() - 1);
-            if (date.toDateString() === today.toDateString()) {
-              dateText = 'TODAY';
-            } else if (date.toDateString() === yest.toDateString()) {
-              dateText = 'YESTERDAY';
             } else {
-              dateText = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+              const prevDate = new Date(prevMsg.created_at).toDateString();
+              const currDate = new Date(msg.created_at).toDateString();
+              if (prevDate !== currDate) {
+                showDateSeparator = true;
+              }
             }
-          }
+            
+            if (showDateSeparator) {
+              const date = new Date(msg.created_at);
+              const today = new Date();
+              const yest = new Date();
+              yest.setDate(yest.getDate() - 1);
+              if (date.toDateString() === today.toDateString()) {
+                dateText = 'TODAY';
+              } else if (date.toDateString() === yest.toDateString()) {
+                dateText = 'YESTERDAY';
+              } else {
+                dateText = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+              }
+            }
 
-          return (
-            <div className={`px-[5px] py-[1px] flex flex-col ${highlightedMessageId === msg.id ? 'bg-[#00a884]/10 transition-all duration-500' : ''}`}>
-              {showDateSeparator && (
-                <div className="flex justify-center my-2.5">
-                  <span className="bg-[#182229] text-[#8696a0] text-[12.5px] px-3 py-1 rounded-lg shadow-sm font-medium">
-                    {dateText}
-                  </span>
-                </div>
-              )}
-              <MessageBubble 
-                key={msg.id} 
-                message={msg} 
-                isOwn={msg.sender_id === userId}
-              />
-            </div>
-          );
-        }}
-        components={{
-          Header: () => isLoadingMore ? (
-            <div className="flex justify-center py-3">
-              <div className="w-6 h-6 border-2 border-[#00a884] border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : !hasMoreMessages && messages.length > 0 ? (
-            <div className="flex justify-center py-3">
-              <span className="bg-[#182229] text-[#8696a0] text-[12px] px-3 py-1 rounded-lg">Beginning of conversation</span>
-            </div>
-          ) : null,
-          Footer: () => remoteTyping ? (
-            <div className="self-start mb-4 bg-[#202c33] text-[#00a884] px-4 py-2 rounded-lg rounded-tl-none text-[14px] font-medium animate-pulse w-max mt-2">
-              typing...
-            </div>
-          ) : null
-        }}
-      />
+            return (
+              <div className={`px-[5px] py-[1px] flex flex-col ${highlightedMessageId === msg.id ? 'bg-[#00a884]/10 transition-all duration-500' : ''}`}>
+                {showDateSeparator && (
+                  <div className="flex justify-center my-2.5">
+                    <span className="bg-[#182229] text-[#8696a0] text-[12.5px] px-3 py-1 rounded-lg shadow-sm font-medium">
+                      {dateText}
+                    </span>
+                  </div>
+                )}
+                <MessageBubble 
+                  key={msg.id} 
+                  message={msg} 
+                  isOwn={msg.sender_id === userId}
+                />
+              </div>
+            );
+          }}
+          components={{
+            Header: () => isLoadingMore ? (
+              <div className="flex justify-center py-3">
+                <div className="w-6 h-6 border-2 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : !hasMoreMessages && messages.length > 0 ? (
+              <div className="flex justify-center py-3">
+                <span className="bg-[#182229] text-[#8696a0] text-[12px] px-3 py-1 rounded-lg">Beginning of conversation</span>
+              </div>
+            ) : null,
+            Footer: () => remoteTyping ? (
+              <div className="self-start mb-4 bg-[#202c33] text-[#00a884] px-4 py-2 rounded-lg rounded-tl-none text-[14px] font-medium animate-pulse w-max mt-2">
+                typing...
+              </div>
+            ) : null
+          }}
+        />
+      )}
 
       {/* Floating Jump to Bottom Button */}
       {showScrollBottom && (
