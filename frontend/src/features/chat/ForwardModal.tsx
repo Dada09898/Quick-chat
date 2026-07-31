@@ -40,7 +40,7 @@ export const ForwardModal: React.FC = () => {
           sender_id: user.id,
           ciphertext,
           nonce: 'pending',
-          signature: 'VERIFIED',
+          signature: 'UNVERIFIED',
           key_version: 1,
           algorithm: 'AES-256-GCM',
           created_at: createdAt,
@@ -58,7 +58,7 @@ export const ForwardModal: React.FC = () => {
           conversation_id: convId,
           ciphertext,
           nonce: 'pending',
-          signature: 'VERIFIED',
+          signature: 'UNVERIFIED',
           key_version: 1,
           algorithm: 'AES-256-GCM',
           created_at: createdAt
