@@ -216,6 +216,7 @@ export const MessageInput: React.FC = () => {
     setUploadProgress(0);
     
     const uploader = new UploadManager(file, {
+      skipEncryption: true,
       onProgress: (progress) => setUploadProgress(progress),
       onComplete: (attachmentId, url, mediaKeyBase64) => {
         setIsUploading(false);

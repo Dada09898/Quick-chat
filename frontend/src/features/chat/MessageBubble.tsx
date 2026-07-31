@@ -10,6 +10,7 @@ import { useChatStore } from './chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ClientLinkPreview } from './ClientLinkPreview';
 import { useRealtime } from '../../realtime/RealtimeProvider';
+import { getMediaUrl } from '../../lib/api';
 import { layoutVariants, springPresets } from '../../motion';
 import { AudioBubble } from './AudioBubble';
 import { DocumentCard } from './DocumentCard';
@@ -188,11 +189,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   };
 
   // Helper to format attachment media URL
-  const getMediaUrl = (mediaItem?: any) => {
-    if (mediaItem?.url) return mediaItem.url;
-    if (mediaItem?.s3_key) {
-      return mediaItem.s3_key.startsWith('http') ? mediaItem.s3_key : `${VITE_API_URL}/media/${mediaItem.s3_key}`;
-    }
+  const formatMediaUrl = (mediaItem?: any) => {
+    if (typeof mediaItem === 'string') return getMediaUrl(mediaItem);
+    if (mediaItem?.url) return getMediaUrl(mediaItem.url);
+    if (mediaItem?.s3_key) return getMediaUrl(mediaItem.s3_key);
     return '';
   };
 
@@ -374,7 +374,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
           {!isDeleted && hasAttachments && (
             <div className="-mx-[9px] -mt-[6px] mb-1">
               {rawAttachments.map((media, idx) => {
-                const mediaUrl = getMediaUrl(media);
+                const mediaUrl = formatMediaUrl(media);
                 const type = getMediaType(media);
 
                 if (type === 'audio') {
@@ -397,7 +397,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                       src={mediaUrl} 
                       alt="Attachment" 
                       onClick={() => setViewImageFull(mediaUrl)}
-                      className="w-full h-auto max-h-[320px] object-cover cursor-pointer hover:opacity-95 transition-opacity" 
+                      className="w-full h-auto max-h-[320px] object-cover cursor-pointer hover:opacity-95 transition-opacity bg-[#182229]" 
                       loading="lazy" 
                       decoding="async" 
                     />
@@ -413,21 +413,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               {(mediaEmojiPrefix === '📷' || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg'].includes(mediaFilenameText.split('.').pop()?.toLowerCase() || '')) ? (
                 <div className="rounded-[8px] overflow-hidden bg-[#182229] relative flex items-center justify-center min-h-[140px] max-w-[280px] border border-[#222d34]">
                   <img 
-                    src={mediaFilenameText.startsWith('http') || mediaFilenameText.startsWith('blob:') || mediaFilenameText.startsWith('data:') ? mediaFilenameText : `${VITE_API_URL}/media/${mediaFilenameText}`}
+                    src={getMediaUrl(mediaFilenameText.startsWith('http') || mediaFilenameText.startsWith('blob:') || mediaFilenameText.startsWith('data:') ? mediaFilenameText : `/media/${mediaFilenameText}`)}
                     alt={mediaFilenameText || 'Photo'} 
-                    onError={(e) => {
-                      const parent = (e.target as HTMLElement).parentElement;
-                      if (parent) {
-                        parent.innerHTML = `<div class="p-3 flex items-center gap-3 text-[#d1d7db] bg-[#182229] w-full"><div class="p-2.5 bg-[#00a884]/20 text-[#00a884] rounded-lg shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div><div class="flex flex-col min-w-0"><span class="text-xs font-medium text-[#e9edef] truncate">${mediaFilenameText}</span><span class="text-[10px] text-[#8696a0]">Photo • Tap to download</span></div></div>`;
-                      }
-                    }}
-                    onClick={() => setViewImageFull(mediaFilenameText.startsWith('http') ? mediaFilenameText : `${VITE_API_URL}/media/${mediaFilenameText}`)}
+                    onClick={() => setViewImageFull(getMediaUrl(mediaFilenameText.startsWith('http') ? mediaFilenameText : `/media/${mediaFilenameText}`))}
                     className="w-full h-auto max-h-[260px] object-cover cursor-pointer hover:opacity-95 transition-opacity" 
                     loading="lazy" 
                   />
                 </div>
               ) : (
-                <DocumentCard url={`${VITE_API_URL}/media/${mediaFilenameText}`} filename={mediaFilenameText || 'Document'} isOwn={isOwn} />
+                <DocumentCard url={getMediaUrl(`/media/${mediaFilenameText}`)} filename={mediaFilenameText || 'Document'} isOwn={isOwn} />
               )}
             </div>
           )}
