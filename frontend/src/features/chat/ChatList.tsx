@@ -173,10 +173,10 @@ export const ChatList: React.FC<ChatListProps> = ({
         onClose={() => setIsLinkedDevicesOpen(false)}
       />
 
-      {/* Clean WhatsApp Mobile & Web Header */}
+      {/* Clean QuickChat Mobile & Web Header */}
       <div className="px-4 py-3 border-b border-[#222d34] flex items-center justify-between bg-[#111b21] md:bg-[#202c33] z-10 shrink-0 h-[60px] relative">
         <h2 className="text-[22px] font-bold text-[#e9edef] tracking-tight font-sans">
-          WhatsApp
+          QuickChat
         </h2>
         
         <div className="flex items-center gap-2 text-[#aebac1] relative">

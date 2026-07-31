@@ -144,7 +144,7 @@ export const QrLoginModal: React.FC<QrLoginModalProps> = ({ isOpen, onClose, onO
               </ol>
             </div>
 
-            {/* WhatsApp Web Style QR Code Frame */}
+            {/* QuickChat Style QR Code Frame */}
             <div className="relative p-4 bg-white rounded-3xl shadow-2xl border-4 border-[#00a884]/40 flex items-center justify-center overflow-hidden">
               {/* Corner Green Accents */}
               <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#00a884] z-20" />
@@ -166,7 +166,7 @@ export const QrLoginModal: React.FC<QrLoginModalProps> = ({ isOpen, onClose, onO
                 className="w-56 h-56 object-contain rounded-xl"
               />
 
-              {/* WhatsApp Icon Badge in Center */}
+              {/* QuickChat Icon Badge in Center */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                 <div className="w-11 h-11 rounded-full bg-white p-1 shadow-2xl flex items-center justify-center border-2 border-[#00a884]">
                   <MessageSquareCode size={22} className="text-[#00a884]" />
