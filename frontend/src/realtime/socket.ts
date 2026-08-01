@@ -41,6 +41,13 @@ export class RealtimeClient {
 
   constructor() {
     this.url = this.getUrl();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        console.log('Network online event detected. Resetting reconnect attempts and connecting WS.');
+        this.reconnectAttempts = 0;
+        this.connect();
+      });
+    }
   }
 
   public connect() {
@@ -78,6 +85,25 @@ export class RealtimeClient {
     this.stopHeartbeat();
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
     useRealtimeStore.getState().setConnectionState(false, false, null);
+  }
+
+  private attemptReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      useRealtimeStore.getState().setConnectionState(false, false, 'Max reconnect attempts reached');
+      return;
+    }
+
+    useRealtimeStore.getState().setConnectionState(false, true, null);
+
+    const delay = Math.min(this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts), 10000);
+    this.reconnectAttempts++;
+    
+    console.log(`Attempting reconnect ${this.reconnectAttempts} in ${delay}ms`);
+    
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+    this.reconnectTimeout = setTimeout(() => {
+      this.connect();
+    }, delay);
   }
 
   public send(type: string, payload: any = {}, id?: string) {

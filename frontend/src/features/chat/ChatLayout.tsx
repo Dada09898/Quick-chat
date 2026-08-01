@@ -3,6 +3,7 @@ import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useChatStore } from './chatStore';
 import { useRealtimeStore } from '../../realtime/store';
+import { wsClient } from '../../realtime/socket';
 import { useAuthStore } from '../../store/authStore';
 import { ChatList } from './ChatList';
 import { NotificationBell } from '../notifications/NotificationBell';
@@ -480,10 +481,17 @@ export const ChatLayout: React.FC = () => {
 
         {/* Connection Reconnecting Indicator */}
         {!isConnected && (
-          <div className="bg-[#182229] border-b border-[#222d34] px-4 py-1.5 flex items-center justify-center gap-2 text-amber-400 text-xs font-medium animate-pulse z-20 shrink-0">
+          <button 
+            onClick={() => {
+              wsClient.disconnect();
+              wsClient.connect();
+            }}
+            className="w-full bg-[#182229] border-b border-[#222d34] px-4 py-1.5 flex items-center justify-center gap-2 text-amber-400 text-xs font-medium animate-pulse z-20 shrink-0 cursor-pointer hover:bg-[#202c33] transition"
+            title="Click to reconnect now"
+          >
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-            <span>{isConnecting ? 'Connecting...' : 'Reconnecting... (Offline mode active)'}</span>
-          </div>
+            <span>{isConnecting ? 'Connecting...' : 'Reconnecting... (Click to reconnect)'}</span>
+          </button>
         )}
 
         {/* AI Assistant Side Panel */}
