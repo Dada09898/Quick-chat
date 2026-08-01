@@ -32,9 +32,15 @@ class JWTAuthMiddleware(BaseMiddleware):
                         cookies[k] = v.value
                         
         auth_cookie_name = settings.SIMPLE_JWT['AUTH_COOKIE']
-        
         token_key = cookies.get(auth_cookie_name)
         
+        if not token_key:
+            query_string = scope.get('query_string', b'').decode('utf-8')
+            from urllib.parse import parse_qs
+            query_params = parse_qs(query_string)
+            if 'token' in query_params and query_params['token']:
+                token_key = query_params['token'][0]
+
         if token_key:
             scope['user'] = await get_user_from_token(token_key)
         else:

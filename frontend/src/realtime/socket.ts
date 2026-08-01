@@ -17,23 +17,30 @@ export class RealtimeClient {
   private connectTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly connectTimeoutMs = 8000;
 
-  constructor() {
-    // Determine WS protocol and host based on API URL or fallback to origin
+  private getUrl(): string {
     const apiUrl = import.meta.env.VITE_API_URL;
+    let protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    let host = window.location.host;
+
     if (apiUrl) {
       try {
         const parsedUrl = new URL(apiUrl);
-        const protocol = parsedUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-        this.url = `${protocol}//${parsedUrl.host}/ws/realtime/`;
+        protocol = parsedUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+        host = parsedUrl.host;
       } catch (e) {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        this.url = `${protocol}//${window.location.host}/ws/realtime/`;
+        host = window.location.host;
       }
-    } else {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = import.meta.env.DEV ? 'localhost:8000' : window.location.host;
-      this.url = `${protocol}//${host}/ws/realtime/`;
+    } else if (import.meta.env.DEV) {
+      host = `${window.location.hostname}:8000`;
     }
+
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token') || localStorage.getItem('quickchat_token');
+    const queryParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${protocol}//${host}/ws/realtime/${queryParam}`;
+  }
+
+  constructor() {
+    this.url = this.getUrl();
   }
 
   public connect() {
@@ -43,6 +50,7 @@ export class RealtimeClient {
 
     useRealtimeStore.getState().setConnectionState(false, true, null);
 
+    this.url = this.getUrl();
     this.ws = new WebSocket(this.url);
     this.ws.onopen = this.handleOpen.bind(this);
     this.ws.onmessage = this.handleMessage.bind(this);
@@ -249,8 +257,8 @@ export class RealtimeClient {
     this.stopHeartbeat();
     useRealtimeStore.getState().setConnectionState(false, false, `Closed code: ${event.code}`);
     
-    // Auto reconnect unless intentionally closed
-    if (event.code !== 1000 && event.code !== 4001) {
+    // Auto reconnect unless intentionally closed with normal closure (1000)
+    if (event.code !== 1000) {
       this.attemptReconnect();
     }
   }
