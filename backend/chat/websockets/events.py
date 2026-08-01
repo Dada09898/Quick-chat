@@ -58,18 +58,18 @@ class ChatEventRouter:
             }))
             
             # 2. Broadcast 'message.new' to the conversation group
-            attachments_data = []
-            if hasattr(msg, 'attachments'):
-                for att in msg.attachments.all():
-                    attachments_data.append({
-                        'id': str(att.id),
-                        's3_key': att.s3_key,
-                        'type': att.s3_key.split('.')[-1] if '.' in att.s3_key else 'file'
-                    })
+            def _get_attachments_data():
+                data = []
+                if hasattr(msg, 'attachments'):
+                    for att in msg.attachments.all():
+                        data.append({
+                            'id': str(att.id),
+                            's3_key': att.s3_key,
+                            'type': att.s3_key.split('.')[-1] if '.' in att.s3_key else 'file'
+                        })
+                return data
 
-            member_user_ids = await database_sync_to_async(
-                lambda: list(msg.conversation.members.values_list('user_id', flat=True))
-            )()
+            attachments_data = await database_sync_to_async(_get_attachments_data)()
 
             event_data = {
                 'type': 'forward_event',
