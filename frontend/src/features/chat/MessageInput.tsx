@@ -11,6 +11,7 @@ import { PollCreateModal } from './PollCreateModal';
 import { ContactShareModal } from './ContactShareModal';
 import { LocationShareModal } from './LocationShareModal';
 import { chatSounds } from '../../utils/chatSounds';
+import { apiJson } from '../../lib/api';
 
 const LazyEmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
@@ -204,7 +205,7 @@ export const MessageInput: React.FC = () => {
       sendEvent('message.send', msgPayload);
 
       // Dual-channel REST API POST fallback for 100% guaranteed DB persistence
-      apiClient('/api/chat/messages/', {
+      apiJson('/api/chat/messages/', {
         method: 'POST',
         body: msgPayload
       }).then(async res => {

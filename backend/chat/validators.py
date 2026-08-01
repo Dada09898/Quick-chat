@@ -24,7 +24,7 @@ class ChatValidator:
             return False
 
     @staticmethod
-    def validate_timestamp_window(client_timestamp_str: str, window_minutes: int = 5) -> bool:
+    def validate_timestamp_window(client_timestamp_str: str, window_minutes: int = 1440) -> bool:
         try:
             # Assuming ISO format from client
             client_time = datetime.fromisoformat(client_timestamp_str.replace('Z', '+00:00'))

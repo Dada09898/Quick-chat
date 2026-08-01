@@ -91,8 +91,8 @@ def test_replay_protection_window(test_user_and_device, conversation):
     user, device, private_key = test_user_and_device
     msg_id = str(uuid6.uuid7())
     
-    # 10 minutes ago - should be rejected by 5 minute window
-    old_time = datetime.now(timezone.utc) - django_timezone.timedelta(minutes=10)
+    # 48 hours ago - should be rejected by 24 hour window
+    old_time = datetime.now(timezone.utc) - django_timezone.timedelta(hours=48)
     
     data = {
         'id': msg_id,
