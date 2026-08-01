@@ -42,9 +42,12 @@ class LoginView(views.APIView):
         if not target_user:
             return Response({'error': 'No account found with this email/username. Please click "Create Account" to sign up.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        user = authenticate(request, email=target_user.email, password=password)
+        user = authenticate(request, username=target_user.email, password=password)
         if not user:
-            return Response({'error': 'Incorrect password. Please check your password and try again.'}, status=status.HTTP_401_UNAUTHORIZED)
+            if target_user.check_password(password) and target_user.is_active:
+                user = target_user
+            else:
+                return Response({'error': 'Incorrect password. Please check your password and try again.'}, status=status.HTTP_401_UNAUTHORIZED)
             
         # Optional TOTP enforcement
         if user.totp_secret:
