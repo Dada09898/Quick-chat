@@ -14,6 +14,8 @@ export class RealtimeClient {
   private baseReconnectDelay = 1000;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private connectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly connectTimeoutMs = 8000;
 
   constructor() {
     // Determine WS protocol and host based on API URL or fallback to origin
@@ -46,9 +48,21 @@ export class RealtimeClient {
     this.ws.onmessage = this.handleMessage.bind(this);
     this.ws.onclose = this.handleClose.bind(this);
     this.ws.onerror = this.handleError.bind(this);
+
+    if (this.connectTimeout) clearTimeout(this.connectTimeout);
+    this.connectTimeout = setTimeout(() => {
+      if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+        console.warn(`WebSocket handshake did not complete within ${this.connectTimeoutMs}ms; forcing reconnect`);
+        this.ws.close();
+      }
+    }, this.connectTimeoutMs);
   }
 
   public disconnect() {
+    if (this.connectTimeout) {
+      clearTimeout(this.connectTimeout);
+      this.connectTimeout = null;
+    }
     if (this.ws) {
       this.ws.close(1000, 'Intentional Disconnect');
       this.ws = null;
@@ -71,6 +85,10 @@ export class RealtimeClient {
   }
 
   private async handleOpen() {
+    if (this.connectTimeout) {
+      clearTimeout(this.connectTimeout);
+      this.connectTimeout = null;
+    }
     this.reconnectAttempts = 0;
     useRealtimeStore.getState().setConnectionState(true, false, null);
     this.startHeartbeat();
@@ -224,6 +242,10 @@ export class RealtimeClient {
   }
 
   private handleClose(event: CloseEvent) {
+    if (this.connectTimeout) {
+      clearTimeout(this.connectTimeout);
+      this.connectTimeout = null;
+    }
     this.stopHeartbeat();
     useRealtimeStore.getState().setConnectionState(false, false, `Closed code: ${event.code}`);
     
