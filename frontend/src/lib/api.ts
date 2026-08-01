@@ -39,20 +39,33 @@ export async function apiClient(
   options: RequestInit = {}
 ): Promise<Response> {
   const url = `${getApiBaseUrl()}${path}`;
+  const isPublicAuthEndpoint = path.includes('/api/auth/login/') || path.includes('/api/auth/register/') || path.includes('/api/auth/refresh/');
   const token = localStorage.getItem('access_token') || localStorage.getItem('token') || localStorage.getItem('quickchat_token');
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string> || {}),
   };
   
-  if (token && !headers['Authorization']) {
+  if (token && !headers['Authorization'] && !isPublicAuthEndpoint) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  return fetch(url, {
+  const response = await fetch(url, {
     ...options,
     credentials: 'include',
     headers,
   });
+
+  if (response.status === 401) {
+    response.clone().json().then(data => {
+      if (data && (data.code === 'token_not_valid' || data.detail === 'Given token not valid for any token type')) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('quickchat_token');
+      }
+    }).catch(() => {});
+  }
+
+  return response;
 }
 
 /**
